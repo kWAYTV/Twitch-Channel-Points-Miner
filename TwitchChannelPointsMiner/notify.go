@@ -727,9 +727,14 @@ func htmlEscape(s string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
 }
 
-// formatTelegram renders a console event as a title plus a sentence (parse_mode HTML).
+// formatTelegram renders a console event as the polarity glyph, a bold title,
+// and a sentence (parse_mode HTML). The glyph is the same one the console and
+// the chart use, and it is sent even when console emojis are turned off.
 func formatTelegram(event constants.Event, message string) string {
 	title := "<b>" + htmlEscape(eventTitle(event)) + "</b>"
+	if emoji, _, ok := constants.EventGlyph(event); ok && emoji != "" {
+		title = emoji + " " + title
+	}
 	body := eventSentence(message)
 	if body == "" || strings.EqualFold(body, eventTitle(event)) {
 		return limitRunes(title, telegramTextLimit)
