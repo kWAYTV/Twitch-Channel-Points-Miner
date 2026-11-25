@@ -1,9 +1,10 @@
 name: ci
 
-# Lint, tests, one build per platform and the image build, none waiting on another. Pull requests
-# reuse Go's test cache from main, so only packages a change can reach are run
-# again. Pushes to main and merge-queue runs execute every test from scratch, in
-# random order.
+# Four jobs, none waiting on another: lint, tests, build, image.
+#
+# Pull requests reuse Go's test cache from main, so only packages a change can
+# reach are run again. Pushes to main and merge-queue runs execute every test
+# from scratch, in random order. Each job fails when it exceeds its time budget.
 on:
   pull_request:
   merge_group:
@@ -18,12 +19,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  GO_VERSION: "1.26.x"
-
 jobs:
   lint:
-    name: Format, vet, tidy
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
@@ -37,32 +35,20 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 0
+      - uses: ./.github/actions/go
+        with:
+          cache: lint
       # Versions are derived from commit messages, so a malformed one is an error.
       - name: Commit messages
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: sh ci/check.sh commits "$BASE" "$HEAD"
-      - uses: actions/setup-go@v7
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-      - uses: actions/cache/restore@v6
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-lint-${{ runner.os }}-${{ github.sha }}
-          restore-keys: go-lint-${{ runner.os }}-
       - name: gofmt, go vet, go mod tidy
         run: sh ci/check.sh lint
-      - uses: actions/cache/save@v6
-        if: github.ref == 'refs/heads/main'
+      - uses: ./.github/actions/go/save
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-lint-${{ runner.os }}-${{ github.sha }}
+          cache: lint
       - name: Budget
         if: always()
         run: sh ci/budget.sh
@@ -82,17 +68,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           filter: blob:none
-      - uses: actions/setup-go@v7
+      - uses: ./.github/actions/go
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-      - uses: actions/cache/restore@v6
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-${{ runner.os }}-${{ github.sha }}
-          restore-keys: go-test-${{ runner.os }}-
+          cache: test
       - name: go test
         run: sh ci/check.sh test
       # A from-scratch run stores no test results. This second, cacheable pass
@@ -100,57 +78,34 @@ jobs:
       - name: Record test results for pull requests
         if: github.ref == 'refs/heads/main'
         run: CHECK_FULL= sh ci/check.sh test
-      # Only main writes the cache, so a pull request cannot seed it with results
-      # from code that never merged.
-      - uses: actions/cache/save@v6
-        if: github.ref == 'refs/heads/main'
+      - uses: ./.github/actions/go/save
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-${{ runner.os }}-${{ github.sha }}
+          cache: test
       - name: Budget
         if: always()
         run: sh ci/budget.sh
 
   build:
-    name: Build ${{ matrix.target }}
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    strategy:
-      fail-fast: false
-      matrix:
-        # Keep in step with RELEASE_TARGETS in ci/check.sh.
-        target: [windows/amd64, linux/amd64, linux/arm64, darwin/amd64, darwin/arm64]
     env:
-      # Measured: 29 seconds for the slowest platform on a cold cache.
-      BUDGET_SECONDS: 45
+      # Measured: 79 seconds for every released platform on a cold cache.
+      BUDGET_SECONDS: 90
     steps:
       - name: Start the clock
         run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           filter: blob:none
-      - uses: actions/setup-go@v7
+      - uses: ./.github/actions/go
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: false
-      - uses: actions/cache/restore@v6
+          cache: build
+      - name: go build, every released platform
+        run: sh ci/check.sh build
+      - uses: ./.github/actions/go/save
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ matrix.target }}-${{ github.sha }}
-          restore-keys: go-build-${{ matrix.target }}-
-      - name: go build
-        run: sh ci/check.sh build ${{ matrix.target }}
-      - uses: actions/cache/save@v6
-        if: github.ref == 'refs/heads/main'
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ matrix.target }}-${{ github.sha }}
+          cache: build
       - name: Budget
         if: always()
         run: sh ci/budget.sh
@@ -159,11 +114,11 @@ jobs:
   # platforms without publishing, so a change that breaks the Dockerfile fails
   # here and not in the middle of a release.
   image:
-    name: Build image
+    name: Image
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
-      # Measured by the workflow this replaces: 35 to 65 seconds warm, 84 cold.
+      # Measured: 35 to 74 seconds warm, 84 cold.
       BUDGET_SECONDS: 90
     steps:
       - name: Start the clock
@@ -178,7 +133,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha
-          # Only main writes the cache, as with the Go caches above.
+          # Only main writes the cache, as with the Go caches.
           cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max' || '' }}
       - name: Budget
         if: always()

@@ -1,0 +1,22 @@
+name: Set up Go
+description: Installs Go and restores the build cache this job saved on main.
+
+inputs:
+  cache:
+    description: Name of this job's cache, so jobs do not overwrite each other's.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v7
+      with:
+        go-version: "1.26.x"
+        cache: false
+    - uses: actions/cache/restore@v6
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: go-${{ inputs.cache }}-${{ runner.os }}-${{ github.sha }}
+        restore-keys: go-${{ inputs.cache }}-${{ runner.os }}-

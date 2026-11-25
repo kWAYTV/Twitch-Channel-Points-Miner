@@ -13,7 +13,7 @@ git config core.hooksPath ci/hooks    # once per clone: run it automatically
 - `commit-msg` checks the message is a conventional commit.
 - `pre-push` runs `ci/check.sh`, the same checks CI runs.
 
-CI runs lint, the tests (race detector, random order) and one build per platform side by side. Each job has a time budget. Do not retry a failing check, skip or loosen one, or raise a budget without a measured reason.
+CI runs four jobs side by side: lint, the tests (race detector, random order), a build of every released platform, and the Docker image. Each job has a time budget. Do not retry a failing check, skip or loosen one, or raise a budget without a measured reason.
 
 ## Commit messages and releases
 
