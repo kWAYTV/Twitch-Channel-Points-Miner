@@ -1,16 +1,18 @@
 ![Twitch Channel Points Miner](assets/banner.png)
 <p align="center">
-<a href="https://github.com/0x8fv/Twitch-Channel-Points-Miner/releases"><img alt="Latest Version" src="https://img.shields.io/github/v/release/0x8fv/Twitch-Channel-Points-Miner?style=flat&color=white&logo=github&logoColor=white"/></a>
-<a href="https://github.com/0x8fv/Twitch-Channel-Points-Miner/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/0x8fv/Twitch-Channel-Points-Miner?style=flat&color=limegreen&logo=github&logoColor=white"/></a>
-<a href="https://github.com/MShawon/github-clone-count-badge"><img alt="GitHub Traffic" src="https://hits.sh/github.com/0x8fv/Twitch-Channel-Points-Miner.svg?style=flat&label=views"/></a>
-<a href="https://github.com/0x8fv/Twitch-Channel-Points-Miner"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/0x8fv/Twitch-Channel-Points-Miner?style=flat&color=lightyellow&logo=github&logoColor=white"/></a>
+<a href="https://github.com/kWAYTV/twitch-points-miner/releases"><img alt="Latest Version" src="https://img.shields.io/github/v/release/kWAYTV/twitch-points-miner?style=flat&color=white&logo=github&logoColor=white"/></a>
+<a href="https://github.com/kWAYTV/twitch-points-miner/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/kWAYTV/twitch-points-miner?style=flat&color=limegreen&logo=github&logoColor=white"/></a>
+<a href="https://github.com/MShawon/github-clone-count-badge"><img alt="GitHub Traffic" src="https://hits.sh/github.com/kWAYTV/twitch-points-miner.svg?style=flat&label=views"/></a>
+<a href="https://github.com/kWAYTV/twitch-points-miner"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/kWAYTV/twitch-points-miner?style=flat&color=lightyellow&logo=github&logoColor=white"/></a>
 </p>
 
 # Twitch Channel Points Miner (Go)
 
 Go rewrite of [0x8fv/Twitch-Channel-Points-Miner-v2](https://github.com/0x8fv/Twitch-Channel-Points-Miner-v2) with a focus on speed and low overhead. This version keeps the same behavior (auto-claims bonuses, drops, and predictions) but trims dependencies, streams point updates over PubSub.
 
-> Credits to the original maintained fork by [rdavydov](https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2), whose work inspired this Go rewrite.
+> This project began as a fork of [0x8fv/Twitch-Channel-Points-Miner](https://github.com/0x8fv/Twitch-Channel-Points-Miner), the Go rewrite by 0x8fv, and is now developed on its own. Compared with it, the code is reorganised by domain and adds a web dashboard, Telegram notifications, readable notification sentences, a Docker image and CI. It stays under the same [CC BY-NC 4.0](LICENSE) licence.
+>
+> Credits also to the original maintained fork by [rdavydov](https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2), whose work inspired the Go rewrite.
 
 ## Why this version
 - Written in Go for faster start-up and lower CPU compared to the original runtime.
@@ -113,18 +115,18 @@ A small built-in web dashboard (no external assets) shows every streamer's balan
 - JSON API: `GET /api/streamers` and `GET /api/streamer/{name}?range=24h|7d|30d|all`.
 
 ## Docker
-A multi-arch image (`linux/amd64`, `linux/arm64`) is published to GHCR on every change to `main`. Replace `OWNER` with the lowercase GitHub account that owns the repository.
+A multi-arch image (`linux/amd64`, `linux/arm64`) is published to GHCR on every change to `main`. 
 
 ```sh
 docker run -d --name twitch-miner --restart unless-stopped \
   -v twitch-miner-data:/data -p 5000:5000 \
-  ghcr.io/OWNER/twitch-channel-points-miner:latest
+  ghcr.io/kwaytv/twitch-points-miner:latest
 ```
 
 ```yaml
 services:
   twitch-miner:
-    image: ghcr.io/OWNER/twitch-channel-points-miner:latest
+    image: ghcr.io/kwaytv/twitch-points-miner:latest
     restart: unless-stopped
     ports:
       - "5000:5000"

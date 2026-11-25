@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 func TestStreamerInitialPointsKeyUsesChannelIDWhenAvailable(t *testing.T) {

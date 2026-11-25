@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 // watchCandidate is one online streamer that may be watched this round.

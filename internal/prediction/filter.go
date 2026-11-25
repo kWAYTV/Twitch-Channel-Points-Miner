@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 // ? ShouldSkipByFilter evaluates the optional filter_condition before betting

@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/random"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 const (

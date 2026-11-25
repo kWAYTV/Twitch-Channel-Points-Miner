@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/dashboard"
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/miner"
+	"github.com/kWAYTV/twitch-points-miner/internal/dashboard"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/miner"
 )
 
 type analyticsConfig struct {

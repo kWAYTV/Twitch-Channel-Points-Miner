@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 func TestHandlePubSubGainSupportsPredictionStakeDeduction(t *testing.T) {

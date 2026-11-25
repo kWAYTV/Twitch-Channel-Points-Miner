@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func (t *Client) CheckStreamerOnline(streamer *domain.Streamer) (bool, error) {

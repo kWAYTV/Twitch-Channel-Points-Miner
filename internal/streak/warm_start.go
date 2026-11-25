@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/jsonfile"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonfile"
 )
 
 const (

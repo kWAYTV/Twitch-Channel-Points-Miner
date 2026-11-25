@@ -2,13 +2,19 @@ package update
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
-const releasesURL = "https://api.github.com/repos/0x8fv/Twitch-Channel-Points-Miner/releases/latest"
+const releasesURL = "https://api.github.com/repos/" + project.Repository + "/releases/latest"
+
+// errNoRelease means the repository has not published a release yet.
+var errNoRelease = errors.New("no release published")
 
 type releaseAsset struct {
 	Name               string `json:"name"`
@@ -35,6 +41,9 @@ func fetchLatestRelease() (githubRelease, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return githubRelease{}, errNoRelease
+	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return githubRelease{}, fmt.Errorf("fetch release: unexpected status %s", resp.Status)
 	}

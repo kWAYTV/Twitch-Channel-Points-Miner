@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 // logWatchQueueSlots prints who holds each watch slot and why, when queue logging is on.

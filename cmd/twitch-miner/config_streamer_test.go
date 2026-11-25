@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func TestParseIRCMode(t *testing.T) {

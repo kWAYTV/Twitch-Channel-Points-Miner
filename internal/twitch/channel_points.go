@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/prediction"
-	"TwitchChannelPointsMiner/internal/random"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 // ? LoadChannelPointsContext fetches points and claims any bonuses.

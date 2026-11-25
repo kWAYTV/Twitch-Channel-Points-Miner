@@ -10,7 +10,7 @@ This project is community-driven, and every improvement—big or small—helps m
 Before contributing:
 
 - Please review the **[Code of Conduct](./CODE_OF_CONDUCT.md)**.
-- Check **[existing issues](https://github.com/0x8fv/Twitch-Channel-Points-Miner/issues)** to avoid duplicates.
+- Check **[existing issues](https://github.com/kWAYTV/twitch-points-miner/issues)** to avoid duplicates.
 
 If an issue related to your idea already exists, join the discussion instead of opening a new one.
 
@@ -36,7 +36,7 @@ Run and edit the project in the cloud with no local setup required:
 
 ## Opening a Pull Request (PR)
 
-Once your changes are ready, open a **[Pull Request](https://github.com/0x8fv/Twitch-Channel-Points-Miner/pulls)**.  
+Once your changes are ready, open a **[Pull Request](https://github.com/kWAYTV/twitch-points-miner/pulls)**.  
 Be sure to fill out the PR template so reviewers understand your changes and intent.
 
 ---
@@ -51,7 +51,7 @@ Be sure to fill out the PR template so reviewers understand your changes and int
 
 ### After your PR is merged
 🎉 Congratulations — you’re now a contributor!  
-You’ll appear in the **[Contributor Graph](https://github.com/0x8fv/Twitch-Channel-Points-Miner/graphs/contributors)**.
+You’ll appear in the **[Contributor Graph](https://github.com/kWAYTV/twitch-points-miner/graphs/contributors)**.
 
 ---
 
@@ -72,7 +72,7 @@ Every contribution is appreciated!
 
 ## Issues
 
-Use **[Issues](https://github.com/0x8fv/Twitch-Channel-Points-Miner/issues)** to report:
+Use **[Issues](https://github.com/kWAYTV/twitch-points-miner/issues)** to report:
 
 - Bugs  
 - Feature requests  
@@ -99,7 +99,7 @@ Labels help identify an issue’s purpose and status:
 - **`wontfix`** — Issue won’t be addressed  
 
 Browse all labels here:  
-<https://github.com/0x8fv/Twitch-Channel-Points-Miner/labels>
+<https://github.com/kWAYTV/twitch-points-miner/labels>
 
 ---
 

@@ -3,7 +3,7 @@ package miner
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func TestShouldClaimDrops(t *testing.T) {

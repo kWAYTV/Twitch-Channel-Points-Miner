@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/notify"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
 type LoggerSettings struct {

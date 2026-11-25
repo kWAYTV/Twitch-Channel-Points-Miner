@@ -3,7 +3,7 @@ package chat
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func TestShouldJoin(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/notify"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
 // maxEvents caps the markers sent per request (the most recent are kept).

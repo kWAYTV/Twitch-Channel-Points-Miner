@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func (t *Client) PostGQL(payload interface{}) (map[string]interface{}, error) {

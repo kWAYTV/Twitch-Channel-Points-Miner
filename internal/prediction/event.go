@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 type Outcome struct {

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/privacy"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 type Logger interface {

@@ -4,8 +4,8 @@ package drops
 import (
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 // claimInterval is how often the inventory is checked for claimable drops.

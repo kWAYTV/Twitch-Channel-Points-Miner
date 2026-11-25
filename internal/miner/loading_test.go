@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 func TestLoadSummaryIsOneLine(t *testing.T) {

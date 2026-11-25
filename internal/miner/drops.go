@@ -1,7 +1,7 @@
 package miner
 
 import (
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func (m *Miner) shouldClaimDrops(streamers []*domain.Streamer) bool {

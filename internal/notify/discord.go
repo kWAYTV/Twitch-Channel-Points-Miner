@@ -10,12 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
-)
-
-const (
-	discordUsername  = "Twitch Channel Points Miner"
-	discordAvatarURL = "https://raw.githubusercontent.com/0x8fv/Twitch-Channel-Points-Miner/main/assets/gopher.png"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
 type DiscordSettings struct {
@@ -81,8 +77,8 @@ func (d *DiscordWebhook) Send(message string, event events.Event) {
 		body = string(r[:4095]) + "…"
 	}
 	payload := discordPayload{
-		Username:  discordUsername,
-		AvatarURL: discordAvatarURL,
+		Username:  project.Name,
+		AvatarURL: project.AvatarURL,
 		Embeds: []discordEmbed{{
 			Title:       title,
 			Description: body,

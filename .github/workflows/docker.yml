@@ -47,7 +47,7 @@ jobs:
       - name: Resolve image name and tags
         id: meta
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/twitch-channel-points-miner"
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
           sha="$(git rev-parse --short=7 HEAD)"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "sha_tag=${image}:sha-${sha}" >> "$GITHUB_OUTPUT"

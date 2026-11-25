@@ -3,8 +3,8 @@ package miner
 import (
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
 func (m *Miner) syncResolvedStreakState(streamer *domain.Streamer, prevBroadcastID string, prevCreatedAt time.Time, prevWatchStreakMissing bool) {

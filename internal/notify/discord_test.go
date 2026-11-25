@@ -7,7 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
 func TestDiscordWebhookSendsEmbed(t *testing.T) {
@@ -44,7 +45,7 @@ func TestDiscordWebhookSendsEmbed(t *testing.T) {
 	if embed.Title != "🟢 Online" || embed.Description != "Alice is online with 1.2k points, playing Valorant. The watch streak is 2." || embed.Color != 0x0A7A2F {
 		t.Fatalf("unexpected embed %+v", embed)
 	}
-	if bodies[0].Username != discordUsername {
+	if bodies[0].Username != project.Name {
 		t.Fatalf("username %q", bodies[0].Username)
 	}
 

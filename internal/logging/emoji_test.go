@@ -3,7 +3,7 @@ package logging
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 func TestEmojize(t *testing.T) {

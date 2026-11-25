@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/ansi"
-	"TwitchChannelPointsMiner/internal/jsonfile"
-	"TwitchChannelPointsMiner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonfile"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 type privacyConfig struct {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func (m *Miner) resolveGameName(streamer *domain.Streamer) string {

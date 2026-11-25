@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/miner"
-	"TwitchChannelPointsMiner/internal/notify"
-	"TwitchChannelPointsMiner/internal/update"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/miner"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
+	"github.com/kWAYTV/twitch-points-miner/internal/update"
 )
 
 func main() {

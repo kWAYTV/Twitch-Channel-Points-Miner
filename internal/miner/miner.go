@@ -8,13 +8,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/ansi"
-	"TwitchChannelPointsMiner/internal/chat"
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/privacy"
-	"TwitchChannelPointsMiner/internal/streak"
-	"TwitchChannelPointsMiner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
+	"github.com/kWAYTV/twitch-points-miner/internal/chat"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 const (

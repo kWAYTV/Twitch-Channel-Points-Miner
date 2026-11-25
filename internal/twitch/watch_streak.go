@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func currentStreamHasCompletedWatchStreak(createdAt, achievementAt time.Time) bool {

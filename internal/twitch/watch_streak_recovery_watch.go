@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
 
 // watchClip reports a clip of a missed stream as played, then checks the streak.

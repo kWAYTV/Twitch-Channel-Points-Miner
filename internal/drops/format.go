@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 func formatDropProgress(current, required int) string {

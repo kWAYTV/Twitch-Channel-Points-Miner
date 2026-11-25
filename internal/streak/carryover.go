@@ -3,7 +3,7 @@ package streak
 import (
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func CarryoverExpiry(streamer *domain.Streamer, now time.Time) time.Time {

@@ -3,8 +3,8 @@ package pubsub
 import (
 	"fmt"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/prediction"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 func (p *Client) placePrediction(eventID string) {

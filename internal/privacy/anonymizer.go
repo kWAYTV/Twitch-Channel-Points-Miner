@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 type Anonymizer struct {

@@ -4,9 +4,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 // AnalyticsSink receives point changes and log events for the analytics dashboard.

@@ -3,7 +3,7 @@ package logging
 import (
 	"sync"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 // A Subscriber receives every logged event as a plain sentence, without colour codes.

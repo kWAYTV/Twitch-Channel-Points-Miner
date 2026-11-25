@@ -1,7 +1,7 @@
 package notify
 
 import (
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 // quietEvents are high-frequency or low-signal. An empty events list sends

@@ -4,9 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 type fakeAnalyticsSink struct {

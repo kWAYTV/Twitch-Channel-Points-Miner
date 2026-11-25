@@ -3,7 +3,7 @@ package chat
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 type stubChatLogger struct {

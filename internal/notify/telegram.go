@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 // Telegram Bot API: https://core.telegram.org/bots/api#sendmessage

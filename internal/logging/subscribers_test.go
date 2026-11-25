@@ -3,8 +3,8 @@ package logging
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/ansi"
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 type published struct {

@@ -5,10 +5,10 @@ import (
 	"math"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/ansi"
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/prediction"
+	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 func (p *Client) logPredictionResult(event *prediction.Event, result map[string]interface{}) {

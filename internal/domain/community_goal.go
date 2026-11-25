@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"TwitchChannelPointsMiner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 type CommunityGoal struct {

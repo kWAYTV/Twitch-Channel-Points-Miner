@@ -3,7 +3,7 @@ package notify
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 func TestWantsEvent(t *testing.T) {

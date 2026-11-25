@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func (p *Event) Decide(balance int) Decision {

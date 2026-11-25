@@ -3,10 +3,10 @@ package twitch
 import (
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/random"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 type ClaimedDrop struct {

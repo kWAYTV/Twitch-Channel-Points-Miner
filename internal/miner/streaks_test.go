@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
 func TestStreakPriorityLimit(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
 // pickStreamersToWatch chooses which online streamers get the watch slots this round.

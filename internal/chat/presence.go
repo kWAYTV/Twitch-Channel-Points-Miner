@@ -4,8 +4,8 @@ import (
 	"strings"
 	"sync"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/privacy"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 )
 
 // Presence joins and leaves each streamer's chat as their IRC mode asks.

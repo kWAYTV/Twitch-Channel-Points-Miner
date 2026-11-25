@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func (t *Client) GetUserByID(channelID string) (*TwitchUserIdentity, error) {

@@ -1,7 +1,7 @@
 package notify
 
 import (
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 func eventTitle(event events.Event) string {

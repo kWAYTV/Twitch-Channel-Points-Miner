@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 func TestLogStatusesHonorsProgressFlag(t *testing.T) {

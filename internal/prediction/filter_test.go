@@ -3,7 +3,7 @@ package prediction
 import (
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func ptrFloat(val float64) *float64 { return &val }

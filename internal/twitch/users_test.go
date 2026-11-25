@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"TwitchChannelPointsMiner/internal/auth"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/auth"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func TestGetUserByIDReturnsCurrentLogin(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
 func testWarmStartStreamer(login, channelID, broadcastID string, createdAt time.Time, online bool) *domain.Streamer {

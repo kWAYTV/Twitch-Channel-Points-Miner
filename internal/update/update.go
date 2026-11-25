@@ -1,6 +1,7 @@
 package update
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
 func RunAutoUpdate() (bool, error) {
@@ -19,11 +22,14 @@ func RunAutoUpdate() (bool, error) {
 	devRun := isGoRunExecutable(exePath)
 
 	release, err := fetchLatestRelease()
+	if errors.Is(err, errNoRelease) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
 
-	currentVersion := normalizeVersion(Version)
+	currentVersion := normalizeVersion(project.Version)
 	latestVersion := normalizeVersion(release.TagName)
 	if compareVersions(latestVersion, currentVersion) <= 0 {
 		return false, nil

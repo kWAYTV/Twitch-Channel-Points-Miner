@@ -3,7 +3,7 @@ package twitch
 import (
 	"encoding/json"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 type gqlChannelPointsContextResponse struct {

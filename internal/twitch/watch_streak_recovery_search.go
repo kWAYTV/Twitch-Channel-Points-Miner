@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 // listing returns the operation that lists the streamer's clips for a period

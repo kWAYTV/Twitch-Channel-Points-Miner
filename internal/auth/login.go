@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 type Login struct {

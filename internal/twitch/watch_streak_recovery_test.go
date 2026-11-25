@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 // recoveryTwitch plays Twitch for a streak recovery: it answers the reward list,

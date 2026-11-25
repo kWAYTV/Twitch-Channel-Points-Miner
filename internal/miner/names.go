@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func displayName(name string) string {

@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 type filterConditionConfig struct {

@@ -15,6 +15,9 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     && mkdir /out/data
 
 FROM alpine:3.20
+LABEL org.opencontainers.image.source="https://github.com/kWAYTV/twitch-points-miner" \
+      org.opencontainers.image.description="Earns Twitch channel points and drops by simulating stream watching" \
+      org.opencontainers.image.licenses="CC-BY-NC-4.0"
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build --chown=1000:1000 /out/data /data
 COPY --from=build /out/twitch-miner /usr/local/bin/twitch-miner

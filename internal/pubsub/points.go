@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 func (p *Client) processPointsEarned(payload map[string]interface{}, channelID string) error {

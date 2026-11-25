@@ -1,4 +1,4 @@
-module TwitchChannelPointsMiner
+module github.com/kWAYTV/twitch-points-miner
 
 go 1.22
 

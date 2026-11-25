@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/auth"
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/privacy"
-	"TwitchChannelPointsMiner/internal/random"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/auth"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 var (

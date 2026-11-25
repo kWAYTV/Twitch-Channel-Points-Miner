@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/streak"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
 func (m *Miner) handlePointsUpdate(streamer *domain.Streamer, previous int, reason string) {

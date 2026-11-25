@@ -1,7 +1,7 @@
 package logging
 
 import (
-	"TwitchChannelPointsMiner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 var emojiMap = map[string]string{

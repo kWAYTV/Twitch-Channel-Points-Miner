@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 // spadeTrackURL is fixed here so recovery does not look up the spade URL of

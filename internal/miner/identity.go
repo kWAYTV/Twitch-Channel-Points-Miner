@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/twitch"
-	"TwitchChannelPointsMiner/internal/twitchapi"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func streamerInitialPointsKey(streamer *domain.Streamer) string {

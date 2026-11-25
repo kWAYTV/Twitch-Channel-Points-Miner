@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/random"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
 
 func (p *Client) buildTopics() ([]string, error) {

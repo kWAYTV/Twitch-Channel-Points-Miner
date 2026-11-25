@@ -3,7 +3,7 @@ package twitch
 import (
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 func campaignNameFromInventory(campaign map[string]interface{}) string {

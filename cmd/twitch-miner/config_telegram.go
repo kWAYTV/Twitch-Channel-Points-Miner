@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/logging"
-	"TwitchChannelPointsMiner/internal/notify"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
 // chatID accepts a JSON number (123456789, -1001234567890) or string ("@channel").

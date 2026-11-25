@@ -8,19 +8,19 @@ import (
 	"syscall"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
-	"TwitchChannelPointsMiner/internal/drops"
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/pubsub"
-	"TwitchChannelPointsMiner/internal/twitch"
-	"TwitchChannelPointsMiner/internal/twitchapi"
-	"TwitchChannelPointsMiner/internal/update"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/drops"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/project"
+	"github.com/kWAYTV/twitch-points-miner/internal/pubsub"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 func (m *Miner) run(streamers []string, useFollowers bool, order domain.FollowersOrder) {
 	m.startedAt = time.Now()
-	m.logger.Printf("Twitch Channel Points Miner | v%s", update.Version)
-	m.logger.Println("https://github.com/0x8fv/Twitch-Channel-Points-Miner")
+	m.logger.Printf("%s | v%s", project.Name, project.Version)
+	m.logger.Println(project.URL)
 	sessionID := newSessionID()
 	m.logger.EmojiEventf(":green_circle:", events.EventStartup, "Start session: '%s'", sessionID)
 	m.stop = make(chan struct{})

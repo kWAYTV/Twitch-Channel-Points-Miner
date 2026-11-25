@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 func TestRememberResolvedStreakCarryoverExtendsActiveWindowFromLatestOfflineTime(t *testing.T) {

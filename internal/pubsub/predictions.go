@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"TwitchChannelPointsMiner/internal/events"
-	"TwitchChannelPointsMiner/internal/jsonvalue"
-	"TwitchChannelPointsMiner/internal/prediction"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 func (p *Client) processPredictionChannel(topic string, payload map[string]interface{}) error {
