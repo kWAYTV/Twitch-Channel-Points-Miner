@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
-	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
 func TestNormalizeGameList(t *testing.T) {
@@ -48,26 +47,14 @@ func TestNewMinerDisableAtInNicknameSetting(t *testing.T) {
 	streamerSettings := domain.StreamerSettings{}
 	streamerSettings.Default()
 
-	minr := NewMiner(
-		"user",
-		"",
-		false,
-		false,
-		logging.LoggerSettings{},
-		streamerSettings,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		true,
-		false,
-		false,
-		true,
-		false,
-	)
+	m := New(Options{
+		Username:                  "user",
+		StreamerSettings:          streamerSettings,
+		DisableAtInNickname:       true,
+		WatchStreakWarmStartCache: true,
+	})
 
-	if !minr.disableAtInNickname {
+	if !m.disableAtInNickname {
 		t.Fatalf("expected disableAtInNickname to be enabled from constructor")
 	}
 }

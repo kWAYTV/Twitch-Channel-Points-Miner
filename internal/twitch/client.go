@@ -88,7 +88,7 @@ func NewClient(username, userAgent, password string, logger debugLogger, anonymi
 	}, nil
 }
 
-// ? SetGameChangeHandler registers a callback fired whenever stream game metadata changes.
+// SetGameChangeHandler registers a callback fired whenever stream game metadata changes.
 func (t *Client) SetGameChangeHandler(handler func(streamer *domain.Streamer, previous, current string)) {
 	t.onGameChange = handler
 }
@@ -131,7 +131,7 @@ func (t *Client) deepDebugf(format string, args ...interface{}) {
 	deep.DeepDebugf(format, args...)
 }
 
-// ? UpdateClientVersion refreshes the Twitch build id used for GQL calls.
+// UpdateClientVersion refreshes the Twitch build id used for GQL calls.
 func (t *Client) UpdateClientVersion() string {
 	if t == nil {
 		return twitchapi.ClientVersion

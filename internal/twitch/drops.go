@@ -28,7 +28,7 @@ type DropStatus struct {
 	Claimed        bool
 }
 
-// ? ClaimDrop claims a single drop instance.
+// ClaimDrop claims a single drop instance.
 func (t *Client) ClaimDrop(dropInstanceID string) (bool, error) {
 	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsPageClaimDropRewards)
 	if op.Variables == nil {
@@ -85,7 +85,7 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 	return claimedDrops, statuses, claimErr
 }
 
-// ? Fetch campaign IDs for a streamer if drops enabled.
+// Fetch campaign IDs for a streamer if drops enabled.
 func (t *Client) CampaignIDsForStreamer(streamer *domain.Streamer) ([]string, error) {
 	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsHighlightServiceAvailable)
 	if op.Variables == nil {

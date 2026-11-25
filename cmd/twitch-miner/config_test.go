@@ -174,3 +174,40 @@ func TestBuildOverrideSettingsCanEnableClaimMomentsOverGlobalDefault(t *testing.
 		t.Fatalf("expected streamer override to enable claim_moments")
 	}
 }
+
+func TestFillMissingAddsOnlyWhatIsAbsent(t *testing.T) {
+	settings := map[string]interface{}{
+		"username": "me",
+		"bet":      map[string]interface{}{"percentage": 9.0},
+		"privacy":  nil,
+	}
+	defaults := map[string]interface{}{
+		"username": "your-twitch-username",
+		"emojis":   true,
+		"bet": map[string]interface{}{
+			"percentage":       5,
+			"filter_condition": map[string]interface{}{"by": nil},
+		},
+		"privacy": map[string]interface{}{"anonymize_logs": false},
+	}
+
+	if !fillMissing(settings, defaults) {
+		t.Fatalf("missing keys should be reported as added")
+	}
+	bet := settings["bet"].(map[string]interface{})
+	if settings["username"] != "me" || bet["percentage"] != 9.0 {
+		t.Fatalf("values the user set must not change: %v", settings)
+	}
+	if settings["emojis"] != true {
+		t.Fatalf("a missing top-level key should be added: %v", settings)
+	}
+	if _, ok := bet["filter_condition"].(map[string]interface{}); !ok {
+		t.Fatalf("a missing nested group should be added: %v", bet)
+	}
+	if privacy, ok := settings["privacy"].(map[string]interface{}); !ok || privacy["anonymize_logs"] != false {
+		t.Fatalf("a group that is not an object should be replaced by its defaults: %v", settings["privacy"])
+	}
+	if fillMissing(settings, defaults) {
+		t.Fatalf("a complete config should need nothing added")
+	}
+}

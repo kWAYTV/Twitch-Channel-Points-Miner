@@ -65,7 +65,6 @@ type Miner struct {
 	Password                   string
 	ClaimDropsStartup          bool
 	DisableSSLCertVerification bool
-	LoggerSettings             logging.LoggerSettings
 	StreamerSettings           domain.StreamerSettings
 	StreamerOverrides          map[string]domain.StreamerSettings
 	WatchStreakWarmStartCache  bool
@@ -94,51 +93,80 @@ type Miner struct {
 	activeStreakMu             sync.Mutex
 }
 
-func NewMiner(username, password string, claimDropsStartup bool, disableCertCheck bool, loggerSettings logging.LoggerSettings, streamerSettings domain.StreamerSettings, streamerOverrides map[string]domain.StreamerSettings, priorityNames []string, streamerExclude []string, gamePriority []string, gameExclude []string, disableAtInNickname bool, showGameInfo bool, logWatchQueue bool, watchStreakWarmStartCache bool, showDropsProgress bool) *Miner {
-	streamerSettings.Default()
-	priorityList := normalizeGameList(gamePriority)
-	excludedGames := make(map[string]struct{})
-	for _, name := range normalizeGameList(gameExclude) {
-		excludedGames[name] = struct{}{}
-	}
-	excludedStreamers := make(map[string]struct{})
-	for _, name := range normalizeStreamerList(streamerExclude) {
-		excludedStreamers[name] = struct{}{}
-	}
-	priorityIndex := make(map[string]int, len(priorityList))
-	for idx, name := range priorityList {
-		priorityIndex[name] = idx
-	}
-	safeUsername := logging.SanitizeFilename(strings.ToLower(strings.TrimSpace(username)))
-	warmStartCachePath := ""
-	if safeUsername != "" {
-		warmStartCachePath = filepath.Join("log", fmt.Sprintf("watch_streak_cache.%s.json", safeUsername))
-	}
+// Options is everything a Miner is configured with.
+type Options struct {
+	Username                   string
+	Password                   string
+	ClaimDropsStartup          bool
+	DisableSSLCertVerification bool
+	Logger                     logging.LoggerSettings
+	StreamerSettings           domain.StreamerSettings
+	StreamerOverrides          map[string]domain.StreamerSettings
+	WatchPriority              []string
+	StreamersExclude           []string
+	GamePriority               []string
+	GameExclude                []string
+	DisableAtInNickname        bool
+	ShowGame                   bool
+	WatchQueueLogging          bool
+	WatchStreakWarmStartCache  bool
+	ShowDropsProgress          bool
+}
+
+// New returns a Miner that is ready to Mine. It does not contact Twitch yet.
+func New(options Options) *Miner {
+	options.StreamerSettings.Default()
+	gamePriority := normalizeGameList(options.GamePriority)
 	m := &Miner{
-		Username:                   username,
-		Password:                   password,
-		ClaimDropsStartup:          claimDropsStartup,
-		DisableSSLCertVerification: disableCertCheck,
-		LoggerSettings:             loggerSettings,
-		StreamerSettings:           streamerSettings,
-		StreamerOverrides:          streamerOverrides,
-		WatchStreakWarmStartCache:  watchStreakWarmStartCache,
-		logger:                     logging.NewLogger(loggerSettings, username),
-		watchPriorities:            parseWatchPriorities(priorityNames),
-		streamerExclusions:         excludedStreamers,
-		gamePriority:               priorityList,
-		gamePriorityIndex:          priorityIndex,
-		gameExclusions:             excludedGames,
-		disableAtInNickname:        disableAtInNickname,
-		showGameInfo:               showGameInfo,
-		showDropsProgress:          showDropsProgress,
-		logWatchQueue:              logWatchQueue,
-		anonymizer:                 privacy.New(loggerSettings.AnonymizeLogs),
-		warmStartCachePath:         warmStartCachePath,
+		Username:                   options.Username,
+		Password:                   options.Password,
+		ClaimDropsStartup:          options.ClaimDropsStartup,
+		DisableSSLCertVerification: options.DisableSSLCertVerification,
+		StreamerSettings:           options.StreamerSettings,
+		StreamerOverrides:          options.StreamerOverrides,
+		WatchStreakWarmStartCache:  options.WatchStreakWarmStartCache,
+		logger:                     logging.NewLogger(options.Logger, options.Username),
+		watchPriorities:            parseWatchPriorities(options.WatchPriority),
+		streamerExclusions:         nameSet(normalizeStreamerList(options.StreamersExclude)),
+		gamePriority:               gamePriority,
+		gamePriorityIndex:          positions(gamePriority),
+		gameExclusions:             nameSet(normalizeGameList(options.GameExclude)),
+		disableAtInNickname:        options.DisableAtInNickname,
+		showGameInfo:               options.ShowGame,
+		showDropsProgress:          options.ShowDropsProgress,
+		logWatchQueue:              options.WatchQueueLogging,
+		anonymizer:                 privacy.New(options.Logger.AnonymizeLogs),
+		warmStartCachePath:         warmStartCachePathFor(options.Username),
 		activeStreakWatches:        make(map[string]streak.ActiveWatch),
 	}
-	m.chat = chat.NewPresence(username, m.chatToken, m.logger, disableAtInNickname, m.anonymizer, m.styledStreamerName)
+	m.chat = chat.NewPresence(options.Username, m.chatToken, m.logger, options.DisableAtInNickname, m.anonymizer, m.styledStreamerName)
 	return m
+}
+
+func nameSet(names []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		set[name] = struct{}{}
+	}
+	return set
+}
+
+// positions maps each name to its place in the list.
+func positions(names []string) map[string]int {
+	index := make(map[string]int, len(names))
+	for i, name := range names {
+		index[name] = i
+	}
+	return index
+}
+
+// warmStartCachePathFor is where an account's watch-streak state is kept between runs.
+func warmStartCachePathFor(username string) string {
+	safeUsername := logging.SanitizeFilename(strings.ToLower(strings.TrimSpace(username)))
+	if safeUsername == "" {
+		return ""
+	}
+	return filepath.Join("log", fmt.Sprintf("watch_streak_cache.%s.json", safeUsername))
 }
 
 // chatToken is empty until the miner has logged in.
@@ -149,12 +177,12 @@ func (m *Miner) chatToken() string {
 	return m.twitch.ChatToken()
 }
 
-// ? Mine runs the miner for an explicit list of streamers.
+// Mine runs the miner for an explicit list of streamers.
 func (m *Miner) Mine(streamers []string) {
 	m.run(streamers, false, domain.FollowersOrderASC)
 }
 
-// ? MineFollowers runs the miner using the follower list.
+// MineFollowers runs the miner using the follower list.
 func (m *Miner) MineFollowers(order domain.FollowersOrder) {
 	m.run(nil, true, order)
 }

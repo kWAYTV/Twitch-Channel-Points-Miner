@@ -131,14 +131,14 @@ func (t *Login) loadCookies(cookiesPath string) error {
 		t.client.Jar.SetCookies(u, append(t.client.Jar.Cookies(u), cookies...))
 	}
 
-	// ? Re-apply auth token and persistent cookies into the jar for future HTTP requests.
+	// Re-apply auth token and persistent cookies into the jar for future HTTP requests.
 	t.mu.Lock()
 	t.ensureSessionCookiesLocked()
 	t.mu.Unlock()
 	return nil
 }
 
-// ? Caller must hold t.mu.
+// Caller must hold t.mu.
 func (t *Login) ensureSessionCookiesLocked() {
 	if t.client == nil || t.client.Jar == nil {
 		return

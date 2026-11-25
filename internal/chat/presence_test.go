@@ -20,7 +20,7 @@ func TestShouldJoin(t *testing.T) {
 		{mode: domain.IRCModeOnline, online: false, want: false},
 		{mode: domain.IRCModeOffline, online: true, want: false},
 		{mode: domain.IRCModeOffline, online: false, want: true},
-		{mode: domain.IRCMode(""), online: true, want: true}, // ? default fallback
+		{mode: domain.IRCMode(""), online: true, want: true}, // default fallback
 		{mode: domain.IRCMode("unknown"), online: false, want: false},
 	}
 	for _, tt := range tests {

@@ -9,7 +9,6 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
-	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 type Logger interface {
@@ -25,8 +24,22 @@ type Logger interface {
 
 var ErrReconnectRequested = errors.New("pubsub reconnect requested")
 
+// Account is what the PubSub client does on Twitch for the logged-in account.
+type Account interface {
+	UserID() string
+	AuthToken() string
+	LoginName() string
+	IsStreamLive(channelID string) (bool, error)
+	LoadChannelPointsContext(streamer *domain.Streamer) (int, error)
+	ClaimBonus(streamer *domain.Streamer, claimID string) error
+	ClaimMoment(streamer *domain.Streamer, momentID string) error
+	JoinRaid(streamer *domain.Streamer, raidID string) error
+	MakePrediction(event *prediction.Event) error
+	ContributeToCommunityGoals(streamer *domain.Streamer)
+}
+
 type Client struct {
-	twitch     *twitch.Client
+	account    Account
 	logger     Logger
 	anonymizer *privacy.Anonymizer
 	disableSSL bool
@@ -88,7 +101,7 @@ func (p *Client) deepDebugf(format string, args ...interface{}) {
 }
 
 func NewClient(
-	twitch *twitch.Client,
+	account Account,
 	logger Logger,
 	anonymizer *privacy.Anonymizer,
 	streamers []*domain.Streamer,
@@ -103,7 +116,7 @@ func NewClient(
 		}
 	}
 	return &Client{
-		twitch:      twitch,
+		account:     account,
 		logger:      logger,
 		anonymizer:  anonymizer,
 		disableSSL:  disableSSL,

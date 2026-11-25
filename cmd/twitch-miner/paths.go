@@ -50,7 +50,7 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 		}, nil
 	}
 
-	// ? Environment overrides (useful for non-interactive launches).
+	// Environment overrides (useful for non-interactive launches).
 	if raw := strings.TrimSpace(os.Getenv("TCPM_DATA_DIR")); raw != "" {
 		abs, err := filepath.Abs(raw)
 		if err != nil {
@@ -78,7 +78,7 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 		cwd = ""
 	}
 
-	// ? Preserve the historical behavior when the user runs from a folder that already has config.json.
+	// Preserve the historical behavior when the user runs from a folder that already has config.json.
 	if cwd != "" && fileExists(filepath.Join(cwd, "config.json")) {
 		return appPaths{
 			WorkDir:    cwd,
@@ -95,7 +95,7 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 		}, nil
 	}
 
-	// ? Fallback (dev runs, restricted environments).
+	// Fallback (dev runs, restricted environments).
 	if cwd == "" {
 		cwd = "."
 	}

@@ -76,7 +76,7 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 		return nil
 	}
 	// p.logger.EmojiPrintf(":gift:", "Claim bonus for %s (claim %s, channel %s)", streamer.Username, claimID, channelID)
-	if err := p.twitch.ClaimBonus(streamer, claimID); err != nil {
+	if err := p.account.ClaimBonus(streamer, claimID); err != nil {
 		if p.anonymizeLogs() {
 			p.logger.Errorf("claim bonus %s: %v", p.streamerName(streamer), err)
 		} else {
@@ -88,7 +88,7 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 	return nil
 }
 
-// ? pollPendingClaims proactively checks each streamer for any outstanding community-point bonuses.
+// pollPendingClaims proactively checks each streamer for any outstanding community-point bonuses.
 func (p *Client) pollPendingClaims(stop <-chan struct{}) {
 	ticker := time.NewTicker(5 * time.Hour)
 	defer ticker.Stop()
@@ -113,7 +113,7 @@ func (p *Client) checkPendingClaims() {
 		} else {
 			p.debugf("Checking pending bonus for %s (%s)", streamer.Username, streamer.ChannelID)
 		}
-		if _, err := p.twitch.LoadChannelPointsContext(streamer); err != nil {
+		if _, err := p.account.LoadChannelPointsContext(streamer); err != nil {
 			p.logger.Errorf("pending bonus check %s: %v", p.streamerName(streamer), err)
 		}
 	}

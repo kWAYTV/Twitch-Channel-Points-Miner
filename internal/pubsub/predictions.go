@@ -92,7 +92,7 @@ func (p *Client) processPredictionUser(payload map[string]interface{}) error {
 			return nil
 		}
 		if !event.BetConfirmed {
-			// ? Assume confirmation if Twitch skipped sending prediction-made
+			// Assume confirmation if Twitch skipped sending prediction-made
 			event.BetConfirmed = true
 		}
 		p.logPredictionResult(event, result)

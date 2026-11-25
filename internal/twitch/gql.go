@@ -168,7 +168,7 @@ func operationNames(payload interface{}) []string {
 		return names
 	}
 
-	// ? fallback for other struct-like payloads
+	// fallback for other struct-like payloads
 	val := reflect.ValueOf(payload)
 	for val.IsValid() && val.Kind() == reflect.Pointer {
 		if val.IsNil() {

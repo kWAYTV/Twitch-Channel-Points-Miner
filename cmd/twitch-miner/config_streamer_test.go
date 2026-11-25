@@ -31,21 +31,21 @@ func TestParseIRCMode(t *testing.T) {
 func TestMergeStreamerSettingsIRCMode(t *testing.T) {
 	base := domain.StreamerSettings{IRCMode: domain.IRCModeNever}
 
-	// ? Valid override should replace base
+	// Valid override should replace base
 	overrideVal := "online"
 	out := mergeStreamerSettings(base, streamerSettingsConfig{IRCMode: &overrideVal})
 	if out.IRCMode != domain.IRCModeOnline {
 		t.Fatalf("expected override to set IRCMode to ONLINE, got %s", out.IRCMode)
 	}
 
-	// ? Invalid override should keep base
+	// Invalid override should keep base
 	invalid := "maybe"
 	out = mergeStreamerSettings(base, streamerSettingsConfig{IRCMode: &invalid})
 	if out.IRCMode != base.IRCMode {
 		t.Fatalf("invalid override should keep base IRCMode %s, got %s", base.IRCMode, out.IRCMode)
 	}
 
-	// ? Nil override should keep base
+	// Nil override should keep base
 	out = mergeStreamerSettings(base, streamerSettingsConfig{})
 	if out.IRCMode != base.IRCMode {
 		t.Fatalf("nil override should keep base IRCMode %s, got %s", base.IRCMode, out.IRCMode)

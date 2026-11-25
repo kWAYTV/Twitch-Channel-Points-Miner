@@ -78,7 +78,7 @@ func mergeFilterCondition(base *domain.FilterCondition, override *filterConditio
 	if override.Value != nil {
 		out.Value = override.Value
 	}
-	// ? If nothing was set, keep nil to avoid activating an empty filter
+	// If nothing was set, keep nil to avoid activating an empty filter
 	if out.By == "" && out.Where == "" && out.Value == nil {
 		return base
 	}

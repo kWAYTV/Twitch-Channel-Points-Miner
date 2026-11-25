@@ -58,7 +58,7 @@ type progressWriter struct {
 }
 
 func newProgressWriter(total int64) *progressWriter {
-	step := total / 20 // ? ~5% steps
+	step := total / 20 // ~5% steps
 	if step == 0 {
 		step = total
 	}

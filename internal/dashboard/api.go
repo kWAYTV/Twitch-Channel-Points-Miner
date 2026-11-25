@@ -80,36 +80,59 @@ type streamerResponse struct {
 	Stats           seriesStats `json:"stats"`
 }
 
+// window is the stretch of history a request asks for.
+type window struct {
+	name  string
+	since int64
+	now   int64
+}
+
+// windowFor resolves a range name such as "7d". An empty name means the last day.
+func (s *Server) windowFor(rangeName string) (window, bool) {
+	if rangeName == "" {
+		rangeName = "24h"
+	}
+	span, ok := ranges[rangeName]
+	if !ok {
+		return window{}, false
+	}
+	w := window{name: rangeName, now: s.store.now().UnixMilli()}
+	if span > 0 {
+		w.since = w.now - span.Milliseconds()
+	}
+	return w, true
+}
+
 func (s *Server) handleStreamer(w http.ResponseWriter, r *http.Request) {
 	name := cleanName(r.PathValue("name"))
 	if name == "" || !s.store.Known(name) {
 		http.Error(w, "unknown streamer", http.StatusNotFound)
 		return
 	}
-	rangeName := r.URL.Query().Get("range")
-	if rangeName == "" {
-		rangeName = "24h"
-	}
-	span, ok := ranges[rangeName]
+	span, ok := s.windowFor(r.URL.Query().Get("range"))
 	if !ok {
 		http.Error(w, "range must be one of 24h, 7d, 30d, all", http.StatusBadRequest)
 		return
 	}
-	now := s.store.now().UnixMilli()
-	var since int64
-	if span > 0 {
-		since = now - span.Milliseconds()
-	}
-
-	points, prev, err := s.store.Points(name, since)
+	points, previous, err := s.store.Points(name, span.since)
 	if err != nil {
 		http.Error(w, "failed to read points", http.StatusInternalServerError)
 		return
 	}
-	events, err := s.store.Events(name, since)
+	events, err := s.eventsWithMarkers(name, span.since, points)
 	if err != nil {
 		http.Error(w, "failed to read events", http.StatusInternalServerError)
 		return
+	}
+	writeJSON(w, r, streamerHistory(name, span, points, previous, events))
+}
+
+// eventsWithMarkers returns the stored events plus one for every gain the chart
+// marks, in time order.
+func (s *Server) eventsWithMarkers(name string, since int64, points []Point) ([]Event, error) {
+	events, err := s.store.Events(name, since)
+	if err != nil {
+		return nil, err
 	}
 	// Lines stored before events were recorded as sentences are rewritten here.
 	for i := range events {
@@ -121,42 +144,59 @@ func (s *Server) handleStreamer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sort.SliceStable(events, func(i, j int) bool { return events[i].T < events[j].T })
+	return events, nil
+}
 
-	resp := streamerResponse{Name: name, Range: rangeName, From: since, To: now, Events: events}
-	if len(events) > maxEvents {
-		resp.Events = events[len(events)-maxEvents:]
-		resp.EventsTruncated = true
+// streamerHistory builds the response for one streamer and window. previous is
+// the last balance before the window, which the series starts from.
+func streamerHistory(name string, span window, points []Point, previous *Point, events []Event) streamerResponse {
+	resp := streamerResponse{Name: name, Range: span.name, From: span.since, To: span.now}
+	resp.Events, resp.EventsTruncated = latestEvents(events)
+	if previous != nil {
+		points = append([]Point{{T: span.since, P: previous.P}}, points...)
 	}
-	if resp.Events == nil {
-		resp.Events = []Event{}
-	}
-
-	// Carry the balance held at the start of the window into the series.
-	if prev != nil {
-		points = append([]Point{{T: since, P: prev.P}}, points...)
-	}
-	if len(points) > 0 {
-		if since == 0 {
+	switch {
+	case len(points) > 0:
+		if span.since == 0 {
 			resp.From = points[0].T
 		}
-		st := seriesStats{Start: points[0].P, End: points[len(points)-1].P, Min: points[0].P, Max: points[0].P}
-		for _, p := range points {
-			if p.P < st.Min {
-				st.Min = p.P
-			}
-			if p.P > st.Max {
-				st.Max = p.P
-			}
+		resp.Stats = statsOf(points)
+	case span.since == 0:
+		resp.From = span.now
+	}
+	resp.Series = seriesOf(Downsample(points, MaxSeriesPoints))
+	return resp
+}
+
+// latestEvents keeps the most recent maxEvents and says whether older ones were dropped.
+func latestEvents(events []Event) ([]Event, bool) {
+	if len(events) > maxEvents {
+		return events[len(events)-maxEvents:], true
+	}
+	if events == nil {
+		return []Event{}, false
+	}
+	return events, false
+}
+
+func statsOf(points []Point) seriesStats {
+	stats := seriesStats{Start: points[0].P, End: points[len(points)-1].P, Min: points[0].P, Max: points[0].P}
+	for _, p := range points {
+		if p.P < stats.Min {
+			stats.Min = p.P
 		}
-		st.Gain = st.End - st.Start
-		resp.Stats = st
-	} else if since == 0 {
-		resp.From = now
+		if p.P > stats.Max {
+			stats.Max = p.P
+		}
 	}
-	sampled := Downsample(points, MaxSeriesPoints)
-	resp.Series = make([][2]int64, len(sampled))
-	for i, p := range sampled {
-		resp.Series[i] = [2]int64{p.T, int64(p.P)}
+	stats.Gain = stats.End - stats.Start
+	return stats
+}
+
+func seriesOf(points []Point) [][2]int64 {
+	series := make([][2]int64, len(points))
+	for i, p := range points {
+		series[i] = [2]int64{p.T, int64(p.P)}
 	}
-	writeJSON(w, r, resp)
+	return series
 }

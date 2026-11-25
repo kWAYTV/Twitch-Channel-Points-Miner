@@ -43,7 +43,7 @@ func (p *Client) processPlaybackMessage(topic string, payload map[string]interfa
 		if !streamer.OfflineAt.IsZero() && time.Since(streamer.OfflineAt) < time.Minute {
 			return nil
 		}
-		live, err := p.twitch.IsStreamLive(streamer.ChannelID)
+		live, err := p.account.IsStreamLive(streamer.ChannelID)
 		if err != nil {
 			p.logger.Errorf("live check %s: %v", p.streamerName(streamer), err)
 			return nil
@@ -73,7 +73,7 @@ func (p *Client) processRaidMessage(topic string, payload map[string]interface{}
 		return nil
 	}
 	streamer.LastRaidID = raidID
-	if err := p.twitch.JoinRaid(streamer, raidID); err != nil {
+	if err := p.account.JoinRaid(streamer, raidID); err != nil {
 		p.logger.Errorf("join raid %s->%s: %v", p.streamerName(streamer), p.name(target), err)
 		return nil
 	}
@@ -98,7 +98,7 @@ func (p *Client) processMomentMessage(topic string, payload map[string]interface
 	if momentID == "" {
 		return nil
 	}
-	if err := p.twitch.ClaimMoment(streamer, momentID); err != nil {
+	if err := p.account.ClaimMoment(streamer, momentID); err != nil {
 		p.logger.Errorf("claim moment %s: %v", p.streamerName(streamer), err)
 		return nil
 	}
@@ -123,7 +123,7 @@ func (p *Client) processCommunityPointChannel(topic string, payload map[string]i
 		if goal := domain.NewCommunityGoalFromPubSub(goalData); goal != nil && goal.ID != "" {
 			streamer.CommunityGoals[goal.ID] = goal
 		}
-		p.twitch.ContributeToCommunityGoals(streamer)
+		p.account.ContributeToCommunityGoals(streamer)
 	case "community-goal-deleted":
 		data, _ := payload["data"].(map[string]interface{})
 		goalData, _ := data["community_goal"].(map[string]interface{})

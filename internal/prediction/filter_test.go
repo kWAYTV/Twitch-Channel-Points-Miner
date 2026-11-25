@@ -38,7 +38,7 @@ func TestShouldSkipByFilterTotals(t *testing.T) {
 		t.Fatalf("expected compared total users 25, got %.0f", compared)
 	}
 
-	// ? force skip
+	// force skip
 	event.Streamer.Settings.Bet.FilterCondition.Value = ptrFloat(30)
 	skip, compared, _ = event.ShouldSkipByFilter()
 	if !skip {
@@ -79,7 +79,7 @@ func TestShouldSkipByFilterDecisionUsers(t *testing.T) {
 		t.Fatalf("expected decision users compared 50, got %.0f", compared)
 	}
 
-	// ? Loosen threshold to allow betting
+	// Loosen threshold to allow betting
 	event.Streamer.Settings.Bet.FilterCondition.Where = domain.ConditionGTE
 	event.Streamer.Settings.Bet.FilterCondition.Value = ptrFloat(50)
 	skip, compared, reason := event.ShouldSkipByFilter()

@@ -81,8 +81,8 @@ func (p *Client) logResponseError(connIndex int, envelope map[string]interface{}
 	}
 	if strings.Contains(respErr, "ERR_BADAUTH") {
 		username := ""
-		if p != nil && p.twitch != nil {
-			username = strings.TrimSpace(p.twitch.LoginName())
+		if p != nil && p.account != nil {
+			username = strings.TrimSpace(p.account.LoginName())
 		}
 		p.logger.Errorf("PubSub[%d] ERR_BADAUTH: most likely you have an outdated cookie file %q. Delete this file and try again.", connIndex, cookieFileOf(username))
 	}

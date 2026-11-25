@@ -9,7 +9,7 @@ import (
 )
 
 func (p *Client) buildTopics() ([]string, error) {
-	userID := p.twitch.UserID()
+	userID := p.account.UserID()
 	if userID == "" {
 		return nil, fmt.Errorf("no user id for pubsub")
 	}
@@ -69,7 +69,7 @@ func (p *Client) listenTopics(conn *websocket.Conn, topics []string) error {
 	for _, t := range topics {
 		data := map[string]interface{}{"topics": []string{t}}
 		if needsAuth(t) {
-			data["auth_token"] = p.twitch.AuthToken()
+			data["auth_token"] = p.account.AuthToken()
 		}
 		payload := map[string]interface{}{
 			"type":  "LISTEN",

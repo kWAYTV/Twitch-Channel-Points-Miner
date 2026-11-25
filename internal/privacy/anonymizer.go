@@ -144,7 +144,7 @@ func randInt(min, max int) int {
 }
 
 func strconvItoa(v int) string {
-	// ? small, allocation-free integer formatting for sequential ids
+	// small, allocation-free integer formatting for sequential ids
 	if v == 0 {
 		return "0"
 	}

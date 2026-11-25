@@ -114,7 +114,7 @@ Events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_
 | `debug`, `debug_deep` | `false` | Request summaries, and full payloads. Deep debug is ignored while logs are anonymised. |
 | `disable_ssl_cert_verification` | `false` | Skip TLS verification for the PubSub connection only. Leave off. |
 
-`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` are still accepted in the file but currently have no effect.
+`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed; an old config file may still contain them, and they are ignored.
 
 ## Environment variables
 

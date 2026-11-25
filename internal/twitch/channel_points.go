@@ -15,7 +15,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
-// ? LoadChannelPointsContext fetches points and claims any bonuses.
+// LoadChannelPointsContext fetches points and claims any bonuses.
 func (t *Client) LoadChannelPointsContext(streamer *domain.Streamer) (int, error) {
 	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ChannelPointsContext)
 	if op.Variables == nil {
@@ -90,7 +90,7 @@ func (t *Client) LoadChannelPointsContext(streamer *domain.Streamer) (int, error
 	return balance, nil
 }
 
-// ? ClaimBonus redeems the community points bonus.
+// ClaimBonus redeems the community points bonus.
 func (t *Client) ClaimBonus(streamer *domain.Streamer, claimID string) error {
 	if claimID == "" {
 		return fmt.Errorf("missing claim id")
@@ -124,7 +124,7 @@ func (t *Client) claimBonusTV(streamer *domain.Streamer, claimID string) error {
 	req.Header.Set("Client-Id", twitchapi.ClientID)
 	req.Header.Set("Client-Session-Id", t.clientSession)
 	req.Header.Set("Client-Version", t.UpdateClientVersion())
-	req.Header.Set("User-Agent", t.userAgent) // ? Android TV UA
+	req.Header.Set("User-Agent", t.userAgent) // Android TV UA
 	req.Header.Set("X-Device-Id", t.deviceID)
 	req.Header.Set("Content-Type", "application/json")
 	authToken := t.twitchLogin.AuthToken()
@@ -187,7 +187,7 @@ func (t *Client) claimBonusTV(streamer *domain.Streamer, claimID string) error {
 	return nil
 }
 
-// ? ClaimMoment redeems a community moment callout.
+// ClaimMoment redeems a community moment callout.
 func (t *Client) ClaimMoment(streamer *domain.Streamer, momentID string) error {
 	if momentID == "" {
 		return nil
@@ -201,7 +201,7 @@ func (t *Client) ClaimMoment(streamer *domain.Streamer, momentID string) error {
 	return err
 }
 
-// ? JoinRaid follows a raid target to mimic viewer behavior.
+// JoinRaid follows a raid target to mimic viewer behavior.
 func (t *Client) JoinRaid(streamer *domain.Streamer, raidID string) error {
 	if raidID == "" {
 		return fmt.Errorf("missing raid id")
@@ -215,7 +215,7 @@ func (t *Client) JoinRaid(streamer *domain.Streamer, raidID string) error {
 	return err
 }
 
-// ? MakePrediction places a bet for the provided event.
+// MakePrediction places a bet for the provided event.
 func (t *Client) MakePrediction(event *prediction.Event) error {
 	if event == nil || event.Streamer == nil {
 		return fmt.Errorf("nil prediction event")

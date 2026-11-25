@@ -29,7 +29,6 @@ type config struct {
 	Debug                      bool            `json:"debug"`
 	DebugDeep                  bool            `json:"debug_deep"`
 	WatchQueueLogging          bool            `json:"watch_queue_logging"`
-	SmartLogging               bool            `json:"smart_logging"`
 	DisableSSLCertVerification bool            `json:"disable_ssl_cert_verification"`
 	ShowSeconds                bool            `json:"show_seconds"`
 	ClaimDropsStartup          bool            `json:"claim_drops_startup"`
@@ -40,8 +39,6 @@ type config struct {
 	CommunityGoals             bool            `json:"community_goals"`
 	Emojis                     bool            `json:"emojis"`
 	SaveLogs                   bool            `json:"save_logs"`
-	ShowUsernameInConsole      bool            `json:"show_username_in_console"`
-	ShowClaimedBonusMsg        bool            `json:"show_claimed_bonus_msg"`
 	ShowGame                   bool            `json:"show_game"`
 	WatchStreakWarmStartCache  bool            `json:"watch_streak_warm_start_cache"`
 	IRCMode                    string          `json:"chat_presence"`
@@ -70,7 +67,6 @@ func defaultConfig() map[string]interface{} {
 		"debug":                         false,
 		"debug_deep":                    false,
 		"watch_queue_logging":           false,
-		"smart_logging":                 true,
 		"disable_ssl_cert_verification": false,
 		"show_seconds":                  false,
 		"claim_drops_startup":           true,
@@ -81,8 +77,6 @@ func defaultConfig() map[string]interface{} {
 		"community_goals":               false,
 		"emojis":                        true,
 		"save_logs":                     false,
-		"show_username_in_console":      false,
-		"show_claimed_bonus_msg":        true,
 		"show_game":                     true,
 		"watch_streak_warm_start_cache": true,
 		"chat_presence":                 "ONLINE",
@@ -127,95 +121,79 @@ func defaultConfig() map[string]interface{} {
 	}
 }
 
+// loadOrCreateConfig reads the config, adds any key a newer version introduced,
+// and writes the file back when it was missing or incomplete.
 func loadOrCreateConfig(path string) (config, error) {
-	cfgMap := map[string]interface{}{}
-	fileData, err := os.ReadFile(path)
-	if err == nil {
-		if err := json.Unmarshal(fileData, &cfgMap); err != nil {
-			return config{}, fmt.Errorf("invalid config: %w", err)
-		}
+	settings, found, err := readSettings(path)
+	if err != nil {
+		return config{}, err
 	}
-
-	changed := false
-	for key, value := range defaultConfig() {
-		if _, ok := cfgMap[key]; !ok {
-			cfgMap[key] = value
-			changed = true
-		}
-	}
-
-	privacyRaw, ok := cfgMap["privacy"].(map[string]interface{})
-	if !ok {
-		privacyRaw = defaultConfig()["privacy"].(map[string]interface{})
-		cfgMap["privacy"] = privacyRaw
-		changed = true
-	} else {
-		defaultPrivacy := defaultConfig()["privacy"].(map[string]interface{})
-		for k, v := range defaultPrivacy {
-			if _, ok := privacyRaw[k]; !ok {
-				privacyRaw[k] = v
-				changed = true
-			}
-		}
-	}
-
-	discordRaw, ok := cfgMap["discord"].(map[string]interface{})
-	if !ok {
-		discordRaw = defaultConfig()["discord"].(map[string]interface{})
-		cfgMap["discord"] = discordRaw
-		changed = true
-	} else {
-		defaultDiscord := defaultConfig()["discord"].(map[string]interface{})
-		for k, v := range defaultDiscord {
-			if _, ok := discordRaw[k]; !ok {
-				discordRaw[k] = v
-				changed = true
-			}
-		}
-	}
-
-	betRaw, ok := cfgMap["bet"].(map[string]interface{})
-	if !ok {
-		betRaw = defaultConfig()["bet"].(map[string]interface{})
-		cfgMap["bet"] = betRaw
-		changed = true
-	} else {
-		defaultBet := defaultConfig()["bet"].(map[string]interface{})
-		for k, v := range defaultBet {
-			if _, ok := betRaw[k]; !ok {
-				betRaw[k] = v
-				changed = true
-			}
-		}
-		// ? Ensure nested filter_condition keys are present.
-		if fcRaw, ok := betRaw["filter_condition"].(map[string]interface{}); ok {
-			for k, v := range defaultBet["filter_condition"].(map[string]interface{}) {
-				if _, ok := fcRaw[k]; !ok {
-					fcRaw[k] = v
-					changed = true
-				}
-			}
-		} else {
-			betRaw["filter_condition"] = defaultBet["filter_condition"]
-			changed = true
-		}
-	}
-
-	if err != nil || changed {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return config{}, err
-		}
-		if err := jsonfile.SaveJSON(path, cfgMap); err != nil {
+	added := fillMissing(settings, defaultConfig())
+	if !found || added {
+		if err := writeSettings(path, settings); err != nil {
 			return config{}, err
 		}
 	}
+	return decodeConfig(settings)
+}
 
-	normalized, err := json.Marshal(cfgMap)
+// readSettings returns the file as a map. A file that cannot be read counts as
+// not found; one that is not valid JSON is an error.
+func readSettings(path string) (settings map[string]interface{}, found bool, err error) {
+	settings = map[string]interface{}{}
+	raw, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return settings, false, nil
+	}
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return nil, false, fmt.Errorf("invalid config: %w", err)
+	}
+	return settings, true, nil
+}
+
+// fillMissing copies every key settings lacks from defaults, at any depth, and
+// reports whether it added anything. Values the user set are never changed,
+// except a group that is not an object, which is replaced by its defaults.
+func fillMissing(settings, defaults map[string]interface{}) bool {
+	added := false
+	for key, value := range defaults {
+		group, isGroup := value.(map[string]interface{})
+		current, exists := settings[key]
+		if !exists {
+			settings[key] = value
+			added = true
+			continue
+		}
+		if !isGroup {
+			continue
+		}
+		nested, ok := current.(map[string]interface{})
+		if !ok {
+			settings[key] = group
+			added = true
+			continue
+		}
+		if fillMissing(nested, group) {
+			added = true
+		}
+	}
+	return added
+}
+
+func writeSettings(path string, settings map[string]interface{}) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return jsonfile.SaveJSON(path, settings)
+}
+
+func decodeConfig(settings map[string]interface{}) (config, error) {
+	raw, err := json.Marshal(settings)
 	if err != nil {
 		return config{}, err
 	}
 	var cfg config
-	if err := json.Unmarshal(normalized, &cfg); err != nil {
+	if err := json.Unmarshal(raw, &cfg); err != nil {
 		return config{}, err
 	}
 	return cfg, nil

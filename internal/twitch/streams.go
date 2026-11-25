@@ -36,7 +36,7 @@ func (t *Client) CheckStreamerOnline(streamer *domain.Streamer) (bool, error) {
 	return true, nil
 }
 
-// ? IsStreamLive performs a lightweight live check without refreshing stream metadata.
+// IsStreamLive performs a lightweight live check without refreshing stream metadata.
 func (t *Client) IsStreamLive(channelID string) (bool, error) {
 	if channelID == "" {
 		return false, fmt.Errorf("missing channel id")
@@ -170,7 +170,7 @@ func (t *Client) streamInfo(streamer *domain.Streamer) (*streamInfoResult, error
 	return result, nil
 }
 
-// ? UpdateStream refreshes metadata and payload required for minute-watched events.
+// UpdateStream refreshes metadata and payload required for minute-watched events.
 func (t *Client) UpdateStream(streamer *domain.Streamer) error {
 	if streamer.Stream == nil {
 		streamer.Stream = domain.NewStream()

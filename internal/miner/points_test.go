@@ -18,13 +18,13 @@ func TestHandlePubSubGainSupportsPredictionStakeDeduction(t *testing.T) {
 		PointsInit:    true,
 	}
 
-	// ? Stake spend should decrease the local balance
+	// Stake spend should decrease the local balance
 	m.handlePubSubGain(streamer, -250_000, "PREDICTION", 0)
 	if streamer.ChannelPoints != 750_000 {
 		t.Fatalf("after stake deduction got %d want %d", streamer.ChannelPoints, 750_000)
 	}
 
-	// ? Payout (stake + profit) should bring balance to original + profit
+	// Payout (stake + profit) should bring balance to original + profit
 	m.handlePubSubGain(streamer, 256_827, "PREDICTION", 0)
 	if streamer.ChannelPoints != 1_006_827 {
 		t.Fatalf("after payout got %d want %d", streamer.ChannelPoints, 1_006_827)

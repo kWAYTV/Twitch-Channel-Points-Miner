@@ -119,7 +119,7 @@ func (t *Client) sendSpadePayload(spadeurl string, username string, rawpayload [
 	return fmt.Errorf("minute watched failed: %d %s", resp.StatusCode, string(bodyBytes))
 }
 
-// ? check listed media segments
+// check listed media segments
 func (t *Client) sendWatchPlaylist(streamer *domain.Streamer) error {
 	masterURL := ""
 	if streamer.Stream.PlaylistURL == "" {

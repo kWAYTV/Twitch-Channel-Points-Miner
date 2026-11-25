@@ -9,7 +9,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
-// ? ContributeToCommunityGoals mirrors the site behavior by spending points into active community goals.
+// ContributeToCommunityGoals mirrors the site behavior by spending points into active community goals.
 func (t *Client) ContributeToCommunityGoals(streamer *domain.Streamer) {
 	if streamer == nil || !streamer.Settings.CommunityGoals || len(streamer.CommunityGoals) == 0 {
 		return
@@ -62,7 +62,7 @@ func (t *Client) ContributeToCommunityGoals(streamer *domain.Streamer) {
 	}
 }
 
-// ? ContributeToCommunityGoal sends a single contribution transaction.
+// ContributeToCommunityGoal sends a single contribution transaction.
 func (t *Client) ContributeToCommunityGoal(streamer *domain.Streamer, goalID, title string, amount int) error {
 	if amount <= 0 || goalID == "" {
 		return nil

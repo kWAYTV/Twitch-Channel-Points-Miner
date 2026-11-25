@@ -36,8 +36,6 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 		m.logger.Fatalf("login failed: %v", err)
 	}
 	m.loadWarmStartCache()
-	// TODO: Fix Available Campaigns
-	// m.logAvailableCampaigns()
 
 	var targets []string
 	if useFollowers {
@@ -70,7 +68,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 
 	m.streamers = streamerObjs
 
-	// ? background loops
+	// background loops
 	if claimDropsEnabled {
 		go dropClaimer.Run(m.stop)
 	}
@@ -216,13 +214,13 @@ func formatLoadDuration(d time.Duration) string {
 	return fmt.Sprintf("%.1f seconds", d.Seconds())
 }
 
-// ? newSessionID creates a UUID-like string for session logging.
+// newSessionID creates a UUID-like string for session logging.
 func newSessionID() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return fmt.Sprintf("%d", time.Now().UnixNano())
 	}
-	// ? variant and version bits per RFC 4122
+	// variant and version bits per RFC 4122
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])

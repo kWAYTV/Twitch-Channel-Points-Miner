@@ -83,7 +83,7 @@ func stringValue(v interface{}) string {
 	return val
 }
 
-// ? claim/watch events are routed even when Twitch omits certain fields.
+// claim/watch events are routed even when Twitch omits certain fields.
 func channelIDFromPayload(payload map[string]interface{}, topic string) string {
 	data, _ := payload["data"].(map[string]interface{})
 	if data != nil {

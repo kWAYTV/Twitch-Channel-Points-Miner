@@ -87,9 +87,9 @@ func (m *Miner) handlePubSubGain(streamer *domain.Streamer, earned int, reason s
 		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
 	}
 
-	// ? Prefer applying the delta (`earned`) over trusting the absolute balance from PubSub
-	// ? PubSub messages can arrive out of order, and may contain a stale pre-spend balance
-	// ? (e.g. after placing a prediction bet), which would otherwise incorrectly inflate the local state
+	// Prefer applying the delta (`earned`) over trusting the absolute balance from PubSub
+	// PubSub messages can arrive out of order, and may contain a stale pre-spend balance
+	// (e.g. after placing a prediction bet), which would otherwise incorrectly inflate the local state
 	newBalance := expected
 	if earned == 0 && balance != 0 {
 		newBalance = balance
@@ -98,8 +98,8 @@ func (m *Miner) handlePubSubGain(streamer *domain.Streamer, earned int, reason s
 	if newBalance < 0 {
 		newBalance = 0
 	}
-	// ? For positive earn events, keep the balance monotonic to avoid logging negative deltas
-	// ? when older balances arrive after a streak of gains.
+	// For positive earn events, keep the balance monotonic to avoid logging negative deltas
+	// when older balances arrive after a streak of gains.
 	if earned >= 0 && newBalance < prev {
 		newBalance = prev
 	}

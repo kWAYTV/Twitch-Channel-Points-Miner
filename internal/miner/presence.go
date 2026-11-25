@@ -97,7 +97,7 @@ func (m *Miner) setPresence(streamer *domain.Streamer, online bool, reason strin
 		return
 	}
 	if reason != "" && !online {
-		// ? Offline message already logged for state changes; keep silent on no-op toggles.
+		// Offline message already logged for state changes; keep silent on no-op toggles.
 		m.syncWarmStartCacheFromStreamer(streamer)
 		return
 	}

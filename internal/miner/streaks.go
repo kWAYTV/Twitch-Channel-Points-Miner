@@ -79,7 +79,7 @@ func (m *Miner) shouldPrioritizeStreak(streamer *domain.Streamer, now time.Time)
 	if m.streakCooldownBlocksCurrentStream(streamer, now) {
 		return false
 	}
-	// ? Keep streak priority long enough for Twitch to issue the streak check (typically ~15 minutes).
+	// Keep streak priority long enough for Twitch to issue the streak check (typically ~15 minutes).
 	return streamer.Stream.MinuteWatched < m.streakPriorityLimit(now)
 }
 
@@ -127,9 +127,9 @@ func (m *Miner) syncActiveStreakWatch(streamer *domain.Streamer, now time.Time) 
 	m.activeStreakMu.Unlock()
 }
 
-// ? streakPriorityLimit adjusts streak priority duration:
-// ? - default 7 minutes
-// ? - extended to 20 minutes after 10 hours runtime to avoid churn late in long sessions.
+// streakPriorityLimit adjusts streak priority duration:
+// - default 7 minutes
+// - extended to 20 minutes after 10 hours runtime to avoid churn late in long sessions.
 func (m *Miner) streakPriorityLimit(now time.Time) float64 {
 	if m == nil {
 		return streak.PriorityMinutesBase
