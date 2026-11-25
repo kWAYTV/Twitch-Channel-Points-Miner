@@ -19,7 +19,7 @@ import (
 
 func (m *Miner) run(streamers []string, useFollowers bool, order domain.FollowersOrder) {
 	m.startedAt = time.Now()
-	m.logger.Printf("%s | v%s", project.Name, project.Version)
+	m.logger.Printf("%s | %s", project.Name, project.VersionLabel())
 	m.logger.Println(project.URL)
 	sessionID := newSessionID()
 	m.logger.EmojiEventf(":green_circle:", events.EventStartup, "Start session: '%s'", sessionID)

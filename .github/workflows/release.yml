@@ -1,0 +1,140 @@
+name: release
+
+# Publishes a release when the commits pushed to main call for one. Nobody picks
+# the version: it follows from the commit messages since the last release.
+#
+#   fix: ...                      patch   1.5.0 -> 1.5.1
+#   feat: ...                     minor   1.5.0 -> 1.6.0
+#   a "BREAKING CHANGE:" footer   major   1.5.0 -> 2.0.0
+#   docs, chore, refactor, test, ci, build, style   no release
+#
+# It runs after ci has passed on main, so a commit that fails a check is never
+# released.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
+
+# Releases are made one at a time and never cancelled halfway.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: "1.26.x"
+
+jobs:
+  release:
+    name: Version and release
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      tag: ${{ steps.version.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          install-only: true
+
+      # Before any tag exists, so a broken build config cannot leave a version
+      # behind with no release.
+      - name: Check the release config
+        run: goreleaser check --config ci/goreleaser.yaml
+
+      # Reads the commits since the last tag. With nothing to release it creates
+      # no tag and the remaining steps are skipped.
+      - name: Decide the version
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ github.token }}
+          commit_sha: ${{ github.event.workflow_run.head_sha }}
+          release_branches: main
+          tag_prefix: v
+          default_bump: false
+
+      - name: Nothing to release
+        if: steps.version.outputs.new_tag == ''
+        run: echo "No fix or feat commit since the last release, so no release." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write the release notes
+        if: steps.version.outputs.new_tag != ''
+        env:
+          NOTES: ${{ steps.version.outputs.changelog }}
+          TAG: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ steps.version.outputs.new_version }}
+        run: |
+          {
+            printf '%s\n\n' "$NOTES"
+            echo '### Install'
+            echo
+            echo "- Docker: \`ghcr.io/${GITHUB_REPOSITORY,,}:${VERSION}\`"
+            echo '- Binaries for Windows, Linux and macOS are attached below. A running binary with `auto_update` on installs this release by itself.'
+          } > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md" >> "$GITHUB_STEP_SUMMARY"
+          git fetch --tags --force
+
+      - name: Build and publish the release
+        if: steps.version.outputs.new_tag != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.new_tag }}
+        run: goreleaser release --config ci/goreleaser.yaml --clean --release-notes "$RUNNER_TEMP/notes.md"
+
+  image:
+    name: Publish the versioned image
+    needs: release
+    if: needs.release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+
+      - name: Resolve image tags
+        id: meta
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          {
+            echo "tags<<EOF"
+            echo "${image}:${VERSION}"
+            echo "${image}:${VERSION%.*}"
+            echo "${image}:latest"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: VERSION=${{ needs.release.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha

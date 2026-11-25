@@ -19,6 +19,12 @@ func RunAutoUpdate() (bool, error) {
 		return false, fmt.Errorf("locate executable: %w", err)
 	}
 
+	// A build with no version stamped in was made from source: it is whatever
+	// its builder checked out, and a release must not replace it.
+	if project.Version == project.DevVersion {
+		return false, nil
+	}
+
 	devRun := isGoRunExecutable(exePath)
 
 	release, err := fetchLatestRelease()

@@ -42,15 +42,20 @@ jobs:
       - name: Start the clock
         run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
 
+      # The whole history without file contents, so the last release tag is known.
       - uses: actions/checkout@v4
         with:
           filter: blob:none
+          fetch-depth: 0
 
       - name: Resolve image name and tags
         id: meta
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
           sha="$(git rev-parse --short=7 HEAD)"
+          # For example 1.6.0-2-gabc1234: two commits after release 1.6.0.
+          version="$(git describe --tags --always --match 'v*' | sed 's/^v//')"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "sha_tag=${image}:sha-${sha}" >> "$GITHUB_OUTPUT"
 
@@ -81,6 +86,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ env.PUBLISH == 'true' }}
+          build-args: VERSION=${{ steps.meta.outputs.version }}
           tags: |
             ${{ steps.meta.outputs.image }}:latest
             ${{ steps.meta.outputs.sha_tag }}

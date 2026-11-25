@@ -90,9 +90,10 @@ In the Docker image it is `/data`.
 
 ## Updating
 
-- **Docker:** `docker compose pull && docker compose up -d`.
-- **From source:** `git pull`, then run or build again.
+- **Docker:** `docker compose pull && docker compose up -d`. `:latest` follows the main branch. To stay on releases, use a version tag in `compose.yaml` instead, such as `:1.6.0`, or `:1.6` for the newest fix of 1.6.
+- **A release binary:** with `auto_update` on (the default) it checks at startup, downloads a newer [release](https://github.com/kWAYTV/twitch-points-miner/releases) and restarts into it. Turn it off with `"auto_update": false` or `TCPM_DISABLE_AUTO_UPDATE=1`.
+- **From source:** `git pull`, then run or build again. A build from source never replaces itself.
 
-A binary can replace itself when a newer release is published (`auto_update`). This repository has not published a release yet, so the check finds nothing and does nothing. It is always off in the Docker image.
+The self-updater is always off in the Docker image.
 
 Your `config.json` carries over. A key added by a newer version is filled in with its default on the next start.

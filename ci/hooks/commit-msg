@@ -1,0 +1,35 @@
+#!/bin/sh
+# Checks the commit message follows Conventional Commits, because the release
+# workflow decides the next version from it.
+# Enable once per clone: git config core.hooksPath ci/hooks
+set -u
+
+subject=$(sed -n '1p' "$1")
+
+# Git writes these itself.
+case $subject in
+"Merge "* | "Revert "* | "fixup! "* | "squash! "*) exit 0 ;;
+esac
+
+if printf '%s\n' "$subject" | grep -Eq '^(feat|fix|perf|docs|refactor|test|chore|ci|build|style|revert)(\([a-z0-9._/-]+\))?!?: .+'; then
+	exit 0
+fi
+
+cat >&2 <<EOF
+commit message is not a conventional commit:
+
+  $subject
+
+Write it as  type(scope): summary  where the scope is optional, for example:
+
+  fix: stop the dashboard losing events after a restart
+  feat(notify): add a quiet-hours option
+
+  feat   a new capability          releases a minor version
+  fix    a bug fix                 releases a patch version
+  perf   a speed-up                releases a patch version
+  docs, refactor, test, chore, ci, build, style   release nothing
+
+A breaking change needs a footer line starting with "BREAKING CHANGE: ".
+EOF
+exit 1

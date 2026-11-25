@@ -9,9 +9,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG TARGETOS TARGETARCH
+# The workflows pass the release version, or a description of the commit.
+ARG VERSION=dev
 # timetzdata embeds the time zone database, so the image needs no tzdata package.
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -buildvcs=false -tags timetzdata -ldflags "-s -w" -o /out/twitch-miner ./cmd/twitch-miner \
+    go build -trimpath -buildvcs=false -tags timetzdata -ldflags "-s -w -X github.com/kWAYTV/twitch-points-miner/internal/project.Version=${VERSION}" -o /out/twitch-miner ./cmd/twitch-miner \
     && mkdir /out/data
 
 FROM alpine:3.20

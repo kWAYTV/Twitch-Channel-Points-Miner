@@ -10,9 +10,23 @@ git config core.hooksPath ci/hooks    # once per clone: run it automatically
 ```
 
 - `pre-commit` formats and vets the Go files being committed.
+- `commit-msg` checks the message is a conventional commit.
 - `pre-push` runs `ci/check.sh`, the same checks CI runs.
 
 CI runs lint, the tests (race detector, random order) and one build per platform side by side. Each job has a time budget. Do not retry a failing check, skip or loosen one, or raise a budget without a measured reason.
+
+## Commit messages and releases
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org), and the `commit-msg` hook checks them. Nobody picks a version: after CI passes on `main`, the release workflow reads the commits since the last release and publishes the next one, with notes, binaries and a versioned image.
+
+| Commit | Release |
+|---|---|
+| `fix: …`, `perf: …` | Patch: 1.5.0 to 1.5.1 |
+| `feat: …` | Minor: 1.5.0 to 1.6.0 |
+| A `BREAKING CHANGE: …` footer | Major: 1.5.0 to 2.0.0 |
+| `docs`, `refactor`, `test`, `chore`, `ci`, `build`, `style` | None |
+
+The summary line is what users read in the release notes, so write it for them: `fix: stop the dashboard losing events after a restart`.
 
 ## Layout
 

@@ -30,7 +30,7 @@ docker compose logs -f
 
 The logs show a code once: open <https://www.twitch.tv/activate> and enter it. The login is saved, so later starts need nothing. The dashboard is at <http://localhost:5000>.
 
-To run from source instead (Go 1.23 or newer): `go run ./cmd/twitch-miner`.
+Without Docker, download the binary for your system from [Releases](https://github.com/kWAYTV/twitch-points-miner/releases) and run it, or run from source (Go 1.23 or newer) with `go run ./cmd/twitch-miner`.
 
 [Getting started](docs/getting-started.md) has the details: user ids and permissions, running without Compose, where files are kept, updating.
 
