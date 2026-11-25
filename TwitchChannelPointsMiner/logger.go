@@ -111,16 +111,18 @@ func (l *Logger) logEvent(level, emoji string, event constants.Event, format str
 		return
 	}
 	message := fmt.Sprintf(format, args...)
+	if event != "" {
+		// Console keeps the full line, including its polarity glyph. Telegram,
+		// Discord and chart tooltips get a sentence built from the raw line.
+		presented := eventSentence(message)
+		if l.discord != nil {
+			l.discord.Send(presented, event)
+		}
+		analyticsEmitEvent(event, presented)
+		telegramEmitEvent(event, presented)
+	}
 	if glyph := emojiFor(emoji, event); glyph != "" && l.settings.Emoji {
 		message = fmt.Sprintf("%s %s", glyph, message)
-	}
-	if event != "" && l.discord != nil {
-		clean := ansiRegexp.ReplaceAllString(message, "")
-		l.discord.Send(clean, event)
-	}
-	if event != "" {
-		analyticsEmitEvent(event, message)
-		telegramEmitEvent(event, message)
 	}
 	timestampFormat := "15:04 02/01/06"
 	if l.settings.ShowSeconds {
