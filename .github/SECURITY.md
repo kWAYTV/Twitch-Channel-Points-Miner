@@ -1,30 +1,7 @@
-# Security Policy
+# Security
 
-## Supported Versions
+Only the latest version on `main` and the `latest` image are supported.
 
-Only the **latest version** of this project is supported.  
-All older versions are **unsupported** and may contain unresolved security issues, bugs, or outdated functionality.
+To report a vulnerability, use [private vulnerability reporting](https://github.com/kWAYTV/twitch-points-miner/security/advisories/new) rather than a public issue. Include the steps to reproduce it and what it exposes. You will get a reply there, and credit in the fix if you want it.
 
-| Version        | Supported          |
-| -------------- | ------------------ |
-| Latest         | :white_check_mark: |
-| Anything else  | :x:                |
-
-### Important Notice  
-Even when using the latest release, **there is absolutely no guarantee** that this script will prevent an account ban or enforcement action by Twitch.  
-Use this project entirely at your own risk.
-
-## Reporting a Vulnerability
-
-If you discover a vulnerability, please report it responsibly so we can investigate and resolve it.
-
-**How to report:**
-- Open an issue in the repository **or** submit a report via the GitHub Security Advisory workflow.  
-- Provide clear details, including steps to reproduce and potential impact.
-
-**What to expect:**
-- Your report will be reviewed.  
-- You may receive follow-up questions for clarification.  
-- You will be notified when a fix is planned, implemented, or if the report is declined with an explanation.
-
-Thank you for helping improve the security of this project.
+This policy covers the code in this repository. It does not cover Twitch's response to automation: using the miner can get an account restricted, and that is not a vulnerability.
