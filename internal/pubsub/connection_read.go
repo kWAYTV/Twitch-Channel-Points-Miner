@@ -1,9 +1,10 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -13,9 +14,9 @@ import (
 // readMessages reads from conn until it fails or the server asks for a reconnect,
 // which it reports on readErr. PONGs refresh lastPong; everything else is queued
 // on msgCh for the workers.
-func (p *Client) readMessages(conn *websocket.Conn, connIndex int, msgCh chan<- []byte, readErr chan<- error, lastPong *atomic.Pointer[time.Time]) {
+func (p *Client) readMessages(ctx context.Context, conn *websocket.Conn, connIndex int, msgCh chan<- []byte, readErr chan<- error, lastPong *atomic.Pointer[time.Time]) {
 	for {
-		_, message, err := conn.ReadMessage()
+		_, message, err := conn.Read(ctx)
 		if err != nil {
 			select {
 			case readErr <- err:

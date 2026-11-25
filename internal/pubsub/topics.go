@@ -1,8 +1,10 @@
 package pubsub
 
 import (
+	"context"
 	"fmt"
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
@@ -62,7 +64,7 @@ func (p *Client) buildTopics() ([]string, error) {
 	return topics, nil
 }
 
-func (p *Client) listenTopics(conn *websocket.Conn, topics []string) error {
+func (p *Client) listenTopics(ctx context.Context, conn *websocket.Conn, topics []string) error {
 	needsAuth := func(topic string) bool {
 		return strings.HasPrefix(topic, "community-points-user-v1.") || strings.HasPrefix(topic, "predictions-user-v1.")
 	}
@@ -85,7 +87,7 @@ func (p *Client) listenTopics(conn *websocket.Conn, topics []string) error {
 		} else {
 			p.debugf("PubSub LISTEN %s", t)
 		}
-		if err := conn.WriteJSON(payload); err != nil {
+		if err := wsjson.Write(ctx, conn, payload); err != nil {
 			return err
 		}
 	}

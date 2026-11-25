@@ -33,7 +33,7 @@ The image supports `linux/amd64` and `linux/arm64`, runs as UID 1000 and keeps e
 
 ### From source
 
-Requires Go 1.22 or newer.
+Requires Go 1.23 or newer.
 
 ```sh
 go run ./cmd/twitch-miner

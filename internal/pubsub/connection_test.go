@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -8,23 +9,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
 // pubSubServer is a local stand-in for Twitch PubSub. serve runs once per connection.
 func pubSubServer(t *testing.T, serve func(conn *websocket.Conn)) *Client {
 	t.Helper()
-	upgrader := websocket.Upgrader{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer conn.CloseNow()
 		serve(conn)
 	}))
 	t.Cleanup(srv.Close)
 	return &Client{logger: &stubLogger{}, endpoint: "ws" + strings.TrimPrefix(srv.URL, "http")}
+}
+
+// readUntilClosed keeps the server side open until the client goes away.
+func readUntilClosed(conn *websocket.Conn) {
+	for {
+		if _, _, err := conn.Read(context.Background()); err != nil {
+			return
+		}
+	}
 }
 
 func waitFor(t *testing.T, done <-chan error) error {
@@ -42,16 +52,12 @@ func TestConnectAndListenSubscribesAndHonoursReconnect(t *testing.T) {
 	listened := make(chan map[string]interface{}, 1)
 	p := pubSubServer(t, func(conn *websocket.Conn) {
 		var msg map[string]interface{}
-		if err := conn.ReadJSON(&msg); err != nil {
+		if err := wsjson.Read(context.Background(), conn, &msg); err != nil {
 			return
 		}
 		listened <- msg
-		_ = conn.WriteJSON(map[string]string{"type": "RECONNECT"})
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				return
-			}
-		}
+		_ = wsjson.Write(context.Background(), conn, map[string]string{"type": "RECONNECT"})
+		readUntilClosed(conn)
 	})
 
 	done := make(chan error, 1)
@@ -72,13 +78,7 @@ func TestConnectAndListenSubscribesAndHonoursReconnect(t *testing.T) {
 }
 
 func TestConnectAndListenStopsCleanly(t *testing.T) {
-	p := pubSubServer(t, func(conn *websocket.Conn) {
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				return
-			}
-		}
-	})
+	p := pubSubServer(t, readUntilClosed)
 
 	stop := make(chan struct{})
 	done := make(chan error, 1)

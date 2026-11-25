@@ -1,9 +1,12 @@
 package pubsub
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,15 +20,23 @@ const (
 	messageWorkers = 4
 	// pongTimeout is how long the connection may go without a PONG before it is replaced.
 	pongTimeout = 5 * time.Minute
+	// handshakeTimeout bounds opening the connection.
+	handshakeTimeout = 45 * time.Second
+	// maxMessageBytes is the largest message accepted from PubSub.
+	maxMessageBytes = 4 << 20
 )
 
 // connectAndListen opens one PubSub connection, subscribes it to topics and serves
 // it until stop is closed or the connection has to be replaced.
 func (p *Client) connectAndListen(connIndex int, topics []string, stop <-chan struct{}) error {
-	conn, err := p.dial()
+	ctx, cancel := contextUntil(stop)
+	defer cancel()
+
+	conn, err := p.dial(ctx)
 	if err != nil {
 		return err
 	}
+	conn.SetReadLimit(maxMessageBytes)
 
 	var lastPong atomic.Pointer[time.Time]
 	connectedAt := time.Now()
@@ -38,13 +49,13 @@ func (p *Client) connectAndListen(connIndex int, topics []string, stop <-chan st
 
 	var readWG sync.WaitGroup
 	defer func() {
-		conn.Close()
+		_ = conn.CloseNow()
 		readWG.Wait()
 		close(msgCh)
 		workerWG.Wait()
 	}()
 
-	if err := p.listenTopics(conn, topics); err != nil {
+	if err := p.listenTopics(ctx, conn, topics); err != nil {
 		return err
 	}
 
@@ -54,23 +65,43 @@ func (p *Client) connectAndListen(connIndex int, topics []string, stop <-chan st
 	readWG.Add(1)
 	go func() {
 		defer readWG.Done()
-		p.readMessages(conn, connIndex, msgCh, readErr, &lastPong)
+		p.readMessages(ctx, conn, connIndex, msgCh, readErr, &lastPong)
 	}()
 
-	return p.keepAlive(conn, pingTimer, stop, readErr, &lastPong)
+	return p.keepAlive(ctx, conn, pingTimer, readErr, &lastPong)
 }
 
-func (p *Client) dial() (*websocket.Conn, error) {
-	dialer := *websocket.DefaultDialer
-	if p.disableSSL {
-		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
-	}
+// contextUntil returns a context that is cancelled when stop is closed.
+func contextUntil(stop <-chan struct{}) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-stop:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
+func (p *Client) dial(ctx context.Context) (*websocket.Conn, error) {
 	endpoint := p.endpoint
 	if endpoint == "" {
 		endpoint = twitchapi.WebsocketURL
 	}
-	conn, _, err := dialer.Dial(endpoint, nil)
+	handshake, cancel := context.WithTimeout(ctx, handshakeTimeout)
+	defer cancel()
+	conn, _, err := websocket.Dial(handshake, endpoint, p.dialOptions())
 	return conn, err
+}
+
+func (p *Client) dialOptions() *websocket.DialOptions {
+	if !p.disableSSL {
+		return nil
+	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+	return &websocket.DialOptions{HTTPClient: &http.Client{Transport: transport}}
 }
 
 // startWorkers handles queued messages until msgCh is closed or stop is.
@@ -98,15 +129,15 @@ func (p *Client) startWorkers(msgCh <-chan []byte, stop <-chan struct{}) *sync.W
 	return &workers
 }
 
-// keepAlive pings on a jittered interval and returns when stop is closed, reading
-// failed, or no PONG has arrived for too long.
-func (p *Client) keepAlive(conn *websocket.Conn, pingTimer *time.Timer, stop <-chan struct{}, readErr <-chan error, lastPong *atomic.Pointer[time.Time]) error {
+// keepAlive pings on a jittered interval and returns when the context ends,
+// reading failed, or no PONG has arrived for too long.
+func (p *Client) keepAlive(ctx context.Context, conn *websocket.Conn, pingTimer *time.Timer, readErr <-chan error, lastPong *atomic.Pointer[time.Time]) error {
 	for {
 		select {
-		case <-stop:
+		case <-ctx.Done():
 			return nil
 		case <-pingTimer.C:
-			if err := conn.WriteJSON(map[string]string{"type": "PING"}); err != nil {
+			if err := wsjson.Write(ctx, conn, map[string]string{"type": "PING"}); err != nil {
 				return err
 			}
 			if time.Since(*lastPong.Load()) > pongTimeout {
@@ -114,6 +145,10 @@ func (p *Client) keepAlive(conn *websocket.Conn, pingTimer *time.Timer, stop <-c
 			}
 			pingTimer.Reset(p.randomPingInterval())
 		case err := <-readErr:
+			if ctx.Err() != nil {
+				// Reading stopped because the client is shutting down.
+				return nil
+			}
 			return err
 		}
 	}
