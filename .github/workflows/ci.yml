@@ -32,14 +32,22 @@ jobs:
     steps:
       - name: Start the clock
         run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
+      # The history without file contents, to read the new commits' messages.
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
-      - uses: actions/setup-go@v5
+          fetch-depth: 0
+      # Versions are derived from commit messages, so a malformed one is an error.
+      - name: Commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: sh ci/check.sh commits "$BASE" "$HEAD"
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             ~/.cache/go-build
@@ -48,7 +56,7 @@ jobs:
           restore-keys: go-lint-${{ runner.os }}-
       - name: gofmt, go vet, go mod tidy
         run: sh ci/check.sh lint
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: github.ref == 'refs/heads/main'
         with:
           path: |
@@ -71,14 +79,14 @@ jobs:
     steps:
       - name: Start the clock
         run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             ~/.cache/go-build
@@ -94,7 +102,7 @@ jobs:
         run: CHECK_FULL= sh ci/check.sh test
       # Only main writes the cache, so a pull request cannot seed it with results
       # from code that never merged.
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: github.ref == 'refs/heads/main'
         with:
           path: |
@@ -120,14 +128,14 @@ jobs:
     steps:
       - name: Start the clock
         run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             ~/.cache/go-build
@@ -136,7 +144,7 @@ jobs:
           restore-keys: go-build-${{ matrix.target }}-
       - name: go build
         run: sh ci/check.sh build ${{ matrix.target }}
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: github.ref == 'refs/heads/main'
         with:
           path: |

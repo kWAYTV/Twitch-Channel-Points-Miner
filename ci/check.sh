@@ -7,6 +7,7 @@
 #   ci/check.sh build   every released platform, plus the Docker platforms
 #   ci/check.sh build linux/arm64   one platform
 #   ci/check.sh all     all of the above
+#   ci/check.sh commits <base> <head>   the messages of the commits in between
 #
 # Every check runs even after one fails, and all failures are listed at the end.
 #
@@ -118,7 +119,34 @@ $times"
 	esac
 }
 
+# check_commits runs the commit-msg hook over every commit after base, up to
+# head. A base that is missing or unknown (a new branch, a force push) checks
+# nothing: there is no range to speak of.
+check_commits() {
+	base=${1:-}
+	head=${2:-HEAD}
+	case $base in
+	"" | 0000000000000000000000000000000000000000) echo "no base commit, nothing to check" && return 0 ;;
+	esac
+	git cat-file -e "$base^{commit}" 2>/dev/null || { echo "base $base is not in this clone, nothing to check" && return 0; }
+	message=$(mktemp) || return 1
+	status=0
+	for commit in $(git rev-list "$base..$head"); do
+		git log -1 --format=%B "$commit" >"$message"
+		if ! sh ci/hooks/commit-msg "$message" 2>/dev/null; then
+			echo "not a conventional commit: $(git log -1 --format='%h %s' "$commit")"
+			status=1
+		fi
+	done
+	rm -f "$message"
+	[ $status -eq 0 ] || echo "see ci/hooks/commit-msg for the format"
+	return $status
+}
+
 case ${1:-all} in
+commits)
+	run "commit messages" check_commits "${2:-}" "${3:-}"
+	;;
 lint)
 	run "gofmt" check_format
 	run "go vet" check_vet
@@ -138,7 +166,7 @@ all)
 	run "tests" check_test
 	;;
 *)
-	echo "usage: ci/check.sh [lint|test|build|all]" >&2
+	echo "usage: ci/check.sh [lint|test|build|all|commits <base> <head>]" >&2
 	exit 2
 	;;
 esac
