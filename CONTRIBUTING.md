@@ -148,6 +148,35 @@ Unformatted code will not be accepted.
 
 ---
 
+## Project Layout
+
+Folders are named after what the code is about, and each file has one job.
+
+| Folder | What it holds |
+|---|---|
+| `cmd/twitch-miner` | The entry point: paths, console setup and `config.json` loading. |
+| `internal/miner` | The session, choosing who to watch, watch streaks, points, presence and identity repair. |
+| `internal/streak` | Watch-streak rules that stand on their own, and the warm-start cache. |
+| `internal/drops` | Claiming drops and reporting their progress. |
+| `internal/twitch` | The Twitch client: GQL, users, streams, minute-watched, drops inventory, channel points. |
+| `internal/twitchapi` | Endpoints, client identity, persisted GQL operations, user agents. |
+| `internal/auth` | Device login and the cookie store. |
+| `internal/pubsub` | The PubSub connection and what each message does. |
+| `internal/prediction` | Prediction events: deciding, filtering and formatting bets. |
+| `internal/chat` | The IRC chat client and when to be present in a chat. |
+| `internal/domain` | Streamers, streams, bet and streamer settings, community goals. |
+| `internal/events` | The event types the miner reports, with their polarity and glyph. |
+| `internal/logging` | The console logger; notifiers and the dashboard subscribe to its events. |
+| `internal/notify` | Discord and Telegram notifications and the sentences they send. |
+| `internal/dashboard` | The analytics store, its HTTP API and the web page. |
+| `internal/project` | The project's name, version and repository. |
+| `internal/privacy`, `internal/update` | Log anonymisation; the self-updater. |
+| `internal/ansi`, `internal/jsonfile`, `internal/jsonvalue`, `internal/random` | Console colours; writing JSON files; reading loose JSON values; nonces and jitter. |
+
+Keep files small and single-purpose, and functions short. Put new code in the package that owns its subject; add a package when a subject has none.
+
+---
+
 ## Checks and Git Hooks
 
 CI runs three jobs side by side: formatting, vetting and module tidiness; the tests; and a build for every released platform. The same checks run locally with one script:

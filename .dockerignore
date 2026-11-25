@@ -10,3 +10,4 @@ config.json
 ci
 .githooks
 .gitattributes
+docs

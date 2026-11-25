@@ -1,121 +1,25 @@
 ![Twitch Channel Points Miner](assets/banner.png)
-<p align="center">
-<a href="https://github.com/kWAYTV/twitch-points-miner/releases"><img alt="Latest Version" src="https://img.shields.io/github/v/release/kWAYTV/twitch-points-miner?style=flat&color=white&logo=github&logoColor=white"/></a>
-<a href="https://github.com/kWAYTV/twitch-points-miner/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/kWAYTV/twitch-points-miner?style=flat&color=limegreen&logo=github&logoColor=white"/></a>
-<a href="https://github.com/MShawon/github-clone-count-badge"><img alt="GitHub Traffic" src="https://hits.sh/github.com/kWAYTV/twitch-points-miner.svg?style=flat&label=views"/></a>
-<a href="https://github.com/kWAYTV/twitch-points-miner"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/kWAYTV/twitch-points-miner?style=flat&color=lightyellow&logo=github&logoColor=white"/></a>
-</p>
 
-# Twitch Channel Points Miner (Go)
+# Twitch Points Miner
 
-Go rewrite of [0x8fv/Twitch-Channel-Points-Miner-v2](https://github.com/0x8fv/Twitch-Channel-Points-Miner-v2) with a focus on speed and low overhead. This version keeps the same behavior (auto-claims bonuses, drops, and predictions) but trims dependencies, streams point updates over PubSub.
+[![ci](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/ci.yml/badge.svg)](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/ci.yml)
+[![docker](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/docker.yml/badge.svg)](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/docker.yml)
+[![licence](https://img.shields.io/badge/licence-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
-> This project began as a fork of [0x8fv/Twitch-Channel-Points-Miner](https://github.com/0x8fv/Twitch-Channel-Points-Miner), the Go rewrite by 0x8fv, and is now developed on its own. Compared with it, the code is reorganised by domain and adds a web dashboard, Telegram notifications, readable notification sentences, a Docker image and CI. It stays under the same [CC BY-NC 4.0](LICENSE) licence.
->
-> Credits also to the original maintained fork by [rdavydov](https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2), whose work inspired the Go rewrite.
+Earns Twitch channel points for you by watching streams in the background. Written in Go: one small binary, quick to start, light on CPU and memory.
 
-## Why this version
-- Written in Go for faster start-up and lower CPU compared to the original runtime.
-- Uses Twitch PubSub for near-instant point gain logging.
-- Can target a manual list of streamers or mine everyone you follow.
+## What it does
+
+- Watches up to two live streams at a time and keeps watch streaks going.
+- Claims bonus chests, drops and moments, and follows raids.
+- Places predictions with configurable strategies and filters.
+- Mines a list of streamers, or everyone you follow.
+- Shows balances and history on a built-in web dashboard.
+- Sends Discord and Telegram notifications in plain sentences.
 
 ## Quick start
-1) Install Go 1.21+.
-2) Copy `config.json` (it will be created/extended on first run) and set `username` plus any options you want. Leave the `streamers` array empty to mine all followed channels.
-3) Run `go run ./cmd/twitch-miner` (or `go build -o twitch-miner ./cmd/twitch-miner` and execute `./twitch-miner`).
-4) On first launch you will see a device code prompt. Open `https://www.twitch.tv/activate`, enter the code, and wait until the app confirms login. Cookies are saved to `cookies/<username>.json` for future runs.
-5) Press Ctrl+C to stop; a session summary is printed on exit.
 
-When running a prebuilt binary, the miner uses `./config.json` if it exists in the current directory; otherwise it uses the directory containing the executable (so `config.json`, `cookies/`, and `log/` live next to the binary by default). Override with `-config`, `-data-dir`, `TCPM_CONFIG`, or `TCPM_DATA_DIR`.
-
-## Configuration (config.json)
-- `username`: Twitch login used for mining and for the cookie filename.
-- `password`: Optional; device login is used, so you can leave this as-is.
-- `debug`: Enable debug logs (high-level request summaries, PubSub message metadata).
-- `debug_deep`: Enable deep debug logs (full request/response bodies and PubSub payloads); only emitted when `privacy.anonymize_logs` is `false`.
-- `smart_logging`, `emojis`, `show_seconds`, `show_username_in_console`, `show_claimed_bonus_msg`: Console output preferences.
-- `save_logs`: Write console output to `log/<username>.log` in addition to stdout.
-- `privacy.anonymize_logs`: Replace streamer names and point balances in all logs with anonymized values; when enabled, `save_logs` writes to `log/miner.log`.
-- `discord`: Optional Discord webhook notifications. Provide `webhook_api` plus `events` (list of event names to send). Each notification is a short embed. The title starts with that event's glyph (`🟢 Online`) and the description is a sentence ("Alice is online with 1.2k points, playing Valorant. The watch streak is 3."), not the raw console line. The glyph is always sent; `emojis` only affects the console. Supported events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_RAID`, `GAIN_FOR_CLAIM`, `GAIN_FOR_WATCH`, `GAIN_FOR_WATCH_STREAK`, `BET_WIN`, `BET_LOSE`, `BET_REFUND`, `BET_FILTERS`, `BET_GENERAL`, `BET_FAILED`, `BET_START`, `BONUS_CLAIM`, `MOMENT_CLAIM`, `JOIN_RAID`, `DROP_CLAIM`, `DROP_STATUS`, `CHAT_MENTION`. An empty `events` list sends every event except the noisy ones (`GAIN_FOR_WATCH`, `DROP_STATUS`, `BET_FILTERS`). Set `"events": ["*"]` to include those too. The first delivery error is printed once; the webhook URL is never logged.
-- `telegram`: Optional Telegram notifications through a bot, with the same event names and the same sentences as `discord`. Each message starts with that event's glyph and a bold title (`🟢 **Online**`), then the sentence. The glyph is always sent; `emojis` only affects the console. Create a bot with [@BotFather](https://t.me/BotFather) to get the `token`, send the bot a message once (or add it to your group/channel), and set `chat_id` to your numeric chat id (a number or string; `@channelusername` also works for public channels). `events` behaves like Discord (empty skips watch ticks, drop-progress spam and bet-filter skips; `"*"` sends everything), and `disable_notification: true` delivers silently. Example: `"telegram": { "chat_id": 123456789, "token": "123456:ABC...", "events": ["STREAMER_ONLINE", "BET_WIN", "BET_LOSE"], "disable_notification": true }`. Messages use the Bot API `sendMessage` method with HTML parse mode; the first delivery error (wrong token or chat id) is printed once to the console.
-- `disable_ssl_cert_verification`: Disables TLS certificate/hostname verification for PubSub WebSockets only; leave `false` unless you know you need it.
-- `timezone`: Optional IANA timezone name (e.g. `Europe/Berlin`) to override auto-detection for environments like Android/Termux; leave `null`/empty to auto-detect.
-- `claim_drops_startup`, `claim_drops`, `follow_raid`: Auto-claim drops at boot, continue claiming while running, and auto-follow raid targets.
-- `show_drops_progress`: When `true`, log compact `DROP_PROGRESS` status lines during the existing 30-minute drop inventory checks. Default `false` keeps drop logging limited to successful claims.
-- `claim_moments`: Global default for listening to and claiming Twitch Moments via PubSub (`community-moments-channel-v1`). Per-streamer `streamer_overrides.<name>.claim_moments` still takes precedence.
-- `betting(make_predictions)`: Enable Twitch prediction betting.
-- `watch_streak_warm_start_cache`: When `true` (default), reuse recent watch-streak state for the same still-live stream across restarts to avoid re-probing every online channel at startup. The miner stores this account-scoped cache at `log/watch_streak_cache.<username>.json`.
-- `disable_at_in_nickname`: When `true`, `CHAT_MENTION` also triggers on plain username mentions in chat (without requiring `@username`), matching the Python miner behavior.
-- `streamers`: List of channel logins to mine; if empty, followers are mined in descending follow order.
-- `streamers_exclude`: List of channel logins to skip (useful with an empty `streamers` list to mine all followed channels except specific ones); case-insensitive.
-- `streamer_overrides`: Per-streamer overrides keyed by login; inherit from the global flags above. Example:
-  ```json
-  "streamer1": {
-    "make_predictions": true,
-    "follow_raid": false,
-    "claim_drops": true,
-    "claim_moments": false,
-    "watch_streak": true,
-    "community_goals": false,
-    "bet": {
-      "strategy": "SMART",
-      "percentage": 5,
-      "percentage_gap": 20,
-      "max_points": 234,
-      "minimum_points": 20000,
-      "stealth_mode": true,
-      "delay_mode": "FROM_END",
-      "delay": 6,
-      "filter_condition": {
-        "by": "TOTAL_USERS",
-        "where": "GTE",
-        "value": 50
-      }
-    }
-  },
-  "streamer2": {
-    "make_predictions": false,
-    "follow_raid": true,
-    "claim_drops": false,
-    "claim_moments": true,
-    "watch_streak": false,
-    "community_goals": true,
-    "bet": {
-      "strategy": "PERCENTAGE",
-      "percentage": 10,
-      "percentage_gap": 15,
-      "max_points": 5000,
-      "minimum_points": 0,
-      "stealth_mode": false,
-      "delay_mode": "FROM_START",
-      "delay": 3,
-      "filter_condition": null
-    }
-  }
-  ```
-- `show_game`: When true, log the game a streamer is playing on join and on watch-point gains.
-- `game_priority` / `game_exclude`: Ordered game names to prefer and names to skip entirely. Leave empty to keep the default behavior; matches are case-insensitive.
-- `bet`: Advanced prediction tuning. Defaults are applied when values are `null`:
-  - `strategy`: Default `SMART` (see `entities.Strategy` for options such as `MOST_VOTED`, `HIGH_ODDS`, `SMART_MONEY`, etc.).
-  - `percentage`: Percent of points to bet (default 5).
-  - `percentage_gap`: Minimum edge between outcomes before betting (default 20).
-  - `max_points`: Cap per bet (default 50000).
-  - `minimum_points`: Skip bets below this balance (default 0).
-  - `stealth_mode`: If true, bets favor lower-visibility patterns (default false).
-  - `delay_mode` / `delay`: When to place the bet (default `FROM_END`, 6 seconds).
-  - `filter_condition`: Optional object to skip betting unless a live metric meets your rule. Example: `{ "by": "TOTAL_USERS", "where": "GTE", "value": 50 }` to skip bets until at least 50 users participate. `by` supports `PERCENTAGE_USERS`, `ODDS`, `ODDS_PERCENTAGE`, `TOP_POINTS`, `TOTAL_USERS`, `TOTAL_POINTS`; `where` supports `GT`, `LT`, `GTE`, `LTE`.
-
-## Analytics dashboard
-A small built-in web dashboard (no external assets) shows every streamer's balance, session gain and online state, plus a points-over-time chart (24h / 7d / 30d / all). Watch streaks, bonus claims, raids, bet results, drop and moment claims, and online/offline changes are counted in an event lane under the chart and listed in an activity log. Hovering the chart shows the balance, how it moved from the previous point, and a sentence for each event in that time slot. The page refreshes every 45 seconds.
-
-- Enabled by default: `"analytics": { "enabled": true, "host": "127.0.0.1", "port": 5000 }` in `config.json`. Open `http://localhost:5000`. Set `enabled` to `false` to turn it off, or `host` to `0.0.0.0` to reach it from other machines on your network. The Docker image listens on `0.0.0.0` already.
-- `TCPM_ANALYTICS_ADDR` (e.g. `127.0.0.1:8080`) overrides `host`/`port`.
-- Data is stored as append-only JSONL files in `analytics/` inside the data directory (`<streamer>.points.jsonl`, `<streamer>.events.jsonl`); delete a file to reset a streamer's history.
-- The dashboard has no login and always shows real streamer names, even with `privacy.anonymize_logs`. Do not expose the port to the internet.
-- JSON API: `GET /api/streamers` and `GET /api/streamer/{name}?range=24h|7d|30d|all`.
-
-## Docker
-A multi-arch image (`linux/amd64`, `linux/arm64`) is published to GHCR on every change to `main`. 
+### Docker
 
 ```sh
 docker run -d --name twitch-miner --restart unless-stopped \
@@ -123,60 +27,59 @@ docker run -d --name twitch-miner --restart unless-stopped \
   ghcr.io/kwaytv/twitch-points-miner:latest
 ```
 
-```yaml
-services:
-  twitch-miner:
-    image: ghcr.io/kwaytv/twitch-points-miner:latest
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/data
+The first start writes `/data/config.json`. Set `username` in it and restart the container. Then run `docker logs -f twitch-miner`, open <https://www.twitch.tv/activate> and enter the code from the logs. The login is saved, so this is needed once.
+
+The image supports `linux/amd64` and `linux/arm64`, runs as UID 1000 and keeps everything in `/data`. A bind-mounted folder must be writable by that user (`chown -R 1000:1000 ./data`). Update with `docker pull`.
+
+### From source
+
+Requires Go 1.22 or newer.
+
+```sh
+go run ./cmd/twitch-miner
 ```
 
-- Everything persistent lives in `/data`: `config.json`, `cookies/`, `log/` and `analytics/`. The container runs as UID 1000, so a bind-mounted folder must be writable by it (`chown -R 1000:1000 ./data`); a named volume needs nothing.
-- First start: the container writes a default `/data/config.json`. Edit it (at least `username`), then `docker restart twitch-miner`. Or place your `config.json` in the folder before the first start.
-- First login: run `docker logs -f twitch-miner`, open `https://www.twitch.tv/activate` and enter the device code shown in the logs. The session is saved to `/data/cookies`, so this is only needed once.
-- The self-updater is disabled inside the image (`TCPM_DISABLE_AUTO_UPDATE=1`) whatever `auto_update` says; update with `docker pull` (or `docker compose pull && docker compose up -d`).
-- Set `TZ` (e.g. `-e TZ=Europe/Madrid`) or the `timezone` config key for local timestamps.
+The first run creates `config.json`. Set `username`, run it again and complete the same device login. Press Ctrl+C to stop; a session summary is printed.
 
-## Project layout
-Folders are named after what the code is about, and each file has one job.
+## Configuration
 
-| Folder | What it holds |
-|---|---|
-| `cmd/twitch-miner` | The program entry point: paths, console setup and `config.json` loading. |
-| `internal/miner` | The miner itself: the session, choosing who to watch, watch streaks, points, presence and identity repair. |
-| `internal/streak` | Watch-streak rules that stand on their own, and the warm-start cache. |
-| `internal/drops` | Claiming drops and reporting their progress. |
-| `internal/twitch` | The Twitch client: GQL, users, streams, minute-watched, drops inventory, channel points. |
-| `internal/twitchapi` | Twitch seen from outside: endpoints, client identity, persisted GQL operations, user agents. |
-| `internal/auth` | Device login and the cookie store. |
-| `internal/pubsub` | The PubSub connection and what each message does. |
-| `internal/prediction` | Prediction events: deciding, filtering and formatting bets. |
-| `internal/chat` | The IRC chat client and when to be present in a chat. |
-| `internal/domain` | The things being mined: streamers, streams, bet and streamer settings, community goals. |
-| `internal/events` | The event types the miner reports, with their polarity and glyph. |
-| `internal/logging` | The console logger; notifiers and the dashboard subscribe to its events. |
-| `internal/notify` | Discord and Telegram notifications and the sentences they send. |
-| `internal/dashboard` | The analytics store, its HTTP API and the web page. |
-| `internal/privacy` | Log anonymisation. |
-| `internal/update` | The self-updater. |
-| `internal/ansi`, `internal/jsonfile`, `internal/jsonvalue`, `internal/random` | Console colours; writing JSON files; reading loose JSON values; nonces and jitter. |
+`config.json` is created with working defaults, so `username` is the only required change. Leave `streamers` empty to mine everyone you follow.
 
-## How it works
-- Authenticates via Twitch device flow, persists cookies per user, and refreshes the client build id for GQL calls.
-- Loads channel points context to grab balances and blue chests; watches two live streams at a time for minute-watched events to keep streaks active.
-- The same watch loop reads HLS playlists and sends HEAD requests for every listed segment to generate Drops playback traffic, without downloading audio or video. Playlist URLs are cached and renewed after failures or a broadcast change; the existing telemetry cadence is unchanged.
-- If you have an active subscription (multiplier) on a streamer, their name is highlighted in gold everywhere it appears in the logs so you can quickly spot priority channels.
-- Listens to PubSub (`community-points-user-v1`) for instant point gain updates and logs deltas with reasons.
-- Periodically claims inventory drops, can optionally log drop progress during those checks, and can auto-join raids and continue mining the destination channel.
+```json
+{
+  "username": "your-twitch-username",
+  "streamers": ["streamer1", "streamer2"],
+  "claim_drops": true,
+  "betting(make_predictions)": true
+}
+```
 
-## Notes
-- Tested with Go 1.21; dependencies are in `go.mod`.
-- Shortcut commands: `go fmt ./...` to format, `go test ./...` to run unit tests.
-- Accepted minute-watched telemetry does not prove Drops credit. Check Twitch's own Drops inventory for authoritative progress.
-- macOS: if Finder opens the downloaded binary in a text editor, run it from Terminal and make it executable first (e.g. `chmod +x TwitchChannelPointsMiner-darwin-arm64`).
+Every option is described in [docs/configuration.md](docs/configuration.md).
 
-## Disclaimer
-- This project comes with no guarantee or warranty. You are responsible for whatever happens from using this project. It is possible to get soft or hard banned by using this project if you are not careful. This is a personal project and is in no way affiliated with Twitch.
+## Dashboard
+
+Open <http://localhost:5000> for each streamer's balance, a points-over-time chart with the events behind it, and an activity log. It is on by default and listens on `127.0.0.1` (the Docker image listens on all interfaces). It has no login, so do not expose the port to the internet.
+
+## Notifications
+
+Add a Discord webhook or a Telegram bot to `config.json` and choose which events to receive. Messages read as sentences, for example "Alice is online with 1.2k points, playing Valorant." Setup is in [docs/configuration.md](docs/configuration.md#notifications).
+
+## Development
+
+```sh
+sh ci/check.sh                        # format, vet, build and test, as CI does
+git config core.hooksPath .githooks   # run it before every push
+```
+
+The code is organised by domain under `internal/`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout and conventions.
+
+## Credits
+
+- [0x8fv/Twitch-Channel-Points-Miner](https://github.com/0x8fv/Twitch-Channel-Points-Miner), the Go rewrite this project began as a fork of. This version reorganises the code and adds the dashboard, Telegram, notification sentences, the Docker image and CI.
+- [rdavydov/Twitch-Channel-Points-Miner-v2](https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2), the Python miner that inspired the rewrite.
+
+## Licence and disclaimer
+
+Released under [CC BY-NC 4.0](LICENSE), the licence of the project it derives from.
+
+This project is not affiliated with Twitch and comes with no warranty. Automating an account can get it restricted or banned; you use it at your own risk.
