@@ -1,6 +1,6 @@
 # Configuration
 
-`config.json` is created on the first run and filled in with defaults; keys added by newer versions are appended to an existing file. Only `username` has to be set.
+`config.json` is created on the first run and filled in with defaults. Only `username` has to be set. The file is written in the order of this page, with a blank line between groups; a key added by a newer version is put in its place, and a file in another layout is rewritten once, keeping every value.
 
 The miner uses `./config.json` if it exists in the current directory, otherwise the directory of the executable. `cookies/`, `log/` and `analytics/` live next to it. Override the locations with `-config`, `-data-dir`, `TCPM_CONFIG` or `TCPM_DATA_DIR`.
 
@@ -72,17 +72,6 @@ Settings under `bet`:
 
 Keys: `make_predictions`, `follow_raid`, `claim_drops`, `claim_moments`, `watch_streak`, `community_goals`, `chat_presence` and `bet`.
 
-## Dashboard
-
-```json
-"analytics": { "enabled": true, "host": "127.0.0.1", "port": 5000 }
-```
-
-- Set `host` to `0.0.0.0` to reach it from other machines. `TCPM_ANALYTICS_ADDR` (for example `0.0.0.0:8080`) overrides both `host` and `port`.
-- History is stored as JSONL files in `analytics/`; delete a streamer's files to reset their history.
-- The dashboard has no login and shows real streamer names even with `privacy.anonymize_logs`.
-- JSON API: `GET /api/streamers` and `GET /api/streamer/{name}?range=24h|7d|30d|all`.
-
 ## Notifications
 
 ```json
@@ -98,6 +87,17 @@ Keys: `make_predictions`, `follow_raid`, `claim_drops`, `claim_moments`, `watch_
 - The first delivery failure is printed once; tokens and webhook URLs are never logged.
 
 Events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_RAID`, `GAIN_FOR_CLAIM`, `GAIN_FOR_WATCH`, `GAIN_FOR_WATCH_STREAK`, `BET_WIN`, `BET_LOSE`, `BET_REFUND`, `BET_FILTERS`, `BET_GENERAL`, `BET_FAILED`, `BET_START`, `BONUS_CLAIM`, `MOMENT_CLAIM`, `JOIN_RAID`, `DROP_CLAIM`, `DROP_STATUS`, `CHAT_MENTION`.
+
+## Dashboard
+
+```json
+"analytics": { "enabled": true, "host": "127.0.0.1", "port": 5000 }
+```
+
+- Set `host` to `0.0.0.0` to reach it from other machines. `TCPM_ANALYTICS_ADDR` (for example `0.0.0.0:8080`) overrides both `host` and `port`.
+- History is stored as JSONL files in `analytics/`; delete a streamer's files to reset their history.
+- The dashboard has no login and shows real streamer names even with `privacy.anonymize_logs`.
+- JSON API: `GET /api/streamers` and `GET /api/streamer/{name}?range=24h|7d|30d|all`.
 
 ## Console and logs
 

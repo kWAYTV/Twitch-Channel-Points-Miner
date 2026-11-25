@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -215,6 +216,13 @@ func TestExampleConfigMatchesDefaults(t *testing.T) {
 	}
 	if !reflect.DeepEqual(example, defaults) {
 		t.Fatalf("config.example.json is out of date: copy the config.json a first run writes over it")
+	}
+	written, err := formatSettings(defaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))) != string(written) {
+		t.Fatalf("config.example.json is not laid out the way the program writes it: copy a first run's config.json over it")
 	}
 	if _, err := decodeConfig(example); err != nil {
 		t.Fatalf("example does not load: %v", err)
