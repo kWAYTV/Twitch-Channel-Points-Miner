@@ -1,6 +1,6 @@
 name: ci
 
-# Lint, tests and one build per platform, none waiting on another. Pull requests
+# Lint, tests, one build per platform and the image build, none waiting on another. Pull requests
 # reuse Go's test cache from main, so only packages a change can reach are run
 # again. Pushes to main and merge-queue runs execute every test from scratch, in
 # random order.
@@ -151,6 +151,35 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: go-build-${{ matrix.target }}-${{ github.sha }}
+      - name: Budget
+        if: always()
+        run: sh ci/budget.sh
+
+  # The image is published by the release workflow. This builds it for both
+  # platforms without publishing, so a change that breaks the Dockerfile fails
+  # here and not in the middle of a release.
+  image:
+    name: Build image
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      # Measured by the workflow this replaces: 35 to 65 seconds warm, 84 cold.
+      BUDGET_SECONDS: 90
+    steps:
+      - name: Start the clock
+        run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+        with:
+          filter: blob:none
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha
+          # Only main writes the cache, as with the Go caches above.
+          cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max' || '' }}
       - name: Budget
         if: always()
         run: sh ci/budget.sh

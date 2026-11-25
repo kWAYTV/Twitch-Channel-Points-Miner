@@ -34,11 +34,16 @@ jobs:
     name: Version and release
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
+    env:
+      # Measured: 70 seconds for a release with five binaries.
+      BUDGET_SECONDS: 105
     outputs:
       version: ${{ steps.version.outputs.new_version }}
       tag: ${{ steps.version.outputs.new_tag }}
     steps:
+      - name: Start the clock
+        run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -105,13 +110,22 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.new_tag }}
         run: goreleaser release --config ci/goreleaser.yaml --clean --release-notes "$RUNNER_TEMP/notes.md"
 
+      - name: Budget
+        if: always()
+        run: sh ci/budget.sh
+
   image:
     name: Publish the image
     needs: release
     if: needs.release.outputs.tag != ''
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
+    env:
+      # Measured: 86 seconds to build both platforms, push and start the image.
+      BUDGET_SECONDS: 130
     steps:
+      - name: Start the clock
+        run: echo "JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release.outputs.tag }}
@@ -176,3 +190,7 @@ jobs:
             echo "::error::the container could not write to ./data"
             exit 1
           fi
+
+      - name: Budget
+        if: always()
+        run: sh ci/budget.sh
