@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -189,5 +191,32 @@ func TestFillMissingAddsOnlyWhatIsAbsent(t *testing.T) {
 	}
 	if fillMissing(settings, defaults) {
 		t.Fatalf("a complete config should need nothing added")
+	}
+}
+
+// config.example.json is what a new user copies, so it has to be exactly what
+// the program would write on a first run.
+func TestExampleConfigMatchesDefaults(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "config.example.json"))
+	if err != nil {
+		t.Fatalf("read example: %v", err)
+	}
+	var example map[string]interface{}
+	if err := json.Unmarshal(raw, &example); err != nil {
+		t.Fatalf("example is not valid JSON: %v", err)
+	}
+	normalized, err := json.Marshal(defaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var defaults map[string]interface{}
+	if err := json.Unmarshal(normalized, &defaults); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(example, defaults) {
+		t.Fatalf("config.example.json is out of date: copy the config.json a first run writes over it")
+	}
+	if _, err := decodeConfig(example); err != nil {
+		t.Fatalf("example does not load: %v", err)
 	}
 }

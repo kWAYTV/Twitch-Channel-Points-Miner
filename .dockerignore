@@ -8,3 +8,5 @@ cookies
 analytics
 config.json
 *.md
+compose.yaml
+config.example.json

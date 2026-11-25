@@ -1,0 +1,24 @@
+# Runs the published image. No source checkout or build needed.
+#
+#   mkdir data
+#   cp config.example.json data/config.json    # then set "username"
+#   docker compose up -d
+#   docker compose logs -f                      # shows the Twitch login code once
+#
+# Update with: docker compose pull && docker compose up -d
+services:
+  twitch-miner:
+    image: ghcr.io/kwaytv/twitch-points-miner:latest
+    container_name: twitch-miner
+    restart: unless-stopped
+    # The user that owns ./data. Change it if yours is not 1000 (check with `id -u`).
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      TZ: "${TZ:-UTC}"
+    ports:
+      # The dashboard has no login. Use "127.0.0.1:5000:5000" to keep it on this
+      # machine, and never expose it to the internet.
+      - "5000:5000"
+    volumes:
+      # config.json, the Twitch login, logs and the dashboard history live here.
+      - ./data:/data

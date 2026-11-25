@@ -11,6 +11,8 @@ on:
       - .dockerignore
       - go.mod
       - go.sum
+      - compose.yaml
+      - config.example.json
       - .github/workflows/docker.yml
   workflow_dispatch:
     inputs:
@@ -85,25 +87,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # The published image has to start: the dashboard line is the first thing
-      # the miner prints once its config and data folder are in place.
-      - name: Start the published image
+      # The published image has to start the way the README tells people to run
+      # it: compose.yaml, the example config and a ./data folder owned by the user.
+      - name: Start the published image with compose.yaml
         if: env.PUBLISH == 'true' && steps.existing.outputs.skip != 'true'
         run: |
           set -u
-          docker run -d --name smoke "${{ steps.meta.outputs.sha_tag }}" >/dev/null
+          mkdir data
+          cp config.example.json data/config.json
+          export PUID="$(id -u)" PGID="$(id -g)"
+          docker compose pull --quiet
+          docker compose up -d
           started=1
           for _ in 1 2 3 4 5 6 7 8 9 10; do
-            if docker logs smoke 2>&1 | grep -q "Analytics dashboard listening on http://0.0.0.0:5000"; then
+            if docker compose logs 2>&1 | grep -q "Analytics dashboard listening on http://0.0.0.0:5000"; then
               started=0
               break
             fi
             sleep 0.5
           done
-          docker logs smoke 2>&1 | head -5
-          docker rm -f smoke >/dev/null
+          docker compose logs 2>&1 | head -5
+          docker compose down
           if [ "$started" -ne 0 ]; then
-            echo "::error::the published image did not start"
+            echo "::error::the published image did not start with compose.yaml"
+            exit 1
+          fi
+          if [ ! -d data/analytics ]; then
+            echo "::error::the container could not write to ./data"
             exit 1
           fi
 

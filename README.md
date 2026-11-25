@@ -21,15 +21,18 @@ Earns Twitch channel points for you by watching streams in the background. Writt
 
 ### Docker
 
+Download [compose.yaml](compose.yaml) and [config.example.json](config.example.json), then:
+
 ```sh
-docker run -d --name twitch-miner --restart unless-stopped \
-  -v twitch-miner-data:/data -p 5000:5000 \
-  ghcr.io/kwaytv/twitch-points-miner:latest
+mkdir data
+cp config.example.json data/config.json   # set "username" in it
+docker compose up -d
+docker compose logs -f
 ```
 
-The first start writes `/data/config.json`. Set `username` in it and restart the container. Then run `docker logs -f twitch-miner`, open <https://www.twitch.tv/activate> and enter the code from the logs. The login is saved, so this is needed once.
+The logs show a code once: open <https://www.twitch.tv/activate> and enter it. The login is saved in `./data`, so later starts need nothing.
 
-The image supports `linux/amd64` and `linux/arm64`, runs as UID 1000 and keeps everything in `/data`. A bind-mounted folder must be writable by that user (`chown -R 1000:1000 ./data`). Update with `docker pull`.
+The image supports `linux/amd64` and `linux/arm64` and keeps everything in `./data`. It runs as user 1000; if your user id is different, set `PUID` and `PGID` (see the comments in `compose.yaml`). Update with `docker compose pull && docker compose up -d`.
 
 ### From source
 
