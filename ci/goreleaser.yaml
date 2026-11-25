@@ -27,7 +27,3 @@ archives:
 
 checksum:
   name_template: checksums.txt
-
-# The notes come from the release workflow.
-changelog:
-  disable: true

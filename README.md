@@ -3,7 +3,7 @@
 # Twitch Points Miner
 
 [![ci](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/ci.yml/badge.svg)](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/ci.yml)
-[![docker](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/docker.yml/badge.svg)](https://github.com/kWAYTV/twitch-points-miner/actions/workflows/docker.yml)
+[![release](https://img.shields.io/github/v/release/kWAYTV/twitch-points-miner)](https://github.com/kWAYTV/twitch-points-miner/releases)
 [![licence](https://img.shields.io/badge/licence-CC%20BY--NC%204.0-lightgrey)](LICENSE)
 
 Earns Twitch channel points for you by watching streams in the background. Written in Go: one small binary, quick to start, light on CPU and memory.

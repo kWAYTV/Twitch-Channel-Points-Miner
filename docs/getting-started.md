@@ -22,7 +22,7 @@ You need Docker with the Compose plugin. Nothing is built locally.
 
 5. [Log in](#logging-in) with the code the logs show.
 
-The image is `ghcr.io/kwaytv/twitch-points-miner:latest`, for `linux/amd64` and `linux/arm64`. Each build is also tagged `sha-<commit>` if you want to pin a version.
+The image is `ghcr.io/kwaytv/twitch-points-miner:latest`, for `linux/amd64` and `linux/arm64`. `:latest` is the latest release; each release is also tagged with its version, such as `:1.6.0`, if you want to pin one.
 
 ### User and permissions
 
@@ -90,7 +90,7 @@ In the Docker image it is `/data`.
 
 ## Updating
 
-- **Docker:** `docker compose pull && docker compose up -d`. `:latest` follows the main branch. To stay on releases, use a version tag in `compose.yaml` instead, such as `:1.6.0`, or `:1.6` for the newest fix of 1.6.
+- **Docker:** `docker compose pull && docker compose up -d`. `:latest` is the latest release. To choose when you move, use a version tag in `compose.yaml` instead, such as `:1.6.0`, or `:1.6` for the newest fix of 1.6.
 - **A release binary:** with `auto_update` on (the default) it checks at startup, downloads a newer [release](https://github.com/kWAYTV/twitch-points-miner/releases) and restarts into it. Turn it off with `"auto_update": false` or `TCPM_DISABLE_AUTO_UPDATE=1`.
 - **From source:** `git pull`, then run or build again. A build from source never replaces itself.
 
