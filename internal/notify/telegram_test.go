@@ -35,10 +35,10 @@ func TestTelegramNotifierSendsSelectedEvents(t *testing.T) {
 		t.Fatal("notifier should be enabled")
 	}
 
-	n.Send("Alice is Online!", events.EventStreamerOnline)
-	n.Send("+10 points", events.EventGainForWatch) // not selected
-	n.Send("no event", "")
-	n.Send(strings.Repeat("é", 5000), events.EventBetLose)
+	n.Send(Describe("Alice (1.2k points) is Online! | Playing: Valorant"), events.EventStreamerOnline)
+	n.Send(Describe("+10 points"), events.EventGainForWatch) // not selected
+	n.Send(Describe("no event"), "")
+	n.Send(Message{Headline: strings.Repeat("é", 5000), Details: []string{strings.Repeat("é", 5000)}}, events.EventBetLose)
 
 	if len(forms) != 2 {
 		t.Fatalf("got %d requests, want 2", len(forms))
@@ -47,14 +47,14 @@ func TestTelegramNotifierSendsSelectedEvents(t *testing.T) {
 		t.Fatalf("unexpected request %q", paths[0])
 	}
 	first := forms[0]
-	if first.Get("chat_id") != "123456789" || first.Get("text") != "🟢 <b>Online</b>\nAlice is online." ||
+	if first.Get("chat_id") != "123456789" || first.Get("text") != "🟢 <b>Alice is online</b>\nPlaying Valorant · Balance 1.2k points" ||
 		first.Get("parse_mode") != "HTML" || first.Get("disable_notification") != "true" ||
 		first.Get("link_preview_options") != `{"is_disabled":true}` {
 		t.Fatalf("unexpected form %v", first)
 	}
 	long := forms[1].Get("text")
-	if !strings.HasPrefix(long, "📉 <b>Bet lost</b>\n") {
-		t.Fatalf("long text missing title: %q", long[:40])
+	if !strings.HasPrefix(long, "📉 <b>é") || !strings.Contains(long, "</b>\né") {
+		t.Fatalf("long text should keep a bold headline and a details line: %q", long[:40])
 	}
 	if got := len([]rune(long)); got > telegramTextLimit {
 		t.Fatalf("long text should be at most %d characters, got %d", telegramTextLimit, got)
@@ -71,16 +71,16 @@ func TestTelegramNotifierSkipsQuietEventsUnlessNamed(t *testing.T) {
 	defer srv.Close()
 
 	open := newTelegramNotifier(TelegramSettings{ChatID: "1", Token: "t"}, srv.URL)
-	open.Send("tick", events.EventGainForWatch)
-	open.Send("Alice (1.2k points) is Online!", events.EventStreamerOnline)
+	open.Send(Describe("tick"), events.EventGainForWatch)
+	open.Send(Describe("Alice (1.2k points) is Online!"), events.EventStreamerOnline)
 	if len(got) != 1 || !strings.Contains(got[0], "Alice") {
 		t.Fatalf("empty events list should skip watch ticks and send online, got %v", got)
 	}
 
 	got = nil
 	all := newTelegramNotifier(TelegramSettings{ChatID: "1", Token: "t", Events: []string{"*"}}, srv.URL)
-	all.Send("tick", events.EventGainForWatch)
-	if len(got) != 1 || !strings.HasPrefix(got[0], "➕ <b>Watch</b>") {
+	all.Send(Describe("+10 → Alice (1.2k points) - Reason: WATCH"), events.EventGainForWatch)
+	if len(got) != 1 || got[0] != "➕ <b>+10 points on Alice</b>\nWatching · Balance 1.2k points" {
 		t.Fatalf("* should opt into watch ticks, got %v", got)
 	}
 }
@@ -90,7 +90,7 @@ func TestTelegramNotifierDisabledWithoutCredentials(t *testing.T) {
 		t.Fatal("notifier must be nil unless chat_id and token are both set")
 	}
 	var n *TelegramNotifier
-	n.Send("ignored", events.EventStartup) // nil notifier is a no-op
+	n.Send(Describe("ignored"), events.EventStartup) // nil notifier is a no-op
 }
 
 func TestFormatTelegram(t *testing.T) {
@@ -99,10 +99,12 @@ func TestFormatTelegram(t *testing.T) {
 		message string
 		want    string
 	}{
-		{events.EventStreamerOnline, "Alice is Online!", "🟢 <b>Online</b>\nAlice is online."},
-		{events.EventBetLose, "EventPrediction: bob - overtime? - Decision: No - Result: LOSE, Gained: -500", "📉 <b>Bet lost</b>\nbob lost 500 points on \"overtime?\" after choosing No."},
+		{events.EventStreamerOnline, "Alice is Online!", "🟢 <b>Alice is online</b>"},
+		{events.EventStartup, "", "▶️ <b>Session started</b>"},
+		{events.EventChatMention, "nick at #alice wrote: <b>hi</b> & bye", "💬 <b>nick mentioned you in #alice</b>\n\"&lt;b&gt;hi&lt;/b&gt; &amp; bye\""},
+		{events.EventBetLose, "EventPrediction: bob - overtime? - Decision: No - Result: LOSE, Gained: -500", "📉 <b>Lost 500 points on bob</b>\n\"overtime?\" · Chose No"},
 	} {
-		if got := formatTelegram(tc.event, tc.message); got != tc.want {
+		if got := formatTelegram(tc.event, Describe(tc.message)); got != tc.want {
 			t.Fatalf("formatTelegram(%s) got %q, want %q", tc.event, got, tc.want)
 		}
 	}

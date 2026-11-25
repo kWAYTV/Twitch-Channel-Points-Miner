@@ -64,10 +64,10 @@ func newTelegramNotifier(settings TelegramSettings, apiBase string) *TelegramNot
 	}
 }
 
-// Send posts a short HTML summary if the event is selected. An empty events
+// Send posts the message if the event is selected. An empty events
 // list sends every event except the noisy ones (watch ticks, drop progress,
 // bet-filter skips); "*" or "ALL" sends those too. Failures never interrupt the miner.
-func (t *TelegramNotifier) Send(message string, event events.Event) {
+func (t *TelegramNotifier) Send(message Message, event events.Event) {
 	if t == nil || !wantsEvent(t.events, event) {
 		return
 	}
@@ -111,19 +111,19 @@ func (t *TelegramNotifier) warn(reason string) {
 	})
 }
 
-// formatTelegram renders a console event as the polarity glyph, a bold title,
-// and a sentence (parse_mode HTML). The glyph is the same one the console and
-// the chart use, and it is sent even when console emojis are turned off.
-func formatTelegram(event events.Event, message string) string {
-	title := eventGlyphPrefix(event) + "<b>" + htmlEscape(eventTitle(event)) + "</b>"
-	body := Sentence(message)
-	if body == "" || strings.EqualFold(body, eventTitle(event)) {
-		return limitRunes(title, telegramTextLimit)
+// formatTelegram renders a message for parse_mode HTML: the polarity glyph and the
+// headline in bold, then the details on one line. The glyph is the one the
+// console uses, and it is sent even when console emojis are turned off.
+func formatTelegram(event events.Event, message Message) string {
+	headline := message.Headline
+	if headline == "" {
+		headline = eventTitle(event)
 	}
-	escaped := htmlEscape(body)
-	budget := telegramTextLimit - len([]rune(title)) - 1
-	if budget < 1 {
-		return limitRunes(title, telegramTextLimit)
+	text := eventGlyphPrefix(event) + "<b>" + htmlEscape(limitRunes(headline, headlineLimit)) + "</b>"
+	details := htmlEscape(strings.Join(message.Details, detailSeparator))
+	budget := telegramTextLimit - len([]rune(text)) - 1
+	if details == "" || budget < 1 {
+		return text
 	}
-	return title + "\n" + limitEscaped(escaped, budget)
+	return text + "\n" + limitEscaped(details, budget)
 }

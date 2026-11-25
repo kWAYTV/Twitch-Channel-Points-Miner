@@ -7,6 +7,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
 // AnalyticsSink receives point changes and log events for the analytics dashboard.
@@ -32,8 +33,8 @@ func SetAnalyticsSink(sink AnalyticsSink) {
 		return
 	}
 	analyticsSink.Store(&analyticsSinkHolder{sink: sink})
-	logging.Subscribe("analytics", func(event events.Event, sentence string) {
-		sink.RecordEvent(string(event), sentence)
+	logging.Subscribe("analytics", func(event events.Event, message notify.Message) {
+		sink.RecordEvent(string(event), message.Sentence())
 	})
 }
 

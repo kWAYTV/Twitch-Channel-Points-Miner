@@ -62,7 +62,7 @@ Open <http://localhost:5000> for each streamer's balance, a points-over-time cha
 
 ## Notifications
 
-Add a Discord webhook or a Telegram bot to `config.json` and choose which events to receive. Messages read as sentences, for example "Alice is online with 1.2k points, playing Valorant." Setup is in [docs/configuration.md](docs/configuration.md#notifications).
+Add a Discord webhook or a Telegram bot to `config.json` and choose which events to receive. Each message is a bold headline with the details under it, written from your side: "+10 points on Alice", then "Watching Valorant · Balance 12.4k points". Setup is in [docs/configuration.md](docs/configuration.md#notifications).
 
 ## Development
 

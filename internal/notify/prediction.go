@@ -4,10 +4,11 @@ import (
 	"strings"
 )
 
-func rewritePrediction(head string) (string, bool) {
+// describeBetResult covers "EventPrediction: bob - title - Decision: Yes - Result: WIN, Gained: +500".
+func describeBetResult(head string) (Message, bool) {
 	const prefix = "eventprediction:"
 	if !strings.HasPrefix(strings.ToLower(head), prefix) {
-		return "", false
+		return Message{}, false
 	}
 	rest := strings.TrimSpace(head[len(prefix):])
 	var name, title, choice, result string
@@ -35,59 +36,36 @@ func rewritePrediction(head string) (string, bool) {
 		}
 	}
 	if name == "" {
-		return "", false
+		return Message{}, false
 	}
-	return predictionSentence(name, title, choice, result), true
-}
 
-func predictionSentence(name, title, choice, result string) string {
 	kind, pts := splitResult(result)
-	var b strings.Builder
-	b.WriteString(name)
-	switch kind {
-	case "WIN":
-		if pts != "" {
-			b.WriteString(" won ")
-			b.WriteString(pts)
-			b.WriteString(" points")
-		} else {
-			b.WriteString(" won the bet")
-		}
-	case "LOSE":
-		if pts != "" {
-			b.WriteString(" lost ")
-			b.WriteString(pts)
-			b.WriteString(" points")
-		} else {
-			b.WriteString(" lost the bet")
-		}
-	case "REFUND":
-		if pts != "" {
-			b.WriteString(" was refunded ")
-			b.WriteString(pts)
-			b.WriteString(" points")
-		} else {
-			b.WriteString(" was refunded")
-		}
+	var headline string
+	var details []string
+	switch {
+	case kind == "WIN" && pts != "":
+		headline = "Won " + pts + " points on " + name
+	case kind == "WIN":
+		headline = "Won the bet on " + name
+	case kind == "LOSE" && pts != "":
+		headline = "Lost " + pts + " points on " + name
+	case kind == "LOSE":
+		headline = "Lost the bet on " + name
+	case kind == "REFUND" && pts != "":
+		headline = "Refunded " + pts + " points on " + name
+	case kind == "REFUND":
+		headline = "Bet refunded on " + name
 	default:
-		b.WriteString(" finished a bet")
-		if result != "" {
-			b.WriteString(" (")
-			b.WriteString(result)
-			b.WriteString(")")
-		}
+		headline = "Bet finished on " + name
+		details = append(details, result)
 	}
 	if title != "" {
-		b.WriteString(" on \"")
-		b.WriteString(title)
-		b.WriteByte('"')
+		details = append(details, `"`+title+`"`)
 	}
 	if choice != "" {
-		b.WriteString(" after choosing ")
-		b.WriteString(choice)
+		details = append(details, "Chose "+choice)
 	}
-	b.WriteByte('.')
-	return b.String()
+	return newMessage(headline, details...), true
 }
 
 func splitResult(result string) (kind, pts string) {
@@ -107,7 +85,8 @@ func splitResult(result string) (kind, pts string) {
 	return kind, pts
 }
 
-func rewritePlace(head string) (string, bool) {
+// describeBetPlaced covers "Place 1,234 points on: Yes ... for bob".
+func describeBetPlaced(head string) (Message, bool) {
 	lower := strings.ToLower(head)
 	amount := ""
 	var rest string
@@ -119,44 +98,59 @@ func rewritePlace(head string) (string, bool) {
 		amount = strings.TrimSpace(head[len("place "):i])
 		rest = strings.TrimSpace(head[i+len(" points on:"):])
 	default:
-		return "", false
+		return Message{}, false
 	}
 	outcome, who, ok := splitLastFold(rest, " for ")
 	if !ok {
-		return "", false
+		return Message{}, false
 	}
 	outcome = shortOutcome(outcome)
+	detail := ""
 	switch {
 	case amount != "" && outcome != "":
-		return who + " placed " + amount + " points on " + outcome + ".", true
+		detail = amount + " points on " + outcome
 	case outcome != "":
-		return who + " placed a bet on " + outcome + ".", true
+		detail = "On " + outcome
 	case amount != "":
-		return who + " placed " + amount + " points.", true
-	default:
-		return who + " placed a bet.", true
+		detail = amount + " points"
 	}
+	return newMessage("Bet placed on "+who, detail), true
 }
 
-func skipSentence(who, reason string) string {
+// describeBetNotice covers a bet that is scheduled, skipped or failed.
+func describeBetNotice(head string) (Message, bool) {
+	lower := strings.ToLower(head)
+	if strings.HasPrefix(lower, "place bet after ") {
+		rest := strings.TrimSpace(head[len("place bet after "):])
+		if when, who, ok := splitLastFold(rest, " for "); ok {
+			return newMessage("Bet on " + who + " in " + when), true
+		}
+	}
+	if who, reason, ok := splitOnceFold(head, "skip bet for ", ": "); ok {
+		return newMessage("Bet skipped on "+who, skipReason(reason)), true
+	}
+	if name, detail, ok := splitOnceFold(head, "prediction ", ": "); ok {
+		return newMessage("Failed prediction on "+name, strings.TrimRight(strings.TrimSpace(detail), ".")), true
+	}
+	return Message{}, false
+}
+
+func skipReason(reason string) string {
 	reason = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(reason), "_", " "))
 	switch {
 	case reason == "":
-		return "The bet for " + who + " was skipped."
+		return ""
 	case strings.Contains(reason, "no outcome"):
-		return "The bet for " + who + " was skipped because no outcome was selected."
+		return "No outcome was selected"
 	case strings.Contains(reason, "twitch"):
-		return "The bet for " + who + " was skipped because the stake is below Twitch's minimum."
+		return "The stake is below Twitch's minimum"
 	case strings.Contains(reason, "minimum"):
-		return "The bet for " + who + " was skipped because the balance is below the minimum."
+		return "The balance is below the minimum"
 	case strings.Contains(reason, "filter"):
-		return "The bet for " + who + " was skipped because the bet filter did not match."
+		return "The bet filter did not match"
 	case strings.Contains(reason, "status"):
-		return "The bet for " + who + " was skipped because the prediction is no longer active."
+		return "The prediction is no longer active"
 	default:
-		if !strings.HasSuffix(reason, ".") {
-			reason += "."
-		}
-		return "The bet for " + who + " was skipped because " + reason
+		return strings.ToUpper(reason[:1]) + reason[1:]
 	}
 }

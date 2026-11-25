@@ -4,10 +4,11 @@ import (
 	"sync"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
-// A Subscriber receives every logged event as a plain sentence, without colour codes.
-type Subscriber func(event events.Event, sentence string)
+// A Subscriber receives every logged event, described without colour codes.
+type Subscriber func(event events.Event, message notify.Message)
 
 var subscribers sync.Map
 
@@ -21,9 +22,9 @@ func Subscribe(name string, fn Subscriber) {
 	subscribers.Store(name, fn)
 }
 
-func publish(event events.Event, sentence string) {
+func publish(event events.Event, message notify.Message) {
 	subscribers.Range(func(_, fn any) bool {
-		fn.(Subscriber)(event, sentence)
+		fn.(Subscriber)(event, message)
 		return true
 	})
 }

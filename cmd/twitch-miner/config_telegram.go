@@ -66,7 +66,7 @@ func startTelegram(cfg telegramConfig) {
 	if notifier == nil {
 		return
 	}
-	logging.Subscribe("telegram", func(event events.Event, sentence string) {
-		notifier.Send(sentence, event)
+	logging.Subscribe("telegram", func(event events.Event, message notify.Message) {
+		notifier.Send(message, event)
 	})
 }

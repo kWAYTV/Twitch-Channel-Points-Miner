@@ -104,3 +104,19 @@ func limitEscaped(s string, n int) string {
 	}
 	return strings.TrimSpace(cut) + "…"
 }
+
+// markdownEscaper neutralises Discord's formatting characters, so a streamer
+// called d0cc_tv or a chat message with asterisks is shown as written.
+var markdownEscaper = strings.NewReplacer(
+	`\`, `\\`,
+	`*`, `\*`,
+	`_`, `\_`,
+	`~`, `\~`,
+	"`", "\\`",
+	`|`, `\|`,
+	`>`, `\>`,
+)
+
+func escapeMarkdown(s string) string {
+	return markdownEscaper.Replace(s)
+}

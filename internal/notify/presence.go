@@ -1,57 +1,53 @@
 package notify
 
 import (
+	"regexp"
 	"strings"
 )
 
-func rewriteOnline(head, game, streak, verb string) (string, bool) {
+var reLoaded = regexp.MustCompile(`(?i)^(\d+ streamers?) loaded in ([^:]+): (\d+) online(?: \((.*)\))?, (\d+) offline\.?$`)
+
+// describeSession covers the session starting, ending and the streamer list loading.
+func describeSession(head string) (Message, bool) {
+	lower := strings.ToLower(head)
+	switch {
+	case strings.HasPrefix(lower, "start session:"):
+		return newMessage("Session started"), true
+	case strings.HasPrefix(lower, "ending session:"):
+		return newMessage("Session ended"), true
+	}
+	if m := reLoaded.FindStringSubmatch(head); m != nil {
+		online := m[3] + " online"
+		if m[4] != "" {
+			online += ": " + m[4]
+		}
+		return newMessage(m[1]+" loaded", online, m[5]+" offline", "Took "+strings.TrimSpace(m[2])), true
+	}
+	return Message{}, false
+}
+
+// describePresence covers "Alice (1.2k points) is Online!" and its offline twin.
+func describePresence(head, game, streak, verb string) (Message, bool) {
 	lower := strings.ToLower(head)
 	marker := " is " + verb
 	i := strings.LastIndex(lower, marker)
 	if i <= 0 {
-		return "", false
+		return Message{}, false
 	}
-	tail := lower[i+len(marker):]
-	if tail != "" && tail != "!" {
-		return "", false
+	if tail := lower[i+len(marker):]; tail != "" && tail != "!" {
+		return Message{}, false
 	}
 	name, points := splitPoints(strings.TrimSpace(head[:i]))
 	if name == "" {
 		name = "The channel"
 	}
-	return presenceSentence(name, points, game, streak, verb), true
-}
-
-func presenceSentence(name, points, game, streak, verb string) string {
-	var b strings.Builder
-	b.WriteString(name)
-	b.WriteString(" is ")
-	b.WriteString(verb)
-	if points != "" {
-		b.WriteString(" with ")
-		b.WriteString(points)
-	}
+	var details []string
 	if game != "" {
-		b.WriteString(", playing ")
-		b.WriteString(game)
+		details = append(details, "Playing "+game)
 	}
-	b.WriteByte('.')
+	details = append(details, balance(points))
 	if streak != "" {
-		b.WriteString(" The watch streak is ")
-		b.WriteString(streak)
-		b.WriteByte('.')
+		details = append(details, "Watch streak "+streak)
 	}
-	return b.String()
-}
-
-func splitPoints(subject string) (name, points string) {
-	open := strings.LastIndex(subject, "(")
-	if open <= 0 || !strings.HasSuffix(subject, ")") {
-		return subject, ""
-	}
-	inner := subject[open+1 : len(subject)-1]
-	if !strings.Contains(strings.ToLower(inner), "point") {
-		return subject, ""
-	}
-	return strings.TrimSpace(subject[:open]), strings.TrimSpace(inner)
+	return newMessage(name+" is "+verb, details...), true
 }

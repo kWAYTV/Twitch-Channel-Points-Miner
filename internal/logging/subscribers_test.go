@@ -5,17 +5,19 @@ import (
 
 	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
 type published struct {
 	event    events.Event
+	message  notify.Message
 	sentence string
 }
 
 func TestLoggerPublishesEventsToSubscribers(t *testing.T) {
 	var got []published
-	Subscribe("test", func(event events.Event, sentence string) {
-		got = append(got, published{event, sentence})
+	Subscribe("test", func(event events.Event, message notify.Message) {
+		got = append(got, published{event, message, message.Sentence()})
 	})
 	defer Subscribe("test", nil)
 	last := func() published {
@@ -43,7 +45,7 @@ func TestLoggerPublishesEventsToSubscribers(t *testing.T) {
 		t.Fatalf("notification should not carry the console shortcode, got %+v", p)
 	}
 	logger.EmojiEventf(":bar_chart:", events.EventBetLose, "EventPrediction: bob - overtime? - Decision: No - Result: %sLOSE%s, Gained: -500", ansi.ColorRed, ansi.ColorReset)
-	if p := last(); p.sentence != "bob lost 500 points on \"overtime?\" after choosing No." || p.event != events.EventBetLose {
+	if p := last(); p.message.Headline != "Lost 500 points on bob" || p.sentence != "Lost 500 points on bob. \"overtime?\". Chose No." || p.event != events.EventBetLose {
 		t.Fatalf("loss notification should stay a sentence, got %+v", p)
 	}
 

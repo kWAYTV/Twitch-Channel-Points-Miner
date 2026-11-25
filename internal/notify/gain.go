@@ -5,13 +5,15 @@ import (
 	"unicode"
 )
 
-func rewriteGain(head, game, streak string) (string, bool) {
+// describeGain covers "+50 → Alice (12.4k points) - Reason: WATCH": points the
+// account gained or lost on a channel.
+func describeGain(head, game, streak string) (Message, bool) {
 	arrow := strings.Index(head, "→")
 	if arrow < 0 {
 		arrow = strings.Index(head, "->")
 	}
 	if arrow <= 0 {
-		return "", false
+		return Message{}, false
 	}
 	sep := "→"
 	if head[arrow] == '-' {
@@ -19,7 +21,7 @@ func rewriteGain(head, game, streak string) (string, bool) {
 	}
 	amount := strings.TrimSpace(head[:arrow])
 	if amount == "" || !isSignedAmount(amount) {
-		return "", false
+		return Message{}, false
 	}
 	rest := strings.TrimSpace(head[arrow+len(sep):])
 	reason := ""
@@ -29,70 +31,54 @@ func rewriteGain(head, game, streak string) (string, bool) {
 	}
 	name, points := splitPoints(rest)
 	if name == "" {
-		return "", false
+		return Message{}, false
 	}
-	sentence := gainSentence(name, amount, points, reason, game)
-	if streak != "" {
-		sentence += " The watch streak is " + streak + "."
-	}
-	return sentence, true
-}
 
-func gainSentence(name, amount, points, reason, game string) string {
 	n, lost := unsignedAmount(amount)
-	var b strings.Builder
-	b.WriteString(name)
+	sign := "+"
 	if lost {
-		b.WriteString(" lost ")
-	} else {
-		b.WriteString(" gained ")
+		sign = "−"
 	}
-	b.WriteString(n)
-	b.WriteString(" points")
-	b.WriteString(reasonClause(reason, game))
-	if points != "" {
-		b.WriteString(" and now has ")
-		b.WriteString(points)
-	}
-	b.WriteByte('.')
-	return b.String()
+	details := gainDetails(reason, game, streak)
+	details = append(details, balance(points))
+	return newMessage(sign+n+" points on "+name, details...), true
 }
 
-func reasonClause(reason, game string) string {
+// gainDetails says why the points changed, and what was being played or how
+// long the watch streak is when the line carried that.
+func gainDetails(reason, game, streak string) []string {
 	kind := ""
 	if fields := strings.Fields(reason); len(fields) > 0 {
 		kind = strings.ToUpper(fields[0])
 	}
+	playing := ""
+	if game != "" {
+		playing = "Playing " + game
+	}
+	streakLength := ""
+	if streak != "" {
+		streakLength = "Watch streak " + streak
+	}
 	switch kind {
 	case "WATCH":
 		if game != "" {
-			return " for watching " + game
+			return []string{"Watching " + game, streakLength}
 		}
-		return " for watching"
+		return []string{"Watching", streakLength}
 	case "WATCH_STREAK":
-		if game != "" {
-			return " for a watch streak while playing " + game
+		if streak != "" {
+			return []string{streakLength, playing}
 		}
-		return " for a watch streak"
+		return []string{"Watch streak", playing}
 	case "CLAIM":
-		return " from a bonus claim"
+		return []string{"Bonus claim", streakLength}
 	case "RAID":
-		if game != "" {
-			return " for a raid while playing " + game
-		}
-		return " for a raid"
+		return []string{"Raid", playing, streakLength}
+	case "":
+		return []string{playing, streakLength}
 	default:
 		label := strings.ToLower(strings.ReplaceAll(kind, "_", " "))
-		switch {
-		case label != "" && game != "":
-			return " (" + label + ") while playing " + game
-		case label != "":
-			return " (" + label + ")"
-		case game != "":
-			return " while playing " + game
-		default:
-			return ""
-		}
+		return []string{strings.ToUpper(label[:1]) + label[1:], playing, streakLength}
 	}
 }
 

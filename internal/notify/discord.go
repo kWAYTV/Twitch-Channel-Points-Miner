@@ -58,24 +58,20 @@ type discordPayload struct {
 	Embeds    []discordEmbed `json:"embeds"`
 }
 
-// Send posts a short embed if the event is selected. An empty events list sends
+// Send posts the message as an embed if the event is selected: the headline is
+// the title and the details are the description. An empty events list sends
 // every event except the noisy ones, matching Telegram. Failures never interrupt
 // the miner; the webhook URL (it contains a secret) is never logged.
-func (d *DiscordWebhook) Send(message string, event events.Event) {
+func (d *DiscordWebhook) Send(message Message, event events.Event) {
 	if d == nil || !wantsEvent(d.events, event) {
 		return
 	}
-	body := Sentence(message)
-	title := eventGlyphPrefix(event) + eventTitle(event)
-	if strings.EqualFold(body, title) {
-		body = ""
+	headline := message.Headline
+	if headline == "" {
+		headline = eventTitle(event)
 	}
-	if r := []rune(title); len(r) > 256 {
-		title = string(r[:256])
-	}
-	if r := []rune(body); len(r) > 4096 {
-		body = string(r[:4095]) + "…"
-	}
+	title := limitRunes(eventGlyphPrefix(event)+escapeMarkdown(headline), headlineLimit)
+	body := limitRunes(escapeMarkdown(strings.Join(message.Details, detailSeparator)), 4096)
 	payload := discordPayload{
 		Username:  project.Name,
 		AvatarURL: project.AvatarURL,

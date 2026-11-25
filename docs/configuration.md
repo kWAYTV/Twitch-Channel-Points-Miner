@@ -94,6 +94,7 @@ Keys: `make_predictions`, `follow_raid`, `claim_drops`, `claim_moments`, `watch_
 - **Telegram:** create a bot with [@BotFather](https://t.me/BotFather), send it a message once, and set `chat_id` to your numeric chat id. `@channelname` works for public channels.
 - An empty `webhook_api`, or an empty `token` or `chat_id`, turns that notifier off.
 - An empty `events` list sends everything except three high-volume events: `GAIN_FOR_WATCH`, `DROP_STATUS` and `BET_FILTERS`. `["*"]` sends those too.
+- A message is a headline and a line of details, told from the account's side: `+10 points on Alice`, then `Watching Valorant · Balance 12.4k points`. Points are always your points on that channel.
 - The first delivery failure is printed once; tokens and webhook URLs are never logged.
 
 Events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_RAID`, `GAIN_FOR_CLAIM`, `GAIN_FOR_WATCH`, `GAIN_FOR_WATCH_STREAK`, `BET_WIN`, `BET_LOSE`, `BET_REFUND`, `BET_FILTERS`, `BET_GENERAL`, `BET_FAILED`, `BET_START`, `BONUS_CLAIM`, `MOMENT_CLAIM`, `JOIN_RAID`, `DROP_CLAIM`, `DROP_STATUS`, `CHAT_MENTION`.

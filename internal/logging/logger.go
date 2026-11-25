@@ -122,13 +122,13 @@ func (l *Logger) logEvent(level, emoji string, event events.Event, format string
 	}
 	message := fmt.Sprintf(format, args...)
 	if event != "" {
-		// Console keeps the full line, including its polarity glyph. Discord and
-		// every subscriber get a sentence built from the raw line.
-		presented := notify.Sentence(message)
+		// The console keeps the full line. Discord and every subscriber get the
+		// event described from the account's side.
+		described := notify.Describe(message)
 		if l.discord != nil {
-			l.discord.Send(presented, event)
+			l.discord.Send(described, event)
 		}
-		publish(event, presented)
+		publish(event, described)
 	}
 	if glyph := emojiFor(emoji, event); glyph != "" && l.settings.Emoji {
 		message = fmt.Sprintf("%s %s", glyph, message)
