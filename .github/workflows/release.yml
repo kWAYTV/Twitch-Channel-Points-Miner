@@ -84,7 +84,7 @@ jobs:
           previous="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
           {
             # Without the generated title line: the release already carries the version.
-            printf '%s\n' "$NOTES" | sed '1{/^## /d}'
+            printf '%s\n' "$NOTES" | sed '1{/^##* \[/d}' | cat -s
             echo
             echo '### Install'
             echo
