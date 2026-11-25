@@ -727,14 +727,21 @@ func htmlEscape(s string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
 }
 
+// eventGlyphPrefix is the polarity mark shared by Telegram and Discord ("🟢 ").
+// Empty when the event has no glyph. Console `emojis` does not apply here.
+func eventGlyphPrefix(event constants.Event) string {
+	emoji, _, ok := constants.EventGlyph(event)
+	if !ok || emoji == "" {
+		return ""
+	}
+	return emoji + " "
+}
+
 // formatTelegram renders a console event as the polarity glyph, a bold title,
 // and a sentence (parse_mode HTML). The glyph is the same one the console and
 // the chart use, and it is sent even when console emojis are turned off.
 func formatTelegram(event constants.Event, message string) string {
-	title := "<b>" + htmlEscape(eventTitle(event)) + "</b>"
-	if emoji, _, ok := constants.EventGlyph(event); ok && emoji != "" {
-		title = emoji + " " + title
-	}
+	title := eventGlyphPrefix(event) + "<b>" + htmlEscape(eventTitle(event)) + "</b>"
 	body := eventSentence(message)
 	if body == "" || strings.EqualFold(body, eventTitle(event)) {
 		return limitRunes(title, telegramTextLimit)
