@@ -11,5 +11,5 @@ const (
 	// URL is the project's home page.
 	URL = "https://github.com/" + Repository
 	// AvatarURL is the picture notifications are sent with.
-	AvatarURL = "https://raw.githubusercontent.com/" + Repository + "/main/assets/gopher.png"
+	AvatarURL = "https://raw.githubusercontent.com/" + Repository + "/main/docs/assets/gopher.png"
 )

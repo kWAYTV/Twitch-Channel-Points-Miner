@@ -191,7 +191,7 @@ sh ci/check.sh build  # every released platform
 Enable the hooks once per clone so they run without being remembered:
 
 ```bash
-git config core.hooksPath .githooks
+git config core.hooksPath ci/hooks
 ```
 
 - `pre-commit` formats and vets the Go files being committed.

@@ -1,4 +1,4 @@
-![Twitch Channel Points Miner](assets/banner.png)
+![Twitch Channel Points Miner](docs/assets/banner.png)
 
 # Twitch Points Miner
 
@@ -68,10 +68,10 @@ Add a Discord webhook or a Telegram bot to `config.json` and choose which events
 
 ```sh
 sh ci/check.sh                        # format, vet, build and test, as CI does
-git config core.hooksPath .githooks   # run it before every push
+git config core.hooksPath ci/hooks   # run it before every push
 ```
 
-The code is organised by domain under `internal/`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout and conventions.
+The code is organised by domain under `internal/`. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the layout and conventions.
 
 ## Credits
 

@@ -1,4 +1,5 @@
-log
-cookies
+# Created when the miner runs from the repository root.
 config.json
-dist/
+cookies/
+log/
+analytics/

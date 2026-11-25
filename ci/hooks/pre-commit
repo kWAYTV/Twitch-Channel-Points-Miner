@@ -1,6 +1,6 @@
 #!/bin/sh
 # Formats and vets the Go files being committed.
-# Enable once per clone: git config core.hooksPath .githooks
+# Enable once per clone: git config core.hooksPath ci/hooks
 set -u
 
 files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go')
