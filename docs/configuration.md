@@ -1,103 +1,93 @@
 # Configuration
 
-`config.json` is created on the first run and filled in with defaults. Only `username` has to be set. The file is written in the order of this page, with a blank line between groups; a key added by a newer version is put in its place, and a file in another layout is rewritten once, keeping every value.
+Every key in `config.json`, in the order the file is written. Only `username` has to be set. The topic pages explain how the settings behave; this page is the reference.
 
-The miner uses `./config.json` if it exists in the current directory, otherwise the directory of the executable. `cookies/`, `log/` and `analytics/` live next to it. Override the locations with `-config`, `-data-dir`, `TCPM_CONFIG` or `TCPM_DATA_DIR`.
+## The file
+
+- It is created on the first run with defaults. [config.example.json](../config.example.json) is that same file.
+- It is written in the groups below, with a blank line between them.
+- A key added by a newer version is filled in with its default, in its place.
+- A file in another layout is rewritten once in this one. Every value is kept.
+- A key the miner does not know is kept, at the end of the file, and ignored.
+
+Where the file is looked for is described in [getting started](getting-started.md#where-files-are-kept).
 
 ## Account
 
 | Key | Default | Meaning |
 |---|---|---|
 | `username` | | Twitch login to mine with. |
-| `password` | `""` | Not needed; login uses Twitch's device flow. |
+| `password` | `""` | Not needed: [login](getting-started.md#logging-in) uses a code, not your password. |
 | `auto_update` | `true` | Replace the binary when a newer release is published. Always off in the Docker image. |
 
 ## Streamers
 
+Explained in [streamers and watching](streamers.md).
+
 | Key | Default | Meaning |
 |---|---|---|
 | `streamers` | `[]` | Channel logins to mine. Empty means everyone you follow. |
-| `streamers_exclude` | `[]` | Logins to skip, useful together with an empty `streamers`. |
+| `streamers_exclude` | `[]` | Logins to skip. |
+| `streamer_overrides` | `{}` | Settings for one streamer, keyed by login. |
 | `watch_priority` | `["STREAK", "DROPS", "ORDER"]` | How the two watch slots are filled. Also `SUBSCRIBED`, `POINTS_ASCENDING`, `POINTS_DESCENDING`. |
 | `game_priority` | `[]` | Games to prefer, in order. |
 | `game_exclude` | `[]` | Games never to watch. |
-| `streamer_overrides` | `{}` | Per-streamer settings, see below. |
 
 ## What to claim
+
+Explained in [streamers and watching](streamers.md#what-is-claimed).
 
 | Key | Default | Meaning |
 |---|---|---|
 | `claim_drops` | `true` | Claim drops from the inventory every 30 minutes. |
 | `claim_drops_startup` | `true` | Also claim once at startup. |
 | `claim_moments` | `true` | Claim Twitch Moments. |
-| `follow_raid` | `true` | Join raids and keep mining the destination. |
+| `follow_raid` | `true` | Join raids. |
 | `community_goals` | `false` | Contribute points to community goals. |
-| `betting(make_predictions)` | `true` | Place predictions. |
 | `chat_presence` | `"ONLINE"` | When to sit in a streamer's chat: `ALWAYS`, `NEVER`, `ONLINE` or `OFFLINE`. |
 | `disable_at_in_nickname` | `false` | Treat a plain username in chat as a mention, without `@`. |
 | `watch_streak_warm_start_cache` | `true` | Remember watch-streak state across restarts. |
 
 ## Predictions
 
-Settings under `bet`:
+Explained in [predictions](predictions.md).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `strategy` | `"SMART"` | How the outcome is chosen. Others include `MOST_VOTED`, `HIGH_ODDS`, `PERCENTAGE` and `SMART_MONEY`. |
-| `percentage` | `5` | Share of the balance to bet. |
-| `percentage_gap` | `20` | Minimum gap between outcomes before betting. |
-| `max_points` | `50000` | Most points placed on one bet. |
-| `minimum_points` | `0` | Do not bet while the balance is below this. |
-| `stealth_mode` | `false` | Keep the stake just under the highest bet. |
-| `deduct_stake_on_place` | `true` | Subtract the stake from the shown balance when the bet is placed. |
-| `delay_mode`, `delay` | `"FROM_END"`, `6` | When to place the bet: seconds from the start or the end of the window. |
-| `filter_condition` | none | Skip a bet unless a live figure meets a rule, for example `{ "by": "TOTAL_USERS", "where": "GTE", "value": 50 }`. `by` is one of `PERCENTAGE_USERS`, `ODDS`, `ODDS_PERCENTAGE`, `TOP_POINTS`, `TOTAL_USERS`, `TOTAL_POINTS`; `where` is `GT`, `LT`, `GTE` or `LTE`. |
-
-## Per-streamer overrides
-
-`streamer_overrides` is keyed by login. Anything left out is inherited from the global settings.
-
-```json
-"streamer_overrides": {
-  "streamer1": {
-    "make_predictions": false
-  },
-  "streamer2": {
-    "claim_drops": false,
-    "watch_streak": true,
-    "bet": { "max_points": 5000, "strategy": "PERCENTAGE" }
-  }
-}
-```
-
-Keys: `make_predictions`, `follow_raid`, `claim_drops`, `claim_moments`, `watch_streak`, `community_goals`, `chat_presence` and `bet`.
+| `betting(make_predictions)` | `true` | Place predictions. |
+| `bet.strategy` | `"SMART"` | How the outcome is chosen: `SMART`, `MOST_VOTED`, `HIGH_ODDS`, `PERCENTAGE`, `SMART_MONEY`, `NUMBER_1` to `NUMBER_8`. |
+| `bet.percentage` | `5` | Percent of the balance to bet. |
+| `bet.percentage_gap` | `20` | For `SMART`: how close the two most-voted outcomes must be to switch to the highest odds. |
+| `bet.max_points` | `50000` | Most points placed on one bet. |
+| `bet.minimum_points` | `0` | Do not bet while the balance is at or below this. |
+| `bet.stealth_mode` | `false` | Keep the stake under the highest bet on the outcome. |
+| `bet.deduct_stake_on_place` | `true` | Subtract the stake from the shown balance when the bet is placed. |
+| `bet.delay_mode` | `"FROM_END"` | What `delay` counts from: `FROM_END`, `FROM_START` or `PERCENTAGE`. |
+| `bet.delay` | `6` | Seconds, or a fraction of the window with `PERCENTAGE`. |
+| `bet.filter_condition` | off | Skip a bet unless a figure meets a rule: `by`, `where`, `value`. |
 
 ## Notifications
 
-```json
-"discord": { "webhook_api": "https://discord.com/api/webhooks/...", "events": [] },
-"telegram": { "chat_id": 123456789, "token": "123456:ABC...", "events": ["STREAMER_ONLINE", "BET_WIN"], "disable_notification": false }
-```
+Explained in [notifications](notifications.md).
 
-- **Discord:** create a webhook in the channel settings and paste its URL.
-- **Telegram:** create a bot with [@BotFather](https://t.me/BotFather), send it a message once, and set `chat_id` to your numeric chat id. `@channelname` works for public channels.
-- An empty `webhook_api`, or an empty `token` or `chat_id`, turns that notifier off.
-- An empty `events` list sends everything except three high-volume events: `GAIN_FOR_WATCH`, `DROP_STATUS` and `BET_FILTERS`. `["*"]` sends those too.
-- A message is a headline and a line of details, told from the account's side: `+10 points on Alice`, then `Watching Valorant · Balance 12.4k points`. Points are always your points on that channel.
-- The first delivery failure is printed once; tokens and webhook URLs are never logged.
-
-Events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_RAID`, `GAIN_FOR_CLAIM`, `GAIN_FOR_WATCH`, `GAIN_FOR_WATCH_STREAK`, `BET_WIN`, `BET_LOSE`, `BET_REFUND`, `BET_FILTERS`, `BET_GENERAL`, `BET_FAILED`, `BET_START`, `BONUS_CLAIM`, `MOMENT_CLAIM`, `JOIN_RAID`, `DROP_CLAIM`, `DROP_STATUS`, `CHAT_MENTION`.
+| Key | Default | Meaning |
+|---|---|---|
+| `discord.webhook_api` | `""` | The webhook URL. Empty turns Discord off. |
+| `discord.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
+| `telegram.token` | `""` | The bot token from @BotFather. |
+| `telegram.chat_id` | `""` | Your numeric chat id, or `@channelname`. |
+| `telegram.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
+| `telegram.disable_notification` | `false` | Deliver silently. |
 
 ## Dashboard
 
-```json
-"analytics": { "enabled": true, "host": "127.0.0.1", "port": 5000 }
-```
+Explained in [dashboard](dashboard.md).
 
-- Set `host` to `0.0.0.0` to reach it from other machines. `TCPM_ANALYTICS_ADDR` (for example `0.0.0.0:8080`) overrides both `host` and `port`.
-- History is stored as JSONL files in `analytics/`; delete a streamer's files to reset their history.
-- The dashboard has no login and shows real streamer names even with `privacy.anonymize_logs`.
-- JSON API: `GET /api/streamers` and `GET /api/streamer/{name}?range=24h|7d|30d|all`.
+| Key | Default | Meaning |
+|---|---|---|
+| `analytics.enabled` | `true` | Record history and serve the web page. |
+| `analytics.host` | `"127.0.0.1"` | Address to listen on. `0.0.0.0` answers on every interface. |
+| `analytics.port` | `5000` | Port to listen on. |
 
 ## Console and logs
 
@@ -109,19 +99,24 @@ Events: `STARTUP`, `SHUTDOWN`, `STREAMER_ONLINE`, `STREAMER_OFFLINE`, `GAIN_FOR_
 | `show_drops_progress` | `false` | Log drop progress at each inventory check. |
 | `watch_queue_logging` | `false` | Explain which streamers got the watch slots and why. |
 | `save_logs` | `false` | Also write the console output to `log/<username>.log`. |
-| `timezone` | auto | IANA name such as `Europe/Madrid`, for systems that cannot detect it. |
+| `timezone` | `null` (detect) | IANA name such as `Europe/Madrid`, for systems that cannot detect it. |
 | `privacy.anonymize_logs` | `false` | Replace streamer names and balances in logs with stand-ins. |
-| `debug`, `debug_deep` | `false` | Request summaries, and full payloads. Deep debug is ignored while logs are anonymised. |
+| `debug` | `false` | Log a summary of each request. |
+| `debug_deep` | `false` | Log full payloads. Ignored while logs are anonymised. |
 | `disable_ssl_cert_verification` | `false` | Skip TLS verification for the PubSub connection only. Leave off. |
 
-`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed; an old config file may still contain them, and they are ignored.
+`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed. An old file may still contain them; they are ignored.
 
 ## Environment variables
+
+These override the file and are mostly useful in containers.
 
 | Variable | Meaning |
 |---|---|
 | `TCPM_CONFIG` | Path of `config.json`. |
 | `TCPM_DATA_DIR` | Folder for `config.json`, `cookies/`, `log/` and `analytics/`. |
-| `TCPM_ANALYTICS_ADDR` | Dashboard listen address, overriding the config. |
+| `TCPM_ANALYTICS_ADDR` | Dashboard listen address, for example `0.0.0.0:8080`. Overrides `analytics.host` and `analytics.port`. |
 | `TCPM_DISABLE_AUTO_UPDATE` | `1` turns the self-updater off whatever the config says. |
 | `TZ` | Time zone for timestamps in a container. |
+
+The command-line flags `-config <file>` and `-data-dir <folder>` take priority over the variables.

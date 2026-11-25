@@ -44,7 +44,7 @@ Folders are named after what the code is about, and each file has one job.
 - Keep files small and single-purpose, and functions short.
 - Put new code in the package that owns its subject; add a package when a subject has none.
 - Write a test with a change in behaviour. Code that talks to Twitch is tested against a local stand-in, never the real service.
-- Document a new option in `docs/configuration.md`.
+- Document a new option in `docs/configuration.md`, and explain it on the topic page it belongs to.
 
 ## Licence
 

@@ -19,8 +19,6 @@ Earns Twitch channel points for you by watching streams in the background. Writt
 
 ## Quick start
 
-### Docker
-
 Download [compose.yaml](compose.yaml) and [config.example.json](config.example.json), then:
 
 ```sh
@@ -30,42 +28,23 @@ docker compose up -d
 docker compose logs -f
 ```
 
-The logs show a code once: open <https://www.twitch.tv/activate> and enter it. The login is saved in `./data`, so later starts need nothing.
+The logs show a code once: open <https://www.twitch.tv/activate> and enter it. The login is saved, so later starts need nothing. The dashboard is at <http://localhost:5000>.
 
-The image supports `linux/amd64` and `linux/arm64` and keeps everything in `./data`. It runs as user 1000; if your user id is different, set `PUID` and `PGID` (see the comments in `compose.yaml`). Update with `docker compose pull && docker compose up -d`.
+To run from source instead (Go 1.23 or newer): `go run ./cmd/twitch-miner`.
 
-### From source
+[Getting started](docs/getting-started.md) has the details: user ids and permissions, running without Compose, where files are kept, updating.
 
-Requires Go 1.23 or newer.
+## Documentation
 
-```sh
-go run ./cmd/twitch-miner
-```
-
-The first run creates `config.json`. Set `username`, run it again and complete the same device login. Press Ctrl+C to stop; a session summary is printed.
-
-## Configuration
-
-`config.json` is created with working defaults, so `username` is the only required change. Leave `streamers` empty to mine everyone you follow.
-
-```json
-{
-  "username": "your-twitch-username",
-  "streamers": ["streamer1", "streamer2"],
-  "claim_drops": true,
-  "betting(make_predictions)": true
-}
-```
-
-Every option is described in [docs/configuration.md](docs/configuration.md).
-
-## Dashboard
-
-Open <http://localhost:5000> for each streamer's balance, a points-over-time chart with the events behind it, and an activity log. It is on by default and listens on `127.0.0.1` (the Docker image listens on all interfaces). It has no login, so do not expose the port to the internet.
-
-## Notifications
-
-Add a Discord webhook or a Telegram bot to `config.json` and choose which events to receive. Each message is a bold headline with the details under it, written from your side: "+10 points on Alice", then "Watching Valorant · Balance 12.4k points". Setup is in [docs/configuration.md](docs/configuration.md#notifications).
+| Page | What it covers |
+|---|---|
+| [Getting started](docs/getting-started.md) | Installing, logging in, where files are kept, updating. |
+| [Configuration](docs/configuration.md) | Every key in `config.json` with its default. |
+| [Streamers and watching](docs/streamers.md) | Who gets mined, the two watch slots, streaks, drops, raids, per-streamer overrides. |
+| [Predictions](docs/predictions.md) | Strategies, stake sizing, timing and filters. |
+| [Notifications](docs/notifications.md) | Discord and Telegram setup, and the events you can choose. |
+| [Dashboard](docs/dashboard.md) | The web page, remote access, stored history, the JSON API. |
+| [Troubleshooting](docs/troubleshooting.md) | Login, permissions, an unreachable dashboard, missing notifications. |
 
 ## Development
 
