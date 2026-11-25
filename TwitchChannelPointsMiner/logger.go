@@ -14,18 +14,18 @@ import (
 )
 
 type LoggerSettings struct {
-	Save             bool `json:"save"`
-	ConsoleLevel     int  `json:"console_level"`
-	FileLevel        int  `json:"file_level"`
-	Emoji            bool `json:"emoji"`
-	Smart            bool `json:"smart"`
-	ShowSeconds      bool `json:"show_seconds"`
-	ConsoleUsername  bool `json:"console_username"`
-	ShowClaimedBonus bool `json:"show_claimed_bonus_msg"`
-	Less             bool `json:"less"`
-	Debug            bool `json:"debug"`
-	DebugDeep        bool `json:"debug_deep"`
-	AnonymizeLogs    bool `json:"anonymize_logs"`
+	Save             bool            `json:"save"`
+	ConsoleLevel     int             `json:"console_level"`
+	FileLevel        int             `json:"file_level"`
+	Emoji            bool            `json:"emoji"`
+	Smart            bool            `json:"smart"`
+	ShowSeconds      bool            `json:"show_seconds"`
+	ConsoleUsername  bool            `json:"console_username"`
+	ShowClaimedBonus bool            `json:"show_claimed_bonus_msg"`
+	Less             bool            `json:"less"`
+	Debug            bool            `json:"debug"`
+	DebugDeep        bool            `json:"debug_deep"`
+	AnonymizeLogs    bool            `json:"anonymize_logs"`
 	Discord          DiscordSettings `json:"discord"`
 }
 
@@ -111,8 +111,8 @@ func (l *Logger) logEvent(level, emoji string, event constants.Event, format str
 		return
 	}
 	message := fmt.Sprintf(format, args...)
-	if emoji != "" && l.settings.Emoji {
-		message = fmt.Sprintf("%s %s", emojize(emoji), message)
+	if glyph := emojiFor(emoji, event); glyph != "" && l.settings.Emoji {
+		message = fmt.Sprintf("%s %s", glyph, message)
 	}
 	if event != "" && l.discord != nil {
 		clean := ansiRegexp.ReplaceAllString(message, "")
@@ -210,4 +210,16 @@ func emojize(code string) string {
 		return val
 	}
 	return code
+}
+
+// emojiFor picks the canonical glyph of a known event. Caller shortcodes
+// (":rocket:", ":partying_face:") are only a fallback for lines with no event.
+func emojiFor(code string, event constants.Event) string {
+	if emoji, _, ok := constants.EventGlyph(event); ok {
+		return emoji
+	}
+	if code == "" {
+		return ""
+	}
+	return emojize(code)
 }

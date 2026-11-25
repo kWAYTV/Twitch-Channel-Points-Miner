@@ -84,4 +84,14 @@ func TestLoggerForwardsEventsToTelegram(t *testing.T) {
 	if got.Get("text") != "Alice is Online!" {
 		t.Fatalf("event should arrive ANSI-stripped, got %q", got.Get("text"))
 	}
+
+	logger = NewLogger(LoggerSettings{Emoji: true}, "")
+	logger.EmojiEventf(":partying_face:", constants.EventStreamerOnline, "%sAlice%s is Online!", colorGreen, colorReset)
+	if got.Get("text") != "🟢 Alice is Online!" {
+		t.Fatalf("event emoji should replace the caller shortcode, got %q", got.Get("text"))
+	}
+	logger.EmojiEventf(":bar_chart:", constants.EventBetLose, "Result: %sLOSE%s", colorRed, colorReset)
+	if got.Get("text") != "📉 Result: LOSE" {
+		t.Fatalf("loss should stay negative after color strip, got %q", got.Get("text"))
+	}
 }
