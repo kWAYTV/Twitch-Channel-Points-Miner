@@ -1,8 +1,13 @@
 package notify
 
 import (
+	"regexp"
 	"strings"
 )
+
+var reChoiceLead = regexp.MustCompile(`^(?:[A-Z]|#\d+):\s*(.+)$`)
+
+var reColorTail = regexp.MustCompile(`\s+\([A-Z]+\)$`)
 
 // describeBetResult covers "EventPrediction: bob - title - Decision: Yes - Result: WIN, Gained: +500".
 func describeBetResult(head string) (Message, bool) {
@@ -153,4 +158,16 @@ func skipReason(reason string) string {
 	default:
 		return strings.ToUpper(reason[:1]) + reason[1:]
 	}
+}
+
+func shortOutcome(s string) string {
+	s = strings.TrimSpace(s)
+	if i := indexFold(s, ", points:"); i >= 0 {
+		s = strings.TrimSpace(s[:i])
+	}
+	if m := reChoiceLead.FindStringSubmatch(s); m != nil {
+		s = strings.TrimSpace(m[1])
+	}
+	s = reColorTail.ReplaceAllString(s, "")
+	return strings.TrimSpace(s)
 }

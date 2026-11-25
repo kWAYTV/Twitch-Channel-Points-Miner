@@ -127,3 +127,23 @@ func formatTelegram(event events.Event, message Message) string {
 	}
 	return text + "\n" + limitEscaped(details, budget)
 }
+
+func htmlEscape(s string) string {
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
+}
+
+// limitEscaped truncates an HTML-escaped string without splitting an entity.
+func limitEscaped(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	if n < 1 {
+		return ""
+	}
+	cut := string(r[:n-1])
+	if i := strings.LastIndex(cut, "&"); i >= 0 && !strings.Contains(cut[i:], ";") {
+		cut = cut[:i]
+	}
+	return strings.TrimSpace(cut) + "…"
+}

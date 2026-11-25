@@ -84,54 +84,6 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	m.shutdown(sessionID)
 }
 
-func (m *Miner) contextRefresher(streamers []*domain.Streamer, stop <-chan struct{}) {
-	ticker := time.NewTicker(20 * time.Minute)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			forEachIndex(len(streamers), streamerConcurrency, func(i int) {
-				s := streamers[i]
-				prev := s.ChannelPoints
-				if _, err := m.loadChannelPointsContextWithIdentityRepair(s); err != nil {
-					m.logger.Printf("refresh %s: %v", m.styledStreamerName(s), err)
-				} else {
-					m.handlePointsUpdate(s, prev, "")
-				}
-			})
-		case <-stop:
-			return
-		}
-	}
-}
-
-func (m *Miner) sleepWithStop(duration time.Duration, stop <-chan struct{}) bool {
-	if duration <= 0 {
-		return false
-	}
-	const chunks = 3
-	step := duration / chunks
-	if step <= 0 {
-		step = duration
-	}
-	elapsed := time.Duration(0)
-	for elapsed < duration {
-		remaining := duration - elapsed
-		if remaining < step {
-			step = remaining
-		}
-		timer := time.NewTimer(step)
-		select {
-		case <-stop:
-			timer.Stop()
-			return true
-		case <-timer.C:
-		}
-		elapsed += step
-	}
-	return false
-}
-
 func (m *Miner) startPubSub(streamers []*domain.Streamer, stop <-chan struct{}) {
 	client := pubsub.NewClient(
 		m.twitch,
@@ -205,13 +157,6 @@ func (m *Miner) shutdown(sessionID string) {
 	}
 	m.chat.LeaveAll()
 	os.Exit(0)
-}
-
-func formatLoadDuration(d time.Duration) string {
-	if d >= time.Minute {
-		return fmt.Sprintf("%.1f minutes", d.Minutes())
-	}
-	return fmt.Sprintf("%.1f seconds", d.Seconds())
 }
 
 // newSessionID creates a UUID-like string for session logging.

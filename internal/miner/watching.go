@@ -2,7 +2,6 @@ package miner
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -128,37 +127,6 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 	}
 }
 
-func (m *Miner) refreshStreamForPreference(streamer *domain.Streamer) {
-	if streamer == nil || !streamer.IsOnline || m.twitch == nil {
-		return
-	}
-	if streamer.Stream != nil {
-		if strings.TrimSpace(streamer.Stream.GameName()) != "" && !streamer.Stream.UpdateRequired() {
-			return
-		}
-	}
-	prevBroadcastID := ""
-	prevCreatedAt := time.Time{}
-	prevWatchStreakMissing := true
-	if streamer.Stream != nil {
-		prevBroadcastID = streamer.Stream.BroadcastID
-		prevCreatedAt = streamer.Stream.CreatedAt
-		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
-	}
-	if err := m.updateStreamWithIdentityRepair(streamer); err != nil {
-		if errors.Is(err, twitch.ErrStreamerOffline) {
-			m.setPresence(streamer, false, "stream-info")
-		} else {
-			m.logger.Debugf("stream info %s: %v", m.styledStreamerName(streamer), err)
-		}
-		return
-	}
-	m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
-	if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
-		m.syncWarmStartCacheFromStreamer(streamer)
-	}
-}
-
 func (m *Miner) watchInterval(count int) time.Duration {
 	if count <= 0 {
 		return 20 * time.Second
@@ -168,4 +136,31 @@ func (m *Miner) watchInterval(count int) time.Duration {
 		return 5 * time.Second
 	}
 	return interval
+}
+
+func (m *Miner) sleepWithStop(duration time.Duration, stop <-chan struct{}) bool {
+	if duration <= 0 {
+		return false
+	}
+	const chunks = 3
+	step := duration / chunks
+	if step <= 0 {
+		step = duration
+	}
+	elapsed := time.Duration(0)
+	for elapsed < duration {
+		remaining := duration - elapsed
+		if remaining < step {
+			step = remaining
+		}
+		timer := time.NewTimer(step)
+		select {
+		case <-stop:
+			timer.Stop()
+			return true
+		case <-timer.C:
+		}
+		elapsed += step
+	}
+	return false
 }

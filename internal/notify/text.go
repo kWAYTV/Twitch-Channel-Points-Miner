@@ -84,39 +84,3 @@ func limitRunes(s string, n int) string {
 	}
 	return strings.TrimSpace(string(r[:n-1])) + "…"
 }
-
-func htmlEscape(s string) string {
-	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
-}
-
-// limitEscaped truncates an HTML-escaped string without splitting an entity.
-func limitEscaped(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	if n < 1 {
-		return ""
-	}
-	cut := string(r[:n-1])
-	if i := strings.LastIndex(cut, "&"); i >= 0 && !strings.Contains(cut[i:], ";") {
-		cut = cut[:i]
-	}
-	return strings.TrimSpace(cut) + "…"
-}
-
-// markdownEscaper neutralises Discord's formatting characters, so a streamer
-// called d0cc_tv or a chat message with asterisks is shown as written.
-var markdownEscaper = strings.NewReplacer(
-	`\`, `\\`,
-	`*`, `\*`,
-	`_`, `\_`,
-	`~`, `\~`,
-	"`", "\\`",
-	`|`, `\|`,
-	`>`, `\>`,
-)
-
-func escapeMarkdown(s string) string {
-	return markdownEscaper.Replace(s)
-}

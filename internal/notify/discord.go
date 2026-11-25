@@ -14,6 +14,18 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
+// markdownEscaper neutralises Discord's formatting characters, so a streamer
+// called d0cc_tv or a chat message with asterisks is shown as written.
+var markdownEscaper = strings.NewReplacer(
+	`\`, `\\`,
+	`*`, `\*`,
+	`_`, `\_`,
+	`~`, `\~`,
+	"`", "\\`",
+	`|`, `\|`,
+	`>`, `\>`,
+)
+
 type DiscordSettings struct {
 	WebhookAPI string   `json:"webhook_api"`
 	Events     []string `json:"events"`
@@ -111,4 +123,8 @@ func (d *DiscordWebhook) warn(reason string) {
 	d.warnOnce.Do(func() {
 		log.Printf("discord: notification not delivered: %s (further failures are not logged)", reason)
 	})
+}
+
+func escapeMarkdown(s string) string {
+	return markdownEscaper.Replace(s)
 }

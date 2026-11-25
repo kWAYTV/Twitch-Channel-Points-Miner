@@ -4,13 +4,6 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
-const (
-	// headlineLimit keeps a headline within what Discord accepts as an embed title.
-	headlineLimit = 256
-	// detailSeparator joins the details of a message on one line.
-	detailSeparator = " · "
-)
-
 // eventTitle names an event for a message that has no headline of its own.
 func eventTitle(event events.Event) string {
 	switch event {

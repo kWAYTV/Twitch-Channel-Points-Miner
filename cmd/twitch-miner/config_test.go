@@ -43,7 +43,7 @@ func TestLoadOrCreateConfigCreatesFileAndDefaults(t *testing.T) {
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("config file should be created: %v", err)
 	}
-	if cfg.WatchPriority == nil || len(cfg.WatchPriority) == 0 {
+	if len(cfg.WatchPriority) == 0 {
 		t.Fatalf("watch priority should have defaults: %#v", cfg)
 	}
 }

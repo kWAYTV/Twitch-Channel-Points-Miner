@@ -24,24 +24,3 @@ func describeMention(head string) (Message, bool) {
 	}
 	return newMessage(nick+" mentioned you in #"+channel, `"`+wrote+`"`), true
 }
-
-// describeRaid covers "Joining raid from Alice to Bob".
-func describeRaid(head string) (Message, bool) {
-	from, to, ok := splitOnceFold(head, "joining raid from ", " to ")
-	if !ok {
-		return Message{}, false
-	}
-	return newMessage("Joined the raid from " + from + " to " + to), true
-}
-
-// describeMoment covers "Alice Claimed Moment".
-func describeMoment(head string) (Message, bool) {
-	name, ok := cutSuffixFold(head, " claimed moment")
-	if !ok {
-		return Message{}, false
-	}
-	if name = strings.TrimSpace(name); name == "" {
-		return newMessage("Claimed a moment"), true
-	}
-	return newMessage("Claimed a moment on " + name), true
-}

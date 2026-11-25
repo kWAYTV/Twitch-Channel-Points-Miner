@@ -1,8 +1,11 @@
 package notify
 
 import (
+	"regexp"
 	"strings"
 )
+
+var reDropBar = regexp.MustCompile(`(?i)^DROP_PROGRESS\s+\[[#\-]*\]\s*(\d+%)\s*(?:\|\s*(.*))?$`)
 
 // describeDropClaim covers "Claim Cool Hat (Summer Drops) 60/60 (100%)".
 func describeDropClaim(head string) (Message, bool) {

@@ -114,3 +114,10 @@ func (m *Miner) loadSummary(streamers []*domain.Streamer, took time.Duration) st
 	}
 	return summary + fmt.Sprintf(", %d offline", len(streamers)-len(online))
 }
+
+func formatLoadDuration(d time.Duration) string {
+	if d >= time.Minute {
+		return fmt.Sprintf("%.1f minutes", d.Minutes())
+	}
+	return fmt.Sprintf("%.1f seconds", d.Seconds())
+}

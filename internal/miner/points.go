@@ -151,3 +151,24 @@ func (m *Miner) updateHistory(streamer *domain.Streamer, reason string, amount i
 	}
 	m.syncActiveStreakWatch(streamer, time.Now())
 }
+
+func (m *Miner) contextRefresher(streamers []*domain.Streamer, stop <-chan struct{}) {
+	ticker := time.NewTicker(20 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			forEachIndex(len(streamers), streamerConcurrency, func(i int) {
+				s := streamers[i]
+				prev := s.ChannelPoints
+				if _, err := m.loadChannelPointsContextWithIdentityRepair(s); err != nil {
+					m.logger.Printf("refresh %s: %v", m.styledStreamerName(s), err)
+				} else {
+					m.handlePointsUpdate(s, prev, "")
+				}
+			})
+		case <-stop:
+			return
+		}
+	}
+}

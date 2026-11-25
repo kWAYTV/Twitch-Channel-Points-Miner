@@ -1,8 +1,6 @@
 package miner
 
 import (
-	"fmt"
-	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -158,15 +156,6 @@ func positions(names []string) map[string]int {
 		index[name] = i
 	}
 	return index
-}
-
-// warmStartCachePathFor is where an account's watch-streak state is kept between runs.
-func warmStartCachePathFor(username string) string {
-	safeUsername := logging.SanitizeFilename(strings.ToLower(strings.TrimSpace(username)))
-	if safeUsername == "" {
-		return ""
-	}
-	return filepath.Join("log", fmt.Sprintf("watch_streak_cache.%s.json", safeUsername))
 }
 
 // chatToken is empty until the miner has logged in.

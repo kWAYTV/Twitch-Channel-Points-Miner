@@ -1,9 +1,13 @@
 package miner
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 )
 
@@ -47,4 +51,13 @@ func (m *Miner) applyWarmStartCache(streamer *domain.Streamer) bool {
 	}
 	streamer.Stream.WatchStreakMissing = entry.WatchStreakMissing
 	return true
+}
+
+// warmStartCachePathFor is where an account's watch-streak state is kept between runs.
+func warmStartCachePathFor(username string) string {
+	safeUsername := logging.SanitizeFilename(strings.ToLower(strings.TrimSpace(username)))
+	if safeUsername == "" {
+		return ""
+	}
+	return filepath.Join("log", fmt.Sprintf("watch_streak_cache.%s.json", safeUsername))
 }

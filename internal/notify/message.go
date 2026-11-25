@@ -1,7 +1,6 @@
 package notify
 
 import (
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -9,10 +8,11 @@ import (
 // sentenceLimit caps a message written out as sentences. The console line stays complete.
 const sentenceLimit = 500
 
-var (
-	reDropBar    = regexp.MustCompile(`(?i)^DROP_PROGRESS\s+\[[#\-]*\]\s*(\d+%)\s*(?:\|\s*(.*))?$`)
-	reChoiceLead = regexp.MustCompile(`^(?:[A-Z]|#\d+):\s*(.+)$`)
-	reColorTail  = regexp.MustCompile(`\s+\([A-Z]+\)$`)
+const (
+	// headlineLimit keeps a headline within what Discord accepts as an embed title.
+	headlineLimit = 256
+	// detailSeparator joins the details of a message on one line.
+	detailSeparator = " · "
 )
 
 // Message is one event told from the account's side: a headline that stands on
@@ -159,16 +159,4 @@ func balance(points string) string {
 		return ""
 	}
 	return "Balance " + points
-}
-
-func shortOutcome(s string) string {
-	s = strings.TrimSpace(s)
-	if i := indexFold(s, ", points:"); i >= 0 {
-		s = strings.TrimSpace(s[:i])
-	}
-	if m := reChoiceLead.FindStringSubmatch(s); m != nil {
-		s = strings.TrimSpace(m[1])
-	}
-	s = reColorTail.ReplaceAllString(s, "")
-	return strings.TrimSpace(s)
 }

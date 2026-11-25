@@ -1,11 +1,13 @@
 package miner
 
 import (
+	"errors"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 // watchCandidate is one online streamer that may be watched this round.
@@ -101,4 +103,35 @@ func sortWatchCandidates(list []watchCandidate, less func(a, b watchCandidate) b
 		return a.position < b.position
 	})
 	return out
+}
+
+func (m *Miner) refreshStreamForPreference(streamer *domain.Streamer) {
+	if streamer == nil || !streamer.IsOnline || m.twitch == nil {
+		return
+	}
+	if streamer.Stream != nil {
+		if strings.TrimSpace(streamer.Stream.GameName()) != "" && !streamer.Stream.UpdateRequired() {
+			return
+		}
+	}
+	prevBroadcastID := ""
+	prevCreatedAt := time.Time{}
+	prevWatchStreakMissing := true
+	if streamer.Stream != nil {
+		prevBroadcastID = streamer.Stream.BroadcastID
+		prevCreatedAt = streamer.Stream.CreatedAt
+		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
+	}
+	if err := m.updateStreamWithIdentityRepair(streamer); err != nil {
+		if errors.Is(err, twitch.ErrStreamerOffline) {
+			m.setPresence(streamer, false, "stream-info")
+		} else {
+			m.logger.Debugf("stream info %s: %v", m.styledStreamerName(streamer), err)
+		}
+		return
+	}
+	m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
+	if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
+		m.syncWarmStartCacheFromStreamer(streamer)
+	}
 }
