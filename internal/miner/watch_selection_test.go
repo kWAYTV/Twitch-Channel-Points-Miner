@@ -72,7 +72,7 @@ func TestMiner_pickByPriority(t *testing.T) {
 		assertPicked(t, got, "alice", "bob")
 	})
 
-	t.Run("ORDER with the first two on one game", func(t *testing.T) {
+	t.Run("ORDER with the first two on one game: list order wins", func(t *testing.T) {
 		h := setup(t, Options{WatchPriority: []string{"ORDER"}})
 		alice := freshStreamer("alice", "1", "Poker")
 		bob := freshStreamer("bob", "2", "Poker")
@@ -80,7 +80,7 @@ func TestMiner_pickByPriority(t *testing.T) {
 
 		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-		assertPicked(t, got, "alice", "carol")
+		assertPicked(t, got, "alice", "bob")
 	})
 
 	t.Run("STREAK", func(t *testing.T) {
@@ -105,31 +105,87 @@ func TestMiner_pickByPriority(t *testing.T) {
 		assertPicked(t, got, "alice", "bob")
 	})
 
-	t.Run("DROPS", func(t *testing.T) {
+	t.Run("DROPS with two streams that carry drops", func(t *testing.T) {
 		h := setup(t, Options{WatchPriority: []string{"DROPS"}})
 		alice := freshStreamer("alice", "1", "Poker")
+		bob := dropsStreamer("bob", "2", "Chess")
+		carol := dropsStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		// One slot for drops, the other back to the top of the list.
+		assertPicked(t, got, "bob", "alice")
+	})
+
+	t.Run("DROPS with drop claims on but no drops on the stream", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
 		bob := freshStreamer("bob", "2", "Chess")
-		bob.Settings.ClaimDrops = true
 		carol := freshStreamer("carol", "3", "Go")
 		carol.Settings.ClaimDrops = true
 
 		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-		assertPicked(t, got, "bob", "carol")
+		assertPicked(t, got, "alice", "bob")
 	})
 
-	t.Run("DROPS with a priority game further down the list", func(t *testing.T) {
-		h := setup(t, Options{WatchPriority: []string{"DROPS"}, GamePriority: []string{"go"}})
+	t.Run("DROPS with drops on the stream but drop claims off", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}})
 		alice := freshStreamer("alice", "1", "Poker")
-		alice.Settings.ClaimDrops = true
 		bob := freshStreamer("bob", "2", "Chess")
-		bob.Settings.ClaimDrops = true
+		carol := dropsStreamer("carol", "3", "Go")
+		carol.Settings.ClaimDrops = false
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("DROPS with drops known by campaign only", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
 		carol := freshStreamer("carol", "3", "Go")
 		carol.Settings.ClaimDrops = true
+		carol.Stream.CampaignIDs = []string{"campaign-1"}
 
 		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
 		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("DROPS with drops on a priority game further down the list", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}, GamePriority: []string{"go", "chess"}})
+		alice := dropsStreamer("alice", "1", "Poker")
+		bob := dropsStreamer("bob", "2", "Chess")
+		carol := dropsStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		// Go is first in game_priority, so its drops win the drops slot.
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("DROPS with drops only on a game outside game_priority", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}, GamePriority: []string{"go"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := dropsStreamer("carol", "3", "Wardogs")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("DROPS when a drops stream already holds a slot", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"ORDER", "DROPS"}})
+		alice := dropsStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := dropsStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
 	})
 
 	t.Run("SUBSCRIBED", func(t *testing.T) {

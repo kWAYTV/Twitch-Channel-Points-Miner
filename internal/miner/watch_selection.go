@@ -33,7 +33,7 @@ func (m *Miner) pickStreamersToWatch(streamers []*domain.Streamer) []*domain.Str
 		slots.preferPriorityGameFirst()
 	}
 	if !slots.full() {
-		slots.pick(candidates, true, nil, "FALLBACK", false)
+		slots.pick(candidates, true, nil, "FALLBACK")
 	}
 
 	watchList := make([]*domain.Streamer, 0, len(slots.picked))
@@ -70,7 +70,29 @@ func (m *Miner) keepActiveStreaks(slots *watchSlots, streamers []*domain.Streame
 		}
 		activeStreaks = append(activeStreaks, c)
 	}
-	slots.pick(activeStreaks, false, nil, "ACTIVE_STREAK", true)
+	slots.pick(activeStreaks, false, nil, "ACTIVE_STREAK")
+}
+
+// dropsCandidates lists the streamers worth watching for drops: the stream
+// carries drops and drop claims are on for the streamer. With a game priority
+// list, only streams of those games count, so a drop of a game nobody asked
+// for never takes a slot.
+func (m *Miner) dropsCandidates(candidates []watchCandidate, streamers []*domain.Streamer) []watchCandidate {
+	drops := make([]watchCandidate, 0, len(candidates))
+	for _, c := range candidates {
+		s := streamers[c.idx]
+		if s == nil || s.Stream == nil || !s.Settings.ClaimDrops {
+			continue
+		}
+		if !s.Stream.DropsTags && len(s.Stream.CampaignIDs) == 0 {
+			continue
+		}
+		if len(m.gamePriority) > 0 && !c.priorityGame {
+			continue
+		}
+		drops = append(drops, c)
+	}
+	return drops
 }
 
 // pickByPriority fills free slots with the candidates one watch priority asks for.
@@ -78,7 +100,7 @@ func (m *Miner) pickByPriority(slots *watchSlots, priority watchPriority, stream
 	candidates := slots.candidates
 	switch priority {
 	case watchPriorityOrder:
-		slots.pick(candidates, false, nil, "ORDER", false)
+		slots.pick(candidates, false, nil, "ORDER")
 	case watchPriorityStreak:
 		streaks := make([]watchCandidate, 0, len(candidates))
 		for _, c := range candidates {
@@ -86,19 +108,14 @@ func (m *Miner) pickByPriority(slots *watchSlots, priority watchPriority, stream
 				streaks = append(streaks, c)
 			}
 		}
-		slots.pick(streaks, true, nil, "STREAK", true)
+		slots.pick(streaks, true, nil, "STREAK")
 	case watchPriorityDrops:
-		drops := make([]watchCandidate, 0, len(candidates))
-		for _, c := range candidates {
-			s := streamers[c.idx]
-			if s == nil || s.Stream == nil {
-				continue
-			}
-			if s.Settings.ClaimDrops {
-				drops = append(drops, c)
-			}
+		drops := m.dropsCandidates(candidates, streamers)
+		// Twitch counts drop progress on one channel at a time, so one slot
+		// goes to drops and the other stays free to earn elsewhere.
+		if len(drops) > 0 && !slots.holdsAnyOf(drops) {
+			slots.add(sortWatchCandidates(drops, nil, true)[0], "DROPS")
 		}
-		slots.pick(drops, true, nil, "DROPS", false)
 	case watchPrioritySubscribed:
 		subscribed := make([]watchCandidate, 0, len(candidates))
 		for _, c := range candidates {
@@ -112,15 +129,15 @@ func (m *Miner) pickByPriority(slots *watchSlots, priority watchPriority, stream
 		}
 		slots.pick(subscribed, true, func(a, b watchCandidate) bool {
 			return streamers[a.idx].TotalMultiplier() > streamers[b.idx].TotalMultiplier()
-		}, "SUBSCRIBED", false)
+		}, "SUBSCRIBED")
 	case watchPriorityPointsAscending:
 		slots.pick(candidates, true, func(a, b watchCandidate) bool {
 			return streamers[a.idx].ChannelPoints < streamers[b.idx].ChannelPoints
-		}, "POINTS_ASC", false)
+		}, "POINTS_ASC")
 	case watchPriorityPointsDescending:
 		slots.pick(candidates, true, func(a, b watchCandidate) bool {
 			return streamers[a.idx].ChannelPoints > streamers[b.idx].ChannelPoints
-		}, "POINTS_DESC", false)
+		}, "POINTS_DESC")
 	}
 }
 

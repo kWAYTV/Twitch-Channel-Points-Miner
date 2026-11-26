@@ -95,6 +95,15 @@ func (h *harness) live(login, channelID, game string) *domain.Streamer {
 	return streamer
 }
 
+// dropsStreamer is a freshStreamer whose stream carries drops, with drop
+// claims on.
+func dropsStreamer(login, channelID, game string) *domain.Streamer {
+	streamer := freshStreamer(login, channelID, game)
+	streamer.Settings.ClaimDrops = true
+	streamer.Stream.DropsTags = true
+	return streamer
+}
+
 // freshStreamer is an online streamer whose stream was refreshed a moment ago,
 // so the miner has no reason to ask Twitch about it.
 func freshStreamer(login, channelID, game string) *domain.Streamer {

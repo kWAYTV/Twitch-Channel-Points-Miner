@@ -7,7 +7,6 @@ type watchSlots struct {
 	byIdx      map[int]watchCandidate
 	picked     []int
 	seen       map[int]struct{}
-	games      map[string]struct{}
 	reasons    map[int]string
 }
 
@@ -21,7 +20,6 @@ func newWatchSlots(candidates []watchCandidate) *watchSlots {
 		byIdx:      byIdx,
 		picked:     make([]int, 0, maxConcurrentWatchers),
 		seen:       make(map[int]struct{}),
-		games:      make(map[string]struct{}),
 		reasons:    make(map[int]string),
 	}
 }
@@ -30,42 +28,30 @@ func (w *watchSlots) full() bool {
 	return len(w.picked) >= maxConcurrentWatchers
 }
 
-// add gives c a slot. Unless forced, a second streamer of an already picked game
-// is skipped while a streamer of another game is still available.
-func (w *watchSlots) add(c watchCandidate, reason string, force bool) {
+// add gives c a slot, unless the slots are full or c already has one.
+func (w *watchSlots) add(c watchCandidate, reason string) {
 	if w.full() {
 		return
 	}
 	if _, ok := w.seen[c.idx]; ok {
 		return
 	}
-	game := c.game
-	if !force && game != "" {
-		if _, ok := w.games[game]; ok {
-			otherAvailable := false
-			for _, alt := range w.candidates {
-				if _, picked := w.seen[alt.idx]; picked {
-					continue
-				}
-				if alt.game != "" && alt.game != game {
-					otherAvailable = true
-					break
-				}
-			}
-			if otherAvailable {
-				return
-			}
+	w.take(c, reason)
+}
+
+// holdsAnyOf reports whether one of the list already has a slot.
+func (w *watchSlots) holdsAnyOf(list []watchCandidate) bool {
+	for _, c := range list {
+		if _, ok := w.seen[c.idx]; ok {
+			return true
 		}
 	}
-	w.take(c, reason)
+	return false
 }
 
 // take records c as picked without any checks.
 func (w *watchSlots) take(c watchCandidate, reason string) {
 	w.seen[c.idx] = struct{}{}
-	if c.game != "" {
-		w.games[c.game] = struct{}{}
-	}
 	w.picked = append(w.picked, c.idx)
 	if reason != "" {
 		w.reasons[c.idx] = reason
@@ -73,9 +59,9 @@ func (w *watchSlots) take(c watchCandidate, reason string) {
 }
 
 // pick adds candidates from list in sorted order until the slots are full.
-func (w *watchSlots) pick(list []watchCandidate, includeGameRank bool, less func(a, b watchCandidate) bool, reason string, force bool) {
+func (w *watchSlots) pick(list []watchCandidate, includeGameRank bool, less func(a, b watchCandidate) bool, reason string) {
 	for _, c := range sortWatchCandidates(list, less, includeGameRank) {
-		w.add(c, reason, force)
+		w.add(c, reason)
 		if w.full() {
 			break
 		}
@@ -107,15 +93,14 @@ func (w *watchSlots) ensureStreak(streakReady []watchCandidate) {
 	}
 	const reason = "FORCE_STREAK_SLOT2"
 	if !w.full() {
-		w.add(streakPick, reason, true)
+		w.add(streakPick, reason)
 		return
 	}
 	keepIdx := w.picked[0]
 	w.picked = w.picked[:0]
 	w.seen = make(map[int]struct{})
-	w.games = make(map[string]struct{})
 	if keep, ok := w.byIdx[keepIdx]; ok {
-		w.add(keep, w.reasons[keepIdx], false)
+		w.add(keep, w.reasons[keepIdx])
 	}
 	if !w.full() {
 		if _, ok := w.seen[streakPick.idx]; !ok {

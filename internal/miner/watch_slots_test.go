@@ -56,7 +56,7 @@ func TestWatchSlots_add(t *testing.T) {
 	t.Run("a first candidate", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{chess, poker})
 
-		slots.add(chess, "ORDER", false)
+		slots.add(chess, "ORDER")
 
 		assertSlots(t, slots, []int{0}, map[int]string{0: "ORDER"})
 	})
@@ -64,63 +64,45 @@ func TestWatchSlots_add(t *testing.T) {
 	t.Run("a candidate without a reason", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{chess, poker})
 
-		slots.add(chess, "", false)
+		slots.add(chess, "")
 
 		assertSlots(t, slots, []int{0}, map[int]string{})
 	})
 
 	t.Run("a candidate already picked", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{chess, poker})
-		slots.add(chess, "ORDER", false)
+		slots.add(chess, "ORDER")
 
-		slots.add(chess, "DROPS", false)
+		slots.add(chess, "DROPS")
 
 		assertSlots(t, slots, []int{0}, map[int]string{0: "ORDER"})
 	})
 
 	t.Run("a third candidate", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{chess, poker, noGame})
-		slots.add(chess, "ORDER", false)
-		slots.add(poker, "ORDER", false)
+		slots.add(chess, "ORDER")
+		slots.add(poker, "ORDER")
 
-		slots.add(noGame, "DROPS", true)
+		slots.add(noGame, "DROPS")
 
 		assertSlots(t, slots, []int{0, 2}, map[int]string{0: "ORDER", 2: "ORDER"})
 	})
 
 	t.Run("a picked game again while another game waits", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{chess, chessToo, poker})
-		slots.add(chess, "ORDER", false)
+		slots.add(chess, "ORDER")
 
-		slots.add(chessToo, "ORDER", false)
-
-		assertSlots(t, slots, []int{0}, map[int]string{0: "ORDER"})
-	})
-
-	t.Run("a picked game again while no other game waits", func(t *testing.T) {
-		slots := newWatchSlots([]watchCandidate{chess, chessToo, noGame})
-		slots.add(chess, "ORDER", false)
-
-		slots.add(chessToo, "ORDER", false)
+		slots.add(chessToo, "ORDER")
 
 		assertSlots(t, slots, []int{0, 1}, map[int]string{0: "ORDER", 1: "ORDER"})
-	})
-
-	t.Run("a picked game again, forced", func(t *testing.T) {
-		slots := newWatchSlots([]watchCandidate{chess, chessToo, poker})
-		slots.add(chess, "ORDER", false)
-
-		slots.add(chessToo, "STREAK", true)
-
-		assertSlots(t, slots, []int{0, 1}, map[int]string{0: "ORDER", 1: "STREAK"})
 	})
 
 	t.Run("a candidate with no game after one with no game", func(t *testing.T) {
 		alsoNoGame := watchCandidate{idx: 4, position: 4}
 		slots := newWatchSlots([]watchCandidate{noGame, alsoNoGame, poker})
-		slots.add(noGame, "ORDER", false)
+		slots.add(noGame, "ORDER")
 
-		slots.add(alsoNoGame, "ORDER", false)
+		slots.add(alsoNoGame, "ORDER")
 
 		assertSlots(t, slots, []int{3, 4}, map[int]string{3: "ORDER", 4: "ORDER"})
 	})
@@ -157,7 +139,7 @@ func TestWatchSlots_pick(t *testing.T) {
 	t.Run("an empty list", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{first, second, third})
 
-		slots.pick(nil, true, nil, "ORDER", false)
+		slots.pick(nil, true, nil, "ORDER")
 
 		assertSlots(t, slots, []int{}, map[int]string{})
 	})
@@ -165,7 +147,7 @@ func TestWatchSlots_pick(t *testing.T) {
 	t.Run("in list order", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{first, second, third})
 
-		slots.pick([]watchCandidate{third, second, first}, false, nil, "ORDER", false)
+		slots.pick([]watchCandidate{third, second, first}, false, nil, "ORDER")
 
 		assertSlots(t, slots, []int{0, 1}, map[int]string{0: "ORDER", 1: "ORDER"})
 	})
@@ -173,7 +155,7 @@ func TestWatchSlots_pick(t *testing.T) {
 	t.Run("by game rank", func(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{first, second, third})
 
-		slots.pick([]watchCandidate{first, second, third}, true, nil, "DROPS", false)
+		slots.pick([]watchCandidate{first, second, third}, true, nil, "DROPS")
 
 		assertSlots(t, slots, []int{2, 1}, map[int]string{2: "DROPS", 1: "DROPS"})
 	})
@@ -182,7 +164,7 @@ func TestWatchSlots_pick(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{first, second, third})
 		highestIdxFirst := func(a, b watchCandidate) bool { return a.idx > b.idx }
 
-		slots.pick([]watchCandidate{first, second}, true, highestIdxFirst, "POINTS_DESC", false)
+		slots.pick([]watchCandidate{first, second}, true, highestIdxFirst, "POINTS_DESC")
 
 		assertSlots(t, slots, []int{1, 0}, map[int]string{1: "POINTS_DESC", 0: "POINTS_DESC"})
 	})
@@ -191,7 +173,7 @@ func TestWatchSlots_pick(t *testing.T) {
 		slots := newWatchSlots([]watchCandidate{first, second, third})
 		slots.take(third, "STREAK")
 
-		slots.pick([]watchCandidate{first, second}, false, nil, "ORDER", false)
+		slots.pick([]watchCandidate{first, second}, false, nil, "ORDER")
 
 		assertSlots(t, slots, []int{2, 0}, map[int]string{2: "STREAK", 0: "ORDER"})
 	})
@@ -200,18 +182,9 @@ func TestWatchSlots_pick(t *testing.T) {
 		chessToo := watchCandidate{idx: 3, position: 3, game: "chess"}
 		slots := newWatchSlots([]watchCandidate{first, chessToo, second})
 
-		slots.pick([]watchCandidate{first, chessToo}, false, nil, "DROPS", false)
+		slots.pick([]watchCandidate{first, chessToo}, false, nil, "ORDER")
 
-		assertSlots(t, slots, []int{0}, map[int]string{0: "DROPS"})
-	})
-
-	t.Run("two of one game, forced", func(t *testing.T) {
-		chessToo := watchCandidate{idx: 3, position: 3, game: "chess"}
-		slots := newWatchSlots([]watchCandidate{first, chessToo, second})
-
-		slots.pick([]watchCandidate{first, chessToo}, false, nil, "STREAK", true)
-
-		assertSlots(t, slots, []int{0, 3}, map[int]string{0: "STREAK", 3: "STREAK"})
+		assertSlots(t, slots, []int{0, 3}, map[int]string{0: "ORDER", 3: "ORDER"})
 	})
 }
 

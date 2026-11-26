@@ -25,13 +25,15 @@ Twitch credits watch time on at most two streams at once, so the miner watches u
 | Value | Prefers |
 |---|---|
 | `STREAK` | Streamers whose watch streak for the current stream has not been earned yet. |
-| `DROPS` | Streamers with a drop campaign you can make progress on. |
-| `ORDER` | The order of your `streamers` list. |
+| `DROPS` | One streamer whose stream carries drops. See [Drops](#drops). |
+| `ORDER` | The order of your `streamers` list: the higher a streamer is, the sooner they get a slot. |
 | `SUBSCRIBED` | Channels where you have a points multiplier. |
 | `POINTS_ASCENDING` | The lowest balance first. |
 | `POINTS_DESCENDING` | The highest balance first. |
 
 An unknown value, or an empty list, falls back to the default above.
+
+Whatever the rule, two streamers that tie are taken in the order of your `streamers` list.
 
 Turn on `show_watch_queue` to have the miner explain which streamers got the slots and why.
 
@@ -42,10 +44,20 @@ Turn on `show_watch_queue` to have the miner explain which streamers got the slo
 "game_exclude": ["Just Chatting"]
 ```
 
-- `game_priority` prefers streamers playing these games, the first game the most.
+- `game_priority` prefers streamers playing these games, the first game the most. It also decides which drops are worth a slot.
 - `game_exclude` never watches a streamer while they play one of these games, and never claims their drops.
 
 Names are matched without regard to upper or lower case, and have to be the game's name as Twitch shows it.
+
+## Drops
+
+Twitch counts drop progress on one channel at a time, so `DROPS` gives one slot to a stream that carries drops and leaves the other to earn points elsewhere.
+
+- With `game_priority` empty, any stream with drops qualifies.
+- With `game_priority` set, only streams of those games do, the first game first. A drop of a game you did not list never takes a slot.
+- Finished drops are claimed every 30 minutes, whatever the game, except games in `game_exclude`.
+
+A drop of a game your Twitch account is not connected to cannot be handed over. The miner says so once and names the game: connect the account at twitch.tv/drops/inventory.
 
 ## Watch streaks
 
