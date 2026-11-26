@@ -206,44 +206,24 @@ func TestClient_placePrediction(t *testing.T) {
 		}
 	})
 
-	t.Run("the same event created twice, then skipped", func(t *testing.T) {
-		streamer := bettor()
-		streamer.Settings.Bet.FilterCondition = crowdedFilter()
-		h := betDue(t, world{streamers: []*domain.Streamer{streamer}})
+	t.Run("the same event created twice, before the bet", func(t *testing.T) {
+		h := betDue(t, world{streamers: []*domain.Streamer{bettor()}})
+
 		h.receive(t, "predictions-channel-v1.123", whoWinsCreated)
-		h.timers[0].fire()
 
-		h.timers[1].fire()
-
-		want := []string{
-			betStartLine,
-			betStartLine,
-			"BET_FILTERS: Skip bet for tester: filter_condition TOTAL_USERS GT 1000000 not met (current 15)",
-		}
-		if got := h.logger.Lines; !reflect.DeepEqual(got, want) {
+		if got, want := h.logger.Lines, []string{betStartLine}; !reflect.DeepEqual(got, want) {
 			t.Errorf("lines = %q, want %q", got, want)
 		}
-	})
-
-	t.Run("the same event created twice (today: two bets)", func(t *testing.T) {
-		h := betDue(t, world{streamers: []*domain.Streamer{bettor()}})
-		h.receive(t, "predictions-channel-v1.123", whoWinsCreated)
-		h.timers[0].fire()
-
-		h.timers[1].fire()
-
-		if got, want := h.account.Bets, []bet{{"ev-1", "yes", 50}, {"ev-1", "yes", 50}}; !reflect.DeepEqual(got, want) {
-			t.Errorf("bets = %+v, want %+v", got, want)
+		if got := len(h.timers); got != 1 {
+			t.Errorf("%d bets scheduled, want 1", got)
 		}
 	})
 
-	t.Run("the same event created twice (bug: should bet once)", func(t *testing.T) {
-		t.Skip("bug: a repeated event-created message places the bet a second time")
+	t.Run("the same event created twice", func(t *testing.T) {
 		h := betDue(t, world{streamers: []*domain.Streamer{bettor()}})
 		h.receive(t, "predictions-channel-v1.123", whoWinsCreated)
-		h.timers[0].fire()
 
-		h.timers[1].fire()
+		h.timers[0].fire()
 
 		if got, want := h.account.Bets, []bet{{"ev-1", "yes", 50}}; !reflect.DeepEqual(got, want) {
 			t.Errorf("bets = %+v, want %+v", got, want)

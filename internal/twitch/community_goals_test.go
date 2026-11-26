@@ -285,23 +285,7 @@ func TestClient_ContributeToCommunityGoal(t *testing.T) {
 		}
 	})
 
-	t.Run("a refusal sent as an object (today: counted as given)", func(t *testing.T) {
-		client, fake := setup(t)
-		fake.twitch.answer("ContributeCommunityPointsCommunityGoal", "", ok(`{"data":{"contributeCommunityPointsCommunityGoal":{"error":{"code":"GOAL_ENDED"}}}}`))
-		streamer := newGoalStreamer()
-
-		err := client.ContributeToCommunityGoal(streamer, "goal-1", "New chair", 100)
-
-		if err != nil {
-			t.Fatalf("ContributeToCommunityGoal error = %v, want none", err)
-		}
-		if streamer.ChannelPoints != 150 {
-			t.Errorf("streamer's points = %d, want 150", streamer.ChannelPoints)
-		}
-	})
-
-	t.Run("a refusal sent as an object (bug: should be an error and leave the points)", func(t *testing.T) {
-		t.Skip("bug: an error that is not a plain string is ignored and the points are deducted")
+	t.Run("a refusal sent as an object", func(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.answer("ContributeCommunityPointsCommunityGoal", "", ok(`{"data":{"contributeCommunityPointsCommunityGoal":{"error":{"code":"GOAL_ENDED"}}}}`))
 		streamer := newGoalStreamer()

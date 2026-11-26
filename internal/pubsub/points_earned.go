@@ -1,7 +1,6 @@
 package pubsub
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
@@ -43,7 +42,7 @@ func pointGainOf(data map[string]interface{}, known int) (gain pointGain, ok boo
 	if pointGain == nil {
 		return gain, false
 	}
-	gain.reason = strings.ToUpper(fmt.Sprint(pointGain["reason_code"]))
+	gain.reason = strings.ToUpper(stringValue(pointGain["reason_code"]))
 	gain.earned = int(jsonvalue.Float(pointGain["total_points"]))
 	gain.balance = known
 	if balanceValue := jsonvalue.At(data, "balance.balance"); balanceValue != nil {

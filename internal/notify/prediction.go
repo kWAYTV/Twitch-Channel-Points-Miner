@@ -156,7 +156,7 @@ func skipReason(reason string) string {
 	case strings.Contains(reason, "status"):
 		return "The prediction is no longer active"
 	default:
-		return strings.ToUpper(reason[:1]) + reason[1:]
+		return capitalise(reason)
 	}
 }
 

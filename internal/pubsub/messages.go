@@ -3,6 +3,7 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -72,6 +73,11 @@ func stringValue(v interface{}) string {
 	if v == nil {
 		return ""
 	}
+	// A number decoded from JSON is a float64, which fmt would write as
+	// 1.23456789e+08 from seven digits up.
+	if number, ok := v.(float64); ok {
+		return strconv.FormatFloat(number, 'f', -1, 64)
+	}
 	val := strings.TrimSpace(fmt.Sprint(v))
 	if val == "" || val == "<nil>" {
 		return ""
@@ -102,7 +108,8 @@ func channelIDFromPayload(payload map[string]interface{}, topic string) string {
 			}
 		}
 	}
-	if topic != "" {
+	// A user topic ends in the account's own id, which is not a channel.
+	if topic != "" && !strings.Contains(topicFamily(topic), "-user-") {
 		if parts := strings.Split(topic, "."); len(parts) == 2 {
 			if id := strings.TrimSpace(parts[1]); id != "" {
 				return id

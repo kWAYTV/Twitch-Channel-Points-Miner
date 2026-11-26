@@ -114,7 +114,6 @@ func TestStake(t *testing.T) {
 		{"a balance one under the minimum bet", 9, domain.BetSettings{}, 0, 0},
 		{"a maximum of exactly the minimum bet", 100, domain.BetSettings{MaxPoints: intPtr(10)}, 0, 10},
 		{"a maximum one under the minimum bet", 100, domain.BetSettings{MaxPoints: intPtr(9)}, 0, 9},
-		{"a maximum under the minimum bet and over the balance (today: the maximum)", 5, domain.BetSettings{MaxPoints: intPtr(8)}, 0, 8},
 
 		{"a balance of zero", 0, domain.BetSettings{}, 0, 0},
 		{"a negative balance", -100, domain.BetSettings{}, 0, -100},
@@ -126,8 +125,7 @@ func TestStake(t *testing.T) {
 		})
 	}
 
-	t.Run("a maximum under the minimum bet and over the balance (bug: should not bet more than the balance)", func(t *testing.T) {
-		t.Skip("bug: a maximum under 10 replaces the stake even when the balance is smaller")
+	t.Run("a maximum under the minimum bet and over the balance", func(t *testing.T) {
 		if got := stake(5, domain.BetSettings{MaxPoints: intPtr(8)}, 0); got > 5 {
 			t.Errorf("stake(5, settings, 0) = %d, want at most 5", got)
 		}

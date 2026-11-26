@@ -17,7 +17,6 @@ func TestFormatChannelPoints(t *testing.T) {
 		{"thousands with a fraction", 1_500, "1.5k"},
 		{"thousands rounded to two decimals", 1_234, "1.23k"},
 		{"the last value that reads in thousands", 999_994, "999.99k"},
-		{"just under a million (today: 1000k)", 999_999, "1000k"},
 		{"exactly a million", 1_000_000, "1M"},
 		{"millions with a fraction", 1_500_000, "1.5M"},
 		{"a negative balance", -1_500, "1.5k"},
@@ -30,8 +29,7 @@ func TestFormatChannelPoints(t *testing.T) {
 		})
 	}
 
-	t.Run("just under a million (bug: should read 1M)", func(t *testing.T) {
-		t.Skip("bug: 999,995 to 999,999 round up to 1000k instead of 1M")
+	t.Run("just under a million", func(t *testing.T) {
 		if got := formatChannelPoints(999_999); got != "1M" {
 			t.Errorf("formatChannelPoints(%d) = %q, want %q", 999_999, got, "1M")
 		}

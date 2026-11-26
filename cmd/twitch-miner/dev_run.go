@@ -9,6 +9,7 @@ func isGoRunExecutable(path, tempDir string) bool {
 	if strings.Contains(lower, "go-build") {
 		return true
 	}
-	temp := strings.ToLower(tempDir)
-	return strings.HasPrefix(lower, temp)
+	temp := strings.TrimRight(strings.ToLower(tempDir), `/\`)
+	rest, under := strings.CutPrefix(lower, temp)
+	return under && (rest == "" || rest[0] == '/' || rest[0] == '\\')
 }

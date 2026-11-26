@@ -300,8 +300,7 @@ func TestClient_GetFollowers(t *testing.T) {
 		}
 	})
 
-	t.Run("an empty page that claims a next page (bug: should stop)", func(t *testing.T) {
-		t.Skip("bug: GetFollowers asks for the same page forever when a page has no edges and hasNextPage is true")
+	t.Run("an empty page that claims a next page", func(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.answer("ChannelFollows", firstPage, ok(`{"data":{"user":{"follows":{"edges":[],"pageInfo":{"hasNextPage":true}}}}}`))
 

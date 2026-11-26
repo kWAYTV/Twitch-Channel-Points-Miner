@@ -134,19 +134,7 @@ func TestClient_processClaimAvailable(t *testing.T) {
 		}
 	})
 
-	t.Run("a bonus naming no channel, one streamer followed (today: ignored)", func(t *testing.T) {
-		h := setup(world{streamers: []*domain.Streamer{{Username: "tester", ChannelID: "123"}}})
-
-		h.receive(t, "community-points-user-v1.999", `{"type":"claim-available","data":{"claim":{"id":"claim-1"}}}`)
-
-		want := effects{Lines: []string{"error: claim-available ignored: channel=999 claim=claim-1 streamer=false"}}
-		if got := h.effects(); !reflect.DeepEqual(got, want) {
-			t.Errorf("effects = %+v, want %+v", got, want)
-		}
-	})
-
-	t.Run("a bonus naming no channel, one streamer followed (bug: should claim for that streamer)", func(t *testing.T) {
-		t.Skip("bug: the account's own ID in the topic is taken for the channel, so the only streamer is never tried")
+	t.Run("a bonus naming no channel, one streamer followed", func(t *testing.T) {
 		h := setup(world{streamers: []*domain.Streamer{{Username: "tester", ChannelID: "123"}}})
 
 		h.receive(t, "community-points-user-v1.999", `{"type":"claim-available","data":{"claim":{"id":"claim-1"}}}`)

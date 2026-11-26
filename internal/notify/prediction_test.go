@@ -220,14 +220,7 @@ func TestSkipReason(t *testing.T) {
 		})
 	}
 
-	t.Run("another reason that starts outside ASCII (today: its first letter is broken)", func(t *testing.T) {
-		if got, want := skipReason("école fermée"), "�\xa9cole fermée"; got != want {
-			t.Errorf(`skipReason("école fermée") = %q, want %q`, got, want)
-		}
-	})
-
-	t.Run("another reason that starts outside ASCII (bug: should keep its first letter)", func(t *testing.T) {
-		t.Skip("bug: the first byte is capitalised, not the first letter")
+	t.Run("another reason that starts outside ASCII", func(t *testing.T) {
 		if got, want := skipReason("école fermée"), "École fermée"; got != want {
 			t.Errorf(`skipReason("école fermée") = %q, want %q`, got, want)
 		}

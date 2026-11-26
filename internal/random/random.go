@@ -25,6 +25,9 @@ func Int(min, max int) int {
 
 func stringFrom(source io.Reader, length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	if length <= 0 {
+		return ""
+	}
 	buf := make([]byte, length)
 	for i := range buf {
 		nBig, _ := rand.Int(source, big.NewInt(int64(len(charset))))

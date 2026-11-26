@@ -186,7 +186,7 @@ func TestEvent_ParseResult(t *testing.T) {
 
 		got := parseResult(event, map[string]interface{}{"type": "WIN", "points_won": float64(3000)})
 
-		want := parsedResult{gained: 2500, placed: 500, won: 3000, resultType: "WIN", resultString: "WIN, Gained: +2.50k"}
+		want := parsedResult{gained: 2500, placed: 500, won: 3000, resultType: "WIN", resultString: "WIN, Gained: +2.5k"}
 		if got != want {
 			t.Errorf("ParseResult() = %+v, want %+v", got, want)
 		}

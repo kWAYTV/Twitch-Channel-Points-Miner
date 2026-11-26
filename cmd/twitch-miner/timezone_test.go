@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"regexp"
 	"testing"
 	"time"
 
@@ -75,23 +74,7 @@ func TestApplyTimezoneOverride(t *testing.T) {
 		}
 	})
 
-	t.Run("an unknown zone (today: the system zone is dropped and times are UTC)", func(t *testing.T) {
-		_, logger, logged := setupTimezone(t)
-		zone := "Bad/Zone"
-
-		applyTimezoneOverride(&zone, logger)
-
-		if time.Local != nil {
-			t.Errorf("time.Local = %v, want nil", time.Local)
-		}
-		wantLog := regexp.MustCompile(`^\[ERROR\] \d\d:\d\d \d\d/\d\d/\d\d: \x1b\[[0-9;]*mTimezone override ignored; falling back to system time: unknown time zone Bad/Zone\x1b\[[0-9;]*m\n$`)
-		if !wantLog.MatchString(logged.String()) {
-			t.Errorf("logged %q, want it to match %s", logged.String(), wantLog)
-		}
-	})
-
-	t.Run("an unknown zone (bug: should keep the system zone)", func(t *testing.T) {
-		t.Skip("bug: an unknown zone sets time.Local to nil, so times are shown in UTC, not system time as the log line says")
+	t.Run("an unknown zone", func(t *testing.T) {
 		system, logger, _ := setupTimezone(t)
 		zone := "Bad/Zone"
 

@@ -11,7 +11,6 @@ func TestIsAuthFailure(t *testing.T) {
 		{"Twitch's refusal notice", ":tmi.twitch.tv NOTICE * :Login authentication failed", true},
 		{"the refusal in capitals", ":tmi.twitch.tv NOTICE * :LOGIN AUTHENTICATION FAILED", true},
 		{"another notice", ":tmi.twitch.tv NOTICE * :Improperly formatted auth", false},
-		{"a chat message quoting the refusal (today: taken for a refusal)", ":nick!nick@nick.tmi.twitch.tv PRIVMSG #chan :my authentication failed", true},
 		{"an empty line", "", false},
 	}
 	for _, tt := range tests {
@@ -22,8 +21,7 @@ func TestIsAuthFailure(t *testing.T) {
 		})
 	}
 
-	t.Run("a chat message quoting the refusal (bug: should not count)", func(t *testing.T) {
-		t.Skip("bug: anyone who writes \"authentication failed\" in a chat makes the miner drop that chat and reconnect")
+	t.Run("a chat message quoting the refusal", func(t *testing.T) {
 		line := ":nick!nick@nick.tmi.twitch.tv PRIVMSG #chan :my authentication failed"
 		if got := isAuthFailure(line); got != false {
 			t.Errorf("isAuthFailure(%q) = %t, want false", line, got)

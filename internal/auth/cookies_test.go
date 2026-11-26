@@ -104,23 +104,7 @@ func TestLogin_cookiesRoundTrip(t *testing.T) {
 		}
 	})
 
-	t.Run("a token and another cookie (today: the other cookie reaches twitch.tv only)", func(t *testing.T) {
-		login := loggedIn(t, `{"auth-token": {"value": "tok"}, "unique_id": {"value": "abc"}}`)
-
-		got := roundTrip(t, login)
-
-		want := session{
-			Token:      "tok",
-			TwitchTV:   map[string]string{"auth-token": "tok", "unique_id": "abc"},
-			IDTwitchTV: map[string]string{"auth-token": "tok"},
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("read back %+v, want %+v", got, want)
-		}
-	})
-
-	t.Run("a token and another cookie (bug: the other cookie should reach id.twitch.tv too)", func(t *testing.T) {
-		t.Skip("bug: setting the token re-adds every cookie in the jar without its domain, which narrows a .twitch.tv cookie to twitch.tv alone")
+	t.Run("a token and another cookie", func(t *testing.T) {
 		login := loggedIn(t, `{"auth-token": {"value": "tok"}, "unique_id": {"value": "abc"}}`)
 
 		got := roundTrip(t, login)
@@ -146,23 +130,7 @@ func TestLogin_cookiesRoundTrip(t *testing.T) {
 		}
 	})
 
-	t.Run("a cookie for id.twitch.tv alone (today: comes back for twitch.tv instead)", func(t *testing.T) {
-		login := loggedIn(t, `{"auth-token": {"value": "tok"}, "unique_id": {"value": "abc", "domain": "id.twitch.tv"}}`)
-
-		got := roundTrip(t, login)
-
-		want := session{
-			Token:      "tok",
-			TwitchTV:   map[string]string{"auth-token": "tok", "unique_id": "abc"},
-			IDTwitchTV: map[string]string{"auth-token": "tok"},
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("read back %+v, want %+v", got, want)
-		}
-	})
-
-	t.Run("a cookie for id.twitch.tv alone (bug: should stay with id.twitch.tv)", func(t *testing.T) {
-		t.Skip("bug: saveCookies never writes a cookie's domain or path, so each one is loaded again under the default .twitch.tv")
+	t.Run("a cookie for id.twitch.tv alone", func(t *testing.T) {
 		login := loggedIn(t, `{"auth-token": {"value": "tok"}, "unique_id": {"value": "abc", "domain": "id.twitch.tv"}}`)
 
 		got := roundTrip(t, login)

@@ -12,7 +12,8 @@ func formatChannelPoints(points int) string {
 		value = -value
 	}
 	switch {
-	case value >= 1_000_000:
+	// From 999,995 the thousands would round up to "1000k".
+	case value >= 999_995:
 		return formatPointsWithSuffix(value, 1_000_000, "M")
 	case value >= 1_000:
 		return formatPointsWithSuffix(value, 1_000, "k")

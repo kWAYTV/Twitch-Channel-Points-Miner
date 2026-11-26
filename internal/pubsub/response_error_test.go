@@ -45,18 +45,7 @@ func TestClient_logResponseError(t *testing.T) {
 		}
 	})
 
-	t.Run("an error without a nonce (today: nonce=<nil>)", func(t *testing.T) {
-		h := setup(world{})
-
-		h.client.logResponseError(1, map[string]interface{}{"type": "RESPONSE", "error": "ERR_BADTOPIC"})
-
-		if got, want := h.logger.Lines, []string{"error: PubSub[1] RESPONSE error nonce=<nil>: ERR_BADTOPIC"}; !reflect.DeepEqual(got, want) {
-			t.Errorf("lines = %q, want %q", got, want)
-		}
-	})
-
-	t.Run("an error without a nonce (bug: should leave the nonce out)", func(t *testing.T) {
-		t.Skip("bug: a RESPONSE with no nonce is logged with nonce=<nil>")
+	t.Run("an error without a nonce", func(t *testing.T) {
 		h := setup(world{})
 
 		h.client.logResponseError(1, map[string]interface{}{"type": "RESPONSE", "error": "ERR_BADTOPIC"})

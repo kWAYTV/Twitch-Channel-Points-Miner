@@ -43,7 +43,6 @@ func TestRewardNameFromInventory(t *testing.T) {
 		{"a drop name", object{"name": "Drop 1", "displayName": "First drop"}, "Drop 1"},
 		{"a drop display name", object{"displayName": "First drop"}, "First drop"},
 		{"benefit edges keyed by position", object{"benefit": object{"edges": object{"0": object{"node": object{"name": "Token"}}}}}, "Token"},
-		{"benefit edges as a list (today: not read)", object{"benefit": object{"edges": list{object{"node": object{"name": "Token"}}}}}, ""},
 		{"an empty drop", object{}, ""},
 		{"no drop", nil, ""},
 	}
@@ -55,8 +54,7 @@ func TestRewardNameFromInventory(t *testing.T) {
 		})
 	}
 
-	t.Run("benefit edges as a list (bug: should read the first edge's name)", func(t *testing.T) {
-		t.Skip("bug: benefit.edges.0.node.name is looked up as an object key, so a list of edges is never read")
+	t.Run("benefit edges as a list", func(t *testing.T) {
 		drop := object{"benefit": object{"edges": list{object{"node": object{"name": "Token"}}}}}
 		if got := rewardNameFromInventory(drop); got != "Token" {
 			t.Errorf("rewardNameFromInventory(%v) = %q, want %q", drop, got, "Token")

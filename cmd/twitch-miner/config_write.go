@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -107,7 +108,7 @@ func inlineList(value interface{}) (string, bool) {
 		items = append(items, string(raw))
 	}
 	line := "[" + strings.Join(items, ", ") + "]"
-	return line, len(line) <= inlineListWidth
+	return line, utf8.RuneCountInString(line) <= inlineListWidth
 }
 
 // keyGroups returns the object's keys in layout order: the known groups first,

@@ -101,6 +101,11 @@ func TestAt(t *testing.T) {
 		{"an empty path", data, "", nil},
 		{"a path that ends in a dot", data, "data.", nil},
 		{"data that is a list", []interface{}{data}, "data", nil},
+		{"the first of a list", []interface{}{data}, "0.data.user.id", "42"},
+		{"the last of a list", map[string]interface{}{"edges": []interface{}{"a", "b"}}, "edges.1", "b"},
+		{"one past the end of a list", map[string]interface{}{"edges": []interface{}{"a", "b"}}, "edges.2", nil},
+		{"a negative position in a list", map[string]interface{}{"edges": []interface{}{"a", "b"}}, "edges.-1", nil},
+		{"an empty list", map[string]interface{}{"edges": []interface{}{}}, "edges.0", nil},
 		{"nil data", nil, "data", nil},
 	}
 	for _, tt := range tests {

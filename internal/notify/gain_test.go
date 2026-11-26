@@ -71,15 +71,7 @@ func TestGainDetails(t *testing.T) {
 		})
 	}
 
-	t.Run("another reason that starts outside ASCII (today: its first letter is broken)", func(t *testing.T) {
-		want := []string{"�\xa9toile", "", ""}
-		if got := gainDetails("ÉTOILE", "", ""); !reflect.DeepEqual(got, want) {
-			t.Errorf(`gainDetails("ÉTOILE", "", "") = %q, want %q`, got, want)
-		}
-	})
-
-	t.Run("another reason that starts outside ASCII (bug: should keep its first letter)", func(t *testing.T) {
-		t.Skip("bug: the first byte is capitalised, not the first letter")
+	t.Run("another reason that starts outside ASCII", func(t *testing.T) {
 		want := []string{"Étoile", "", ""}
 		if got := gainDetails("ÉTOILE", "", ""); !reflect.DeepEqual(got, want) {
 			t.Errorf(`gainDetails("ÉTOILE", "", "") = %q, want %q`, got, want)

@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // ansiCodes matches the colour escapes the console logger adds to event lines.
@@ -26,52 +27,111 @@ func collapseSpace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
+// The Fold functions ignore case. They measure in the bytes of s itself, never
+// of a lower-cased copy, because a letter's lower case can be shorter in bytes
+// than the letter.
+
+// foldPrefixLen returns how many bytes at the start of s spell prefix, or -1.
+func foldPrefixLen(s, prefix string) int {
+	n := 0
+	for _, want := range prefix {
+		if n >= len(s) {
+			return -1
+		}
+		got, size := utf8.DecodeRuneInString(s[n:])
+		if unicode.ToLower(got) != unicode.ToLower(want) {
+			return -1
+		}
+		n += size
+	}
+	return n
+}
+
+// findFold returns where sub first starts in s and how many bytes it takes there.
+func findFold(s, sub string) (index, length int) {
+	for i := range s {
+		if n := foldPrefixLen(s[i:], sub); n >= 0 {
+			return i, n
+		}
+	}
+	if sub == "" {
+		return len(s), 0
+	}
+	return -1, 0
+}
+
+// findLastFold is findFold for the last place sub starts in s.
+func findLastFold(s, sub string) (index, length int) {
+	if sub == "" {
+		return len(s), 0
+	}
+	index = -1
+	for i := range s {
+		if n := foldPrefixLen(s[i:], sub); n >= 0 {
+			index, length = i, n
+		}
+	}
+	return index, length
+}
+
 func indexFold(s, sub string) int {
-	return strings.Index(strings.ToLower(s), strings.ToLower(sub))
+	i, _ := findFold(s, sub)
+	return i
 }
 
 func splitLastFold(s, sep string) (string, string, bool) {
-	i := strings.LastIndex(strings.ToLower(s), strings.ToLower(sep))
+	i, n := findLastFold(s, sep)
 	if i < 0 {
 		return "", "", false
 	}
-	return strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+len(sep):]), true
+	return strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+n:]), true
 }
 
 func splitOnceFold(s, prefix, sep string) (string, string, bool) {
-	if !strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix)) {
+	start := foldPrefixLen(s, prefix)
+	if start < 0 {
 		return "", "", false
 	}
-	rest := strings.TrimSpace(s[len(prefix):])
-	i := indexFold(rest, sep)
+	rest := strings.TrimSpace(s[start:])
+	i, n := findFold(rest, sep)
 	if i <= 0 {
 		return "", "", false
 	}
-	return strings.TrimSpace(rest[:i]), strings.TrimSpace(rest[i+len(sep):]), true
+	return strings.TrimSpace(rest[:i]), strings.TrimSpace(rest[i+n:]), true
 }
 
 func cutSuffixFold(s, suffix string) (string, bool) {
-	if !strings.HasSuffix(strings.ToLower(s), strings.ToLower(suffix)) {
+	i, n := findLastFold(s, suffix)
+	if i < 0 || i+n != len(s) {
 		return "", false
 	}
-	return s[:len(s)-len(suffix)], true
+	return s[:i], true
 }
 
 func replaceFold(s, old, new string) string {
-	lower := strings.ToLower(s)
-	oldLower := strings.ToLower(old)
+	if old == "" {
+		return s
+	}
 	var b strings.Builder
 	for {
-		i := strings.Index(lower, oldLower)
+		i, n := findFold(s, old)
 		if i < 0 {
 			b.WriteString(s)
 			return b.String()
 		}
 		b.WriteString(s[:i])
 		b.WriteString(new)
-		s = s[i+len(old):]
-		lower = lower[i+len(oldLower):]
+		s = s[i+n:]
 	}
+}
+
+// capitalise upper-cases the first letter of s.
+func capitalise(s string) string {
+	first, size := utf8.DecodeRuneInString(s)
+	if size == 0 {
+		return s
+	}
+	return string(unicode.ToUpper(first)) + s[size:]
 }
 
 func limitRunes(s string, n int) string {

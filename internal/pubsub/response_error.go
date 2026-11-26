@@ -12,7 +12,7 @@ func (p *Client) logResponseError(connIndex int, envelope map[string]interface{}
 	if !ok || strings.TrimSpace(respErr) == "" {
 		return
 	}
-	nonce := strings.TrimSpace(fmt.Sprint(envelope["nonce"]))
+	nonce := stringValue(envelope["nonce"])
 	if nonce != "" {
 		p.logger.Errorf("PubSub[%d] RESPONSE error nonce=%s: %s", connIndex, nonce, respErr)
 	} else {

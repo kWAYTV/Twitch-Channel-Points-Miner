@@ -6,8 +6,10 @@ import (
 )
 
 // isAuthFailure reports whether a line from Twitch says the login was refused.
+// Only a NOTICE counts: a chat message quoting the words is not a refusal.
 func isAuthFailure(line string) bool {
-	return strings.Contains(strings.ToLower(line), "authentication failed")
+	command, text, _ := strings.Cut(line, " :")
+	return strings.Contains(command, " NOTICE ") && strings.Contains(strings.ToLower(text), "authentication failed")
 }
 
 // parsePrivmsg splits a chat message line into who wrote it and what they

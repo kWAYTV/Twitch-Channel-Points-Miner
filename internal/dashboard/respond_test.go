@@ -32,7 +32,6 @@ func TestAcceptsGzip(t *testing.T) {
 		{"no header", "", false},
 		{"other encodings only", "br, deflate", false},
 		{"identity", "identity", false},
-		{"gzip refused with q=0 (today: accepted)", "gzip;q=0", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -42,8 +41,7 @@ func TestAcceptsGzip(t *testing.T) {
 		})
 	}
 
-	t.Run("gzip refused with q=0 (bug: should not be accepted)", func(t *testing.T) {
-		t.Skip("bug: the header is searched for the word gzip, so its q=0 is ignored")
+	t.Run("gzip refused with q=0", func(t *testing.T) {
 		if got := acceptsGzip("gzip;q=0"); got != false {
 			t.Errorf("acceptsGzip(%q) = %v, want false", "gzip;q=0", got)
 		}

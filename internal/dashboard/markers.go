@@ -15,13 +15,17 @@ func pointsSentence(delta int) string {
 	if n < 0 {
 		n = -n
 	}
+	unit := "points"
+	if n == 1 {
+		unit = "point"
+	}
 	switch {
 	case delta < 0:
-		return fmt.Sprintf("Lost %d points.", n)
+		return fmt.Sprintf("Lost %d %s.", n, unit)
 	case delta == 0:
 		return "Points did not change."
 	default:
-		return fmt.Sprintf("Gained %d points.", n)
+		return fmt.Sprintf("Gained %d %s.", n, unit)
 	}
 }
 

@@ -41,6 +41,8 @@ func downloadAsset(url, dir string, logf func(format string, args ...interface{}
 	}
 
 	if _, err := io.Copy(temp, reader); err != nil {
+		temp.Close()
+		os.Remove(temp.Name())
 		return "", err
 	}
 	if progress != nil {

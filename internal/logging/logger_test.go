@@ -189,18 +189,7 @@ func TestLogger_Println(t *testing.T) {
 		}
 	})
 
-	t.Run("two words (today: run together)", func(t *testing.T) {
-		logger, console := setup(LoggerSettings{})
-
-		logger.Println("hello", "world")
-
-		if got, want := console.String(), "[INFO] 15:04 25/11/26: helloworld\n"; got != want {
-			t.Errorf("console shows %q, want %q", got, want)
-		}
-	})
-
-	t.Run("two words (bug: should put a space between them)", func(t *testing.T) {
-		t.Skip("bug: the values are joined as fmt.Sprint joins them, not as a Println does")
+	t.Run("two words", func(t *testing.T) {
 		logger, console := setup(LoggerSettings{})
 
 		logger.Println("hello", "world")

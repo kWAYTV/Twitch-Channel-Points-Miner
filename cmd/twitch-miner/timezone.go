@@ -29,6 +29,7 @@ func applyTimezoneOverride(raw *string, logger *logging.Logger) {
 	loc, err := time.LoadLocation(zone)
 	if err != nil {
 		logger.Errorf("%sTimezone override ignored; falling back to system time: %v%s", ansi.ColorRed, err, ansi.ColorReset)
+		return
 	}
 	time.Local = loc
 }

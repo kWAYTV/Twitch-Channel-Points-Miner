@@ -203,12 +203,6 @@ func TestMergeFilterCondition(t *testing.T) {
 			override: &filterConditionConfig{By: "  "},
 			want:     nil,
 		},
-		{
-			name:     "a blank by over a base (today: by is erased)",
-			base:     &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
-			override: &filterConditionConfig{By: "  "},
-			want:     &domain.FilterCondition{By: "", Where: "GT", Value: ptr(50.0)},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -218,8 +212,7 @@ func TestMergeFilterCondition(t *testing.T) {
 		})
 	}
 
-	t.Run("a blank by over a base (bug: should keep the base's by)", func(t *testing.T) {
-		t.Skip("bug: a by or where of only spaces counts as set and erases the base's value")
+	t.Run("a blank by over a base", func(t *testing.T) {
 		base := &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)}
 		override := &filterConditionConfig{By: "  "}
 		want := &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)}

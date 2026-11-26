@@ -199,7 +199,6 @@ func TestDisplayName(t *testing.T) {
 		{"a name of one letter", "s", "S"},
 		{"a name that starts with a digit", "4head", "4head"},
 		{"an empty name", "", ""},
-		{"a name that starts outside ASCII (today: the first letter is broken)", "élan", "�\xa9lan"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -209,8 +208,7 @@ func TestDisplayName(t *testing.T) {
 		})
 	}
 
-	t.Run("a name that starts outside ASCII (bug: should read Élan)", func(t *testing.T) {
-		t.Skip("bug: displayName upper-cases the first byte, not the first letter")
+	t.Run("a name that starts outside ASCII", func(t *testing.T) {
 		if got := displayName("élan"); got != "Élan" {
 			t.Errorf("displayName(%q) = %q, want %q", "élan", got, "Élan")
 		}

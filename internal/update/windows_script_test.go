@@ -69,7 +69,6 @@ func TestFormatArgs(t *testing.T) {
 		{"an argument with a space", []string{"my config.json"}, ` "my config.json"`},
 		{"an empty argument", []string{""}, ` ""`},
 		{"an argument outside ASCII", []string{"żółw.json"}, ` "żółw.json"`},
-		{"a Windows path (today: backslashes doubled)", []string{`C:\cfg\run.json`}, ` "C:\\cfg\\run.json"`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,8 +78,7 @@ func TestFormatArgs(t *testing.T) {
 		})
 	}
 
-	t.Run("a Windows path (bug: should keep single backslashes)", func(t *testing.T) {
-		t.Skip("bug: arguments are quoted as Go strings, so the relaunched miner gets C:\\\\cfg\\\\run.json")
+	t.Run("a Windows path", func(t *testing.T) {
 		args := []string{`C:\cfg\run.json`}
 		if got, want := formatArgs(args), ` "C:\cfg\run.json"`; got != want {
 			t.Errorf("formatArgs(%q) = %q, want %q", args, got, want)

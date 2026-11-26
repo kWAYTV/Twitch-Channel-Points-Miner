@@ -2,7 +2,6 @@ package update
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -36,10 +35,14 @@ func formatArgs(args []string) string {
 	}
 	parts := make([]string, len(args))
 	for i, arg := range args {
-		parts[i] = " " + strconv.Quote(arg)
+		parts[i] = ` "` + quotedForBatch.Replace(arg) + `"`
 	}
 	return strings.Join(parts, "")
 }
+
+// Inside double quotes a batch file reads everything literally except a
+// percent sign and the quote itself.
+var quotedForBatch = strings.NewReplacer("%", "%%", `"`, `""`)
 
 func escapeForBatch(path string) string {
 	replacer := strings.NewReplacer(

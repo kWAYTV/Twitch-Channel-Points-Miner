@@ -37,16 +37,7 @@ func TestDescribePresence(t *testing.T) {
 		})
 	}
 
-	t.Run("a name whose lower case is shorter (today: the balance stays in the name)", func(t *testing.T) {
-		message, ok := describePresence("İnci (1.2k points) is Online!", "", "", "online")
-		want := described{Message{Headline: "İnci (1.2k points is online"}, true}
-		if got := (described{message, ok}); !reflect.DeepEqual(got, want) {
-			t.Errorf(`describePresence("İnci (1.2k points) is Online!") = %+v, want %+v`, got, want)
-		}
-	})
-
-	t.Run("a name whose lower case is shorter (bug: should read the balance)", func(t *testing.T) {
-		t.Skip("bug: the marker's index is taken in the lower-cased copy, which is one byte shorter than the line")
+	t.Run("a name whose lower case is shorter", func(t *testing.T) {
 		message, ok := describePresence("İnci (1.2k points) is Online!", "", "", "online")
 		want := described{Message{"İnci is online", []string{"Balance 1.2k points"}}, true}
 		if got := (described{message, ok}); !reflect.DeepEqual(got, want) {

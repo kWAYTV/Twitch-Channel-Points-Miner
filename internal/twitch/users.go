@@ -108,6 +108,11 @@ func (t *Client) GetFollowers(limit int, order domain.FollowersOrder) ([]string,
 			}
 		}
 		hasNext, _ = pageInfo["hasNextPage"].(bool)
+		// A page without a cursor can't be followed: asking again would
+		// return the same page forever.
+		if cursor == "" {
+			break
+		}
 	}
 	return follows, nil
 }

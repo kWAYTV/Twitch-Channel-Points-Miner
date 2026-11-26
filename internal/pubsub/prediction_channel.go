@@ -42,8 +42,15 @@ func (p *Client) processPredictionChannel(topic string, payload map[string]inter
 		}
 		wait := event.ClosingAfter(p.env.now())
 		p.predMu.Lock()
-		p.predictions[event.EventID] = event
+		_, alreadyScheduled := p.predictions[event.EventID]
+		if !alreadyScheduled {
+			p.predictions[event.EventID] = event
+		}
 		p.predMu.Unlock()
+		// Twitch can announce an event more than once; it gets one bet.
+		if alreadyScheduled {
+			return nil
+		}
 		p.env.after(wait, func() {
 			p.placePrediction(event.EventID)
 		})

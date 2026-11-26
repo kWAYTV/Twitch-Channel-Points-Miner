@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -97,7 +98,7 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 }
 
 func (l *Logger) Println(v ...interface{}) {
-	l.log("INFO", "", "%s", fmt.Sprint(v...))
+	l.log("INFO", "", "%s", strings.TrimSuffix(fmt.Sprintln(v...), "\n"))
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {

@@ -52,7 +52,7 @@ func stake(balance int, settings domain.BetSettings, topPoints int) int {
 	}
 	if amount < 10 {
 		if settings.MaxPoints != nil && *settings.MaxPoints < 10 {
-			amount = *settings.MaxPoints
+			amount = min(*settings.MaxPoints, balance)
 		} else if balance >= 10 {
 			amount = 10
 		}

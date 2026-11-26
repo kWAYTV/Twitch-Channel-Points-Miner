@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/auth"
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -220,7 +221,8 @@ func displayName(name string) string {
 	if name == "" {
 		return ""
 	}
-	return strings.ToUpper(name[:1]) + name[1:]
+	first, size := utf8.DecodeRuneInString(name)
+	return string(unicode.ToUpper(first)) + name[size:]
 }
 
 // AuthToken is the OAuth token of the logged-in account.

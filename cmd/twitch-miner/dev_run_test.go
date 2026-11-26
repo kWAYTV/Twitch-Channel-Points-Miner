@@ -16,7 +16,6 @@ func TestIsGoRunExecutable(t *testing.T) {
 		{name: "under the temp folder in another case", path: `c:\users\me\appdata\local\temp\miner.exe`, tempDir: `C:\Users\Me\AppData\Local\Temp`, want: true},
 		{name: "under the temp folder, the path in another case", path: `C:\Users\Me\AppData\Local\Temp\miner.exe`, tempDir: `c:\users\me\appdata\local\temp`, want: true},
 		{name: "no path", path: "", tempDir: "/tmp", want: false},
-		{name: "a folder named like the temp folder with more letters (today: taken for a dev run)", path: "/tmpfiles/twitch-miner", tempDir: "/tmp", want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -26,8 +25,7 @@ func TestIsGoRunExecutable(t *testing.T) {
 		})
 	}
 
-	t.Run("a folder named like the temp folder with more letters (bug: should be an installed program)", func(t *testing.T) {
-		t.Skip("bug: the temp folder is matched as a plain prefix, so /tmpfiles counts as being under /tmp")
+	t.Run("a folder named like the temp folder with more letters", func(t *testing.T) {
 		if got := isGoRunExecutable("/tmpfiles/twitch-miner", "/tmp"); got != false {
 			t.Errorf(`isGoRunExecutable("/tmpfiles/twitch-miner", "/tmp") = %v, want false`, got)
 		}

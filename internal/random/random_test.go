@@ -26,17 +26,7 @@ func TestString(t *testing.T) {
 		}
 	})
 
-	t.Run("a negative length (today: panics)", func(t *testing.T) {
-		defer func() {
-			if recover() == nil {
-				t.Errorf("String(-1) returned, want a panic")
-			}
-		}()
-		String(-1)
-	})
-
-	t.Run("a negative length (bug: should be empty, as Hex is)", func(t *testing.T) {
-		t.Skip("bug: String panics on a negative length where Hex returns an empty string")
+	t.Run("a negative length", func(t *testing.T) {
 		if got := String(-1); got != "" {
 			t.Errorf("String(-1) = %q, want %q", got, "")
 		}

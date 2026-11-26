@@ -58,12 +58,6 @@ func TestPointGainOf(t *testing.T) {
 			pointGain{"WATCH", 0, 1000},
 			true,
 		},
-		{
-			"no reason (today: <NIL>)",
-			object{"point_gain": object{"total_points": 10.0}},
-			pointGain{"<NIL>", 10, 1000},
-			true,
-		},
 		{"no gain", object{"balance": object{"balance": 1010.0}}, pointGain{}, false},
 		{"a gain that is not an object", object{"point_gain": "WATCH"}, pointGain{}, false},
 		{"no data", nil, pointGain{}, false},
@@ -76,8 +70,7 @@ func TestPointGainOf(t *testing.T) {
 		})
 	}
 
-	t.Run("no reason (bug: should be empty)", func(t *testing.T) {
-		t.Skip("bug: a gain without a reason_code is reported with the reason <NIL>")
+	t.Run("no reason", func(t *testing.T) {
 		got, ok := pointGainOf(object{"point_gain": object{"total_points": 10.0}}, 1000)
 		if want := (pointGain{"", 10, 1000}); got != want || !ok {
 			t.Errorf("pointGainOf = %+v, %t, want %+v, true", got, ok, want)

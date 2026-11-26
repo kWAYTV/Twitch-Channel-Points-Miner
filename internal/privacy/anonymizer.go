@@ -3,6 +3,7 @@ package privacy
 import (
 	"crypto/rand"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -74,7 +75,7 @@ func (a *Anonymizer) Name(raw string) string {
 	if alias, ok := a.streamerAliases[key]; ok {
 		return alias
 	}
-	alias := "Streamer" + strconvItoa(a.nextStreamerIndex)
+	alias := "Streamer" + strconv.Itoa(a.nextStreamerIndex)
 	a.nextStreamerIndex++
 	a.streamerAliases[key] = alias
 	return alias
@@ -127,27 +128,4 @@ func randInt(min, max int) int {
 		return min
 	}
 	return min + int(nBig.Int64())
-}
-
-func strconvItoa(v int) string {
-	// small, allocation-free integer formatting for sequential ids
-	if v == 0 {
-		return "0"
-	}
-	neg := v < 0
-	if neg {
-		v = -v
-	}
-	var buf [32]byte
-	i := len(buf)
-	for v > 0 {
-		i--
-		buf[i] = byte('0' + v%10)
-		v /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
 }

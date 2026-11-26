@@ -74,10 +74,20 @@ func (t *Client) ContributeToCommunityGoal(streamer *domain.Streamer, goalID, ti
 	if err != nil {
 		return err
 	}
-	if errVal := jsonvalue.At(resp, "data.contributeCommunityPointsCommunityGoal.error"); errVal != nil {
-		if errStr, ok := errVal.(string); ok && errStr != "" {
-			return fmt.Errorf("unable to contribute to %s: %s", title, errStr)
+	switch refusal := jsonvalue.At(resp, "data.contributeCommunityPointsCommunityGoal.error").(type) {
+	case nil:
+	case string:
+		if refusal != "" {
+			return fmt.Errorf("unable to contribute to %s: %s", title, refusal)
 		}
+	case map[string]interface{}:
+		reason := jsonvalue.FirstString(refusal, "code", "message")
+		if reason == "" {
+			reason = fmt.Sprint(refusal)
+		}
+		return fmt.Errorf("unable to contribute to %s: %s", title, reason)
+	default:
+		return fmt.Errorf("unable to contribute to %s: %v", title, refusal)
 	}
 	streamer.ChannelPoints -= amount
 	if streamer.ChannelPoints < 0 {

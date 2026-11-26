@@ -6,13 +6,11 @@ import (
 
 // describePresence covers "Alice (1.2k points) is Online!" and its offline twin.
 func describePresence(head, game, streak, verb string) (Message, bool) {
-	lower := strings.ToLower(head)
-	marker := " is " + verb
-	i := strings.LastIndex(lower, marker)
+	i, n := findLastFold(head, " is "+verb)
 	if i <= 0 {
 		return Message{}, false
 	}
-	if tail := lower[i+len(marker):]; tail != "" && tail != "!" {
+	if tail := head[i+n:]; tail != "" && tail != "!" {
 		return Message{}, false
 	}
 	name, points := splitPoints(strings.TrimSpace(head[:i]))

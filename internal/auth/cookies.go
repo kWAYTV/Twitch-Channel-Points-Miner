@@ -17,19 +17,18 @@ func (t *Login) saveCookies(cookiesPath string) error {
 	}
 	t.ensureSessionCookiesLocked()
 
-	hostnames := []string{"twitch.tv", "id.twitch.tv"}
+	// The jar hands back names and values only, so where a cookie belongs is
+	// read from which host it is sent to: one sent to twitch.tv is kept for
+	// all of twitch.tv (the default), one sent to id.twitch.tv alone stays there.
 	store := make(cookieStore)
-	for _, host := range hostnames {
-		u := &url.URL{Scheme: "https", Host: host}
-		for _, c := range t.client.Jar.Cookies(u) {
-			if c == nil || c.Name == "" {
-				continue
-			}
-			store[c.Name] = persistedCookie{
-				Value:  c.Value,
-				Path:   c.Path,
-				Domain: c.Domain,
-			}
+	for _, c := range t.client.Jar.Cookies(&url.URL{Scheme: "https", Host: "id.twitch.tv"}) {
+		if c != nil && c.Name != "" {
+			store[c.Name] = persistedCookie{Value: c.Value, Domain: "id.twitch.tv"}
+		}
+	}
+	for _, c := range t.client.Jar.Cookies(&url.URL{Scheme: "https", Host: "twitch.tv"}) {
+		if c != nil && c.Name != "" {
+			store[c.Name] = persistedCookie{Value: c.Value}
 		}
 	}
 
@@ -78,7 +77,7 @@ func (t *Login) loadCookies(cookiesPath string) error {
 
 	for host, cookies := range sessionCookies {
 		u := &url.URL{Scheme: "https", Host: host}
-		t.client.Jar.SetCookies(u, append(t.client.Jar.Cookies(u), cookies...))
+		t.client.Jar.SetCookies(u, cookies)
 	}
 
 	// Re-apply auth token and persistent cookies into the jar for future HTTP requests.
@@ -107,13 +106,14 @@ func (t *Login) upsertSessionCookiesLocked(name, value string) {
 	}
 	for _, host := range []string{"twitch.tv", "id.twitch.tv"} {
 		u := &url.URL{Scheme: "https", Host: host}
-		existing := t.client.Jar.Cookies(u)
 		c := &http.Cookie{
 			Name:   name,
 			Value:  value,
 			Path:   "/",
 			Domain: "." + host,
 		}
-		t.client.Jar.SetCookies(u, append(existing, c))
+		// Only the new cookie: the jar keeps the rest, and handing them back
+		// without their domains would narrow them to this host.
+		t.client.Jar.SetCookies(u, []*http.Cookie{c})
 	}
 }

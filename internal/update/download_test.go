@@ -146,28 +146,7 @@ func TestDownloadAsset(t *testing.T) {
 		}
 	})
 
-	t.Run("a download cut short (today: the partial file stays)", func(t *testing.T) {
-		github := startFakeGitHub(t)
-		github.Assets["miner"] = "new b"
-		github.CutShort = true
-		dir := t.TempDir()
-
-		path, err := downloadAsset(github.AssetURL("miner"), dir, (&logLines{}).Logf)
-
-		if err == nil || err.Error() != "unexpected EOF" {
-			t.Errorf("error = %v, want %q", err, "unexpected EOF")
-		}
-		if path != "" {
-			t.Errorf("path = %q, want none", path)
-		}
-		left := filesIn(t, dir)
-		if len(left) != 1 || !downloadName.MatchString(left[0]) {
-			t.Errorf("files left behind: %q, want one matching %s", left, downloadName)
-		}
-	})
-
-	t.Run("a download cut short (bug: should remove the partial file)", func(t *testing.T) {
-		t.Skip("bug: a failed download leaves its miner-update-* file next to the executable")
+	t.Run("a download cut short", func(t *testing.T) {
 		github := startFakeGitHub(t)
 		github.Assets["miner"] = "new b"
 		github.CutShort = true

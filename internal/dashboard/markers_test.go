@@ -14,8 +14,6 @@ func TestPointsSentence(t *testing.T) {
 		{"a gain", 450, "Gained 450 points."},
 		{"a loss", -200, "Lost 200 points."},
 		{"no change", 0, "Points did not change."},
-		{"a gain of one (today: 1 points)", 1, "Gained 1 points."},
-		{"a loss of one (today: 1 points)", -1, "Lost 1 points."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -25,15 +23,13 @@ func TestPointsSentence(t *testing.T) {
 		})
 	}
 
-	t.Run("a gain of one (bug: should read 1 point)", func(t *testing.T) {
-		t.Skip("bug: one point is written as \"1 points\"")
+	t.Run("a gain of one", func(t *testing.T) {
 		if got, want := pointsSentence(1), "Gained 1 point."; got != want {
 			t.Errorf("pointsSentence(1) = %q, want %q", got, want)
 		}
 	})
 
-	t.Run("a loss of one (bug: should read 1 point)", func(t *testing.T) {
-		t.Skip("bug: one point is written as \"1 points\"")
+	t.Run("a loss of one", func(t *testing.T) {
 		if got, want := pointsSentence(-1), "Lost 1 point."; got != want {
 			t.Errorf("pointsSentence(-1) = %q, want %q", got, want)
 		}

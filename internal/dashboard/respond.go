@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -26,9 +27,21 @@ func gzipBytes(data []byte, level int) []byte {
 	return buf.Bytes()
 }
 
-// acceptsGzip reads an Accept-Encoding header.
+// acceptsGzip reads an Accept-Encoding header: gzip is accepted when it is
+// listed and not refused with a quality of zero.
 func acceptsGzip(acceptEncoding string) bool {
-	return strings.Contains(acceptEncoding, "gzip")
+	for _, entry := range strings.Split(acceptEncoding, ",") {
+		coding, params, _ := strings.Cut(entry, ";")
+		if !strings.Contains(coding, "gzip") {
+			continue
+		}
+		quality, isQuality := strings.CutPrefix(strings.ReplaceAll(params, " ", ""), "q=")
+		if value, err := strconv.ParseFloat(quality, 64); isQuality && err == nil && value == 0 {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // compresses reports whether a body of size bytes is sent gzipped.

@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"math"
 	"testing"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -352,35 +351,6 @@ func TestRandInt(t *testing.T) {
 	t.Run("a range of two numbers", func(t *testing.T) {
 		if got := randInt(7, 8); got != 7 && got != 8 {
 			t.Errorf("randInt(7, 8) = %d, want 7 or 8", got)
-		}
-	})
-}
-
-func TestStrconvItoa(t *testing.T) {
-	tests := []struct {
-		name string
-		v    int
-		want string
-	}{
-		{"zero", 0, "0"},
-		{"one digit", 7, "7"},
-		{"several digits", 1204, "1204"},
-		{"a negative number", -35, "-35"},
-		{"the largest number", math.MaxInt64, "9223372036854775807"},
-		{"the smallest number (today: only a minus sign)", math.MinInt64, "-"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := strconvItoa(tt.v); got != tt.want {
-				t.Errorf("strconvItoa(%d) = %q, want %q", tt.v, got, tt.want)
-			}
-		})
-	}
-
-	t.Run("the smallest number (bug: should read -9223372036854775808)", func(t *testing.T) {
-		t.Skip("bug: negating the smallest int overflows, so no digits are written")
-		if got := strconvItoa(math.MinInt64); got != "-9223372036854775808" {
-			t.Errorf("strconvItoa(%d) = %q, want %q", math.MinInt64, got, "-9223372036854775808")
 		}
 	})
 }

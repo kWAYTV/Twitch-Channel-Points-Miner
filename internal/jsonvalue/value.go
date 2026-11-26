@@ -3,6 +3,7 @@ package jsonvalue
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 )
 
@@ -37,7 +38,8 @@ func Bool(v interface{}) bool {
 	return false
 }
 
-// At follows a dot-separated path through nested objects and returns nil when any step is missing.
+// At follows a dot-separated path through nested objects and lists, where a
+// number is a position in a list, and returns nil when any step is missing.
 func At(data interface{}, path string) interface{} {
 	if data == nil {
 		return nil
@@ -45,11 +47,18 @@ func At(data interface{}, path string) interface{} {
 	current := data
 	parts := strings.Split(path, ".")
 	for _, p := range parts {
-		m, ok := current.(map[string]interface{})
-		if !ok {
+		switch node := current.(type) {
+		case map[string]interface{}:
+			current = node[p]
+		case []interface{}:
+			index, err := strconv.Atoi(p)
+			if err != nil || index < 0 || index >= len(node) {
+				return nil
+			}
+			current = node[index]
+		default:
 			return nil
 		}
-		current = m[p]
 		if current == nil {
 			return nil
 		}

@@ -12,14 +12,12 @@ func TestFormatNumber(t *testing.T) {
 		{"a small number", 5, "5"},
 		{"a small negative number", -5, "-5"},
 		{"one below a thousand", 999, "999"},
-		{"exactly a thousand (today: 1.00k)", 1_000, "1.00k"},
-		{"a thousand and a half", 1_500, "1.50k"},
+		{"a thousand and a half", 1_500, "1.5k"},
 		{"a thousand with cents", 1_234, "1.23k"},
-		{"negative thousands", -1_500, "-1.50k"},
-		{"one below a million", 999_999, "1000.00k"},
-		{"exactly a million (today: 1.00M)", 1_000_000, "1.00M"},
+		{"negative thousands", -1_500, "-1.5k"},
+		{"one below a million", 999_999, "1M"},
 		{"millions", 2_340_000, "2.34M"},
-		{"negative millions", -2_500_000, "-2.50M"},
+		{"negative millions", -2_500_000, "-2.5M"},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			if got := FormatNumber(row.value); got != row.want {
@@ -28,15 +26,13 @@ func TestFormatNumber(t *testing.T) {
 		})
 	}
 
-	t.Run("exactly a thousand (bug: should read 1k)", func(t *testing.T) {
-		t.Skip("bug: the zeros are trimmed after the k is added, so nothing is trimmed")
+	t.Run("exactly a thousand", func(t *testing.T) {
 		if got := FormatNumber(1_000); got != "1k" {
 			t.Errorf("FormatNumber(1000) = %q, want %q", got, "1k")
 		}
 	})
 
-	t.Run("exactly a million (bug: should read 1M)", func(t *testing.T) {
-		t.Skip("bug: the zeros are trimmed after the M is added, so nothing is trimmed")
+	t.Run("exactly a million", func(t *testing.T) {
 		if got := FormatNumber(1_000_000); got != "1M" {
 			t.Errorf("FormatNumber(1000000) = %q, want %q", got, "1M")
 		}
@@ -58,7 +54,6 @@ func TestFormatFloat(t *testing.T) {
 		{"a third decimal that rounds up", 2.256, "2.26"},
 		{"too small to show", 0.001, "0"},
 		{"a negative number", -1.5, "-1.5"},
-		{"a negative number too small to show (today: -0)", -0.001, "-0"},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			if got := FormatFloat(row.value); got != row.want {
@@ -67,8 +62,7 @@ func TestFormatFloat(t *testing.T) {
 		})
 	}
 
-	t.Run("a negative number too small to show (bug: should read 0)", func(t *testing.T) {
-		t.Skip("bug: -0.00 is trimmed to -0, which the guard for a lone minus sign misses")
+	t.Run("a negative number too small to show", func(t *testing.T) {
 		if got := FormatFloat(-0.001); got != "0" {
 			t.Errorf("FormatFloat(-0.001) = %q, want %q", got, "0")
 		}

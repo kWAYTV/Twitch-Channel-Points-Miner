@@ -31,14 +31,7 @@ func TestDisplayName(t *testing.T) {
 		})
 	}
 
-	t.Run("a first letter outside ASCII (today: the letter is broken)", func(t *testing.T) {
-		if got, want := displayName("élan"), "�\xa9lan"; got != want {
-			t.Errorf("displayName(%q) = %q, want %q", "élan", got, want)
-		}
-	})
-
-	t.Run("a first letter outside ASCII (bug: should read Élan)", func(t *testing.T) {
-		t.Skip("bug: only the first byte is upper-cased, which splits a multi-byte letter")
+	t.Run("a first letter outside ASCII", func(t *testing.T) {
 		if got, want := displayName("élan"), "Élan"; got != want {
 			t.Errorf("displayName(%q) = %q, want %q", "élan", got, want)
 		}

@@ -129,7 +129,6 @@ func TestEtagMatches(t *testing.T) {
 		{"another tag", `"aaaaaaaaaaaaaaaa"`, false},
 		{"the tag without its quotes", `0123456789abcdef`, false},
 		{"no header", ``, false},
-		{"any tag (today: no match)", `*`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,8 +138,7 @@ func TestEtagMatches(t *testing.T) {
 		})
 	}
 
-	t.Run("any tag (bug: * should match)", func(t *testing.T) {
-		t.Skip("bug: If-None-Match: * is not read as matching the page")
+	t.Run("any tag", func(t *testing.T) {
 		if got := etagMatches(`*`, `"0123456789abcdef"`); got != true {
 			t.Errorf("etagMatches(%q) = %v, want true", `*`, got)
 		}

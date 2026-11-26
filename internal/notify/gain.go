@@ -78,7 +78,7 @@ func gainDetails(reason, game, streak string) []string {
 		return []string{playing, streakLength}
 	default:
 		label := strings.ToLower(strings.ReplaceAll(kind, "_", " "))
-		return []string{strings.ToUpper(label[:1]) + label[1:], playing, streakLength}
+		return []string{capitalise(label), playing, streakLength}
 	}
 }
 

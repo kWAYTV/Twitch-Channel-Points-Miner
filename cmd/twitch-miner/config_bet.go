@@ -69,11 +69,11 @@ func mergeFilterCondition(base *domain.FilterCondition, override *filterConditio
 	if base != nil {
 		out = *base
 	}
-	if override.By != "" {
-		out.By = domain.OutcomeKey(strings.ToUpper(strings.TrimSpace(override.By)))
+	if by := strings.TrimSpace(override.By); by != "" {
+		out.By = domain.OutcomeKey(strings.ToUpper(by))
 	}
-	if override.Where != "" {
-		out.Where = domain.Condition(strings.ToUpper(strings.TrimSpace(override.Where)))
+	if where := strings.TrimSpace(override.Where); where != "" {
+		out.Where = domain.Condition(strings.ToUpper(where))
 	}
 	if override.Value != nil {
 		out.Value = override.Value

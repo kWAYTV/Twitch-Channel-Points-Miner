@@ -111,7 +111,7 @@ func TestParseOutcomes(t *testing.T) {
 func TestOutcome_String(t *testing.T) {
 	t.Run("an outcome with every figure", func(t *testing.T) {
 		outcome := Outcome{Title: " Yes ", Color: "blue", TotalPoints: 1_500, TotalUsers: 25, PercentageUsers: 62.5, Odds: 1.25, OddsPercentage: 80}
-		want := "Yes (BLUE), Points: 1.50k, Users: 25 (62.50%), Odds: 1.25 (80%)"
+		want := "Yes (BLUE), Points: 1.5k, Users: 25 (62.50%), Odds: 1.25 (80%)"
 		if got := outcome.String(); got != want {
 			t.Errorf("String() = %q, want %q", got, want)
 		}

@@ -77,14 +77,7 @@ func TestIndexFold(t *testing.T) {
 		})
 	}
 
-	t.Run("after a letter whose lower case is shorter (today: one byte early)", func(t *testing.T) {
-		if got, want := indexFold("İ wrote: hi", " wrote: "), 1; got != want {
-			t.Errorf(`indexFold("İ wrote: hi", " wrote: ") = %d, want %d`, got, want)
-		}
-	})
-
-	t.Run("after a letter whose lower case is shorter (bug: should be its index in the string)", func(t *testing.T) {
-		t.Skip("bug: the index is taken in the lower-cased copy, which is one byte shorter than the string")
+	t.Run("after a letter whose lower case is shorter", func(t *testing.T) {
 		if got, want := indexFold("İ wrote: hi", " wrote: "), 2; got != want {
 			t.Errorf(`indexFold("İ wrote: hi", " wrote: ") = %d, want %d`, got, want)
 		}
@@ -115,15 +108,7 @@ func TestSplitLastFold(t *testing.T) {
 		})
 	}
 
-	t.Run("after a letter whose lower case is shorter (today: cut one byte early)", func(t *testing.T) {
-		before, after, ok := splitLastFold("İyi (BLUE) for bob", " for ")
-		if got, want := (split{before, after, ok}), (split{"İyi (BLUE", "bob", true}); got != want {
-			t.Errorf(`splitLastFold("İyi (BLUE) for bob", " for ") = %+v, want %+v`, got, want)
-		}
-	})
-
-	t.Run("after a letter whose lower case is shorter (bug: should keep the whole first half)", func(t *testing.T) {
-		t.Skip("bug: the index is taken in the lower-cased copy, which is one byte shorter than the string")
+	t.Run("after a letter whose lower case is shorter", func(t *testing.T) {
 		before, after, ok := splitLastFold("İyi (BLUE) for bob", " for ")
 		if got, want := (split{before, after, ok}), (split{"İyi (BLUE)", "bob", true}); got != want {
 			t.Errorf(`splitLastFold("İyi (BLUE) for bob", " for ") = %+v, want %+v`, got, want)
@@ -210,14 +195,7 @@ func TestReplaceFold(t *testing.T) {
 		})
 	}
 
-	t.Run("after a letter whose lower case is shorter (today: the letter is cut in half)", func(t *testing.T) {
-		if got, want := replaceFold("İ, Gained: +500", ", gained: ", " "), "\xc4  +500"; got != want {
-			t.Errorf(`replaceFold("İ, Gained: +500", ", gained: ", " ") = %q, want %q`, got, want)
-		}
-	})
-
-	t.Run("after a letter whose lower case is shorter (bug: should keep the letter)", func(t *testing.T) {
-		t.Skip("bug: the index is taken in the lower-cased copy, which is one byte shorter than the string")
+	t.Run("after a letter whose lower case is shorter", func(t *testing.T) {
 		if got, want := replaceFold("İ, Gained: +500", ", gained: ", " "), "İ +500"; got != want {
 			t.Errorf(`replaceFold("İ, Gained: +500", ", gained: ", " ") = %q, want %q`, got, want)
 		}

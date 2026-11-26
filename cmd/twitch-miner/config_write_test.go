@@ -270,12 +270,6 @@ func TestInlineList(t *testing.T) {
 			wantLine: `["` + strings.Repeat("a", 69) + `"]`,
 			wantOK:   false,
 		},
-		{
-			name:     "a line of 72 characters, one outside ASCII (today: too long)",
-			value:    []interface{}{strings.Repeat("a", 67) + "ñ"},
-			wantLine: `["` + strings.Repeat("a", 67) + `ñ"]`,
-			wantOK:   false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -286,8 +280,7 @@ func TestInlineList(t *testing.T) {
 		})
 	}
 
-	t.Run("a line of 72 characters, one outside ASCII (bug: should fit)", func(t *testing.T) {
-		t.Skip("bug: the width is counted in bytes, so a line with characters outside ASCII is split before 72 characters")
+	t.Run("a line of 72 characters, one outside ASCII", func(t *testing.T) {
 		value := []interface{}{strings.Repeat("a", 67) + "ñ"}
 		line, ok := inlineList(value)
 		if wantLine := `["` + strings.Repeat("a", 67) + `ñ"]`; line != wantLine || !ok {

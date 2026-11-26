@@ -22,7 +22,6 @@ func TestStringValue(t *testing.T) {
 		{"the text <nil>", "<nil>", ""},
 		{"a whole number", 42, "42"},
 		{"a decoded JSON number", float64(42), "42"},
-		{"a nine-digit JSON number (today: 1.23456789e+08)", float64(123456789), "1.23456789e+08"},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			if got := stringValue(row.value); got != row.want {
@@ -31,8 +30,7 @@ func TestStringValue(t *testing.T) {
 		})
 	}
 
-	t.Run("a nine-digit JSON number (bug: should read 123456789)", func(t *testing.T) {
-		t.Skip("bug: numbers of seven digits or more are written in scientific notation")
+	t.Run("a nine-digit JSON number", func(t *testing.T) {
 		if got, want := stringValue(float64(123456789)), "123456789"; got != want {
 			t.Errorf("stringValue(123456789.0) = %q, want %q", got, want)
 		}

@@ -94,7 +94,7 @@ func readWeb(name string) []byte {
 
 // etagMatches reads an If-None-Match header.
 func etagMatches(ifNoneMatch, etag string) bool {
-	return strings.Contains(ifNoneMatch, etag)
+	return strings.TrimSpace(ifNoneMatch) == "*" || strings.Contains(ifNoneMatch, etag)
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {

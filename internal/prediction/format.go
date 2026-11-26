@@ -13,10 +13,11 @@ func FormatNumber(value int) string {
 		v = -v
 	}
 	switch {
-	case v >= 1_000_000:
-		return sign + trimZeros(fmt.Sprintf("%.2fM", float64(v)/1_000_000))
+	// From 999,995 the thousands would round up to "1000k".
+	case v >= 999_995:
+		return sign + trimZeros(fmt.Sprintf("%.2f", float64(v)/1_000_000)) + "M"
 	case v >= 1_000:
-		return sign + trimZeros(fmt.Sprintf("%.2fk", float64(v)/1_000))
+		return sign + trimZeros(fmt.Sprintf("%.2f", float64(v)/1_000)) + "k"
 	default:
 		return fmt.Sprintf("%s%d", sign, v)
 	}
@@ -28,7 +29,7 @@ func FormatFloat(val float64) string {
 
 func trimZeros(val string) string {
 	val = strings.TrimRight(strings.TrimRight(val, "0"), ".")
-	if val == "" || val == "-" {
+	if val == "" || val == "-" || val == "-0" {
 		return "0"
 	}
 	return val
