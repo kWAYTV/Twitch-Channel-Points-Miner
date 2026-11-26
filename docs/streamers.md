@@ -31,7 +31,7 @@ Twitch credits watch time on at most two streams at once, so the miner watches u
 | `POINTS_ASCENDING` | The lowest balance first. |
 | `POINTS_DESCENDING` | The highest balance first. |
 
-An unknown value, or an empty list, falls back to the default above.
+An empty list falls back to the default above. A value the miner does not know stops it at startup, with a message that names it.
 
 Whatever the rule, two streamers that tie are taken in the order of your `streamers` list.
 

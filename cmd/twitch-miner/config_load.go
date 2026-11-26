@@ -27,7 +27,14 @@ func loadOrCreateConfig(path string) (config, error) {
 	} else {
 		tidySettings(path, settings, onDisk)
 	}
-	return decodeConfig(settings)
+	cfg, err := decodeConfig(settings)
+	if err != nil {
+		return config{}, err
+	}
+	if err := validateConfig(cfg); err != nil {
+		return config{}, err
+	}
+	return cfg, nil
 }
 
 // tidySettings rewrites a complete config that differs from the file on disk

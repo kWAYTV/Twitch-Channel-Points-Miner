@@ -26,8 +26,8 @@ type betConfig struct {
 
 func mergeBetSettings(base domain.BetSettings, override betConfig) domain.BetSettings {
 	out := base
-	if override.Strategy != "" {
-		out.Strategy = domain.Strategy(override.Strategy)
+	if strategy := settingName(override.Strategy); strategy != "" {
+		out.Strategy = domain.Strategy(strategy)
 	}
 	if override.Percentage != nil {
 		out.Percentage = override.Percentage
@@ -47,8 +47,8 @@ func mergeBetSettings(base domain.BetSettings, override betConfig) domain.BetSet
 	if override.FilterCondition != nil {
 		out.FilterCondition = mergeFilterCondition(out.FilterCondition, override.FilterCondition)
 	}
-	if override.DelayMode != "" {
-		out.DelayMode = domain.DelayMode(override.DelayMode)
+	if mode := settingName(override.DelayMode); mode != "" {
+		out.DelayMode = domain.DelayMode(mode)
 	}
 	if override.Delay != nil {
 		out.Delay = override.Delay

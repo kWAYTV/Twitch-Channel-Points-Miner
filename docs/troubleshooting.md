@@ -38,7 +38,13 @@ To stop collecting drops for a game, put it in `game_exclude`. To go after drops
 
 ## The miner stops with `invalid config`
 
-`config.json` is not valid JSON; the message says where. The usual causes are a missing or trailing comma and a missing quote. If you would rather start again, move the file away and the next start writes a fresh one.
+Either `config.json` is not valid JSON, and the message says where (the usual causes are a missing or trailing comma and a missing quote), or a setting has a value the miner does not know, such as a mistyped strategy. Then the message names the setting and lists what it accepts:
+
+```
+invalid config: bet.strategy "KELY" is not one of KELLY, SMART, MOST_VOTED, ...
+```
+
+Capitals and spaces do not matter; the spelling does. If you would rather start again, move the file away and the next start writes a fresh one.
 
 ## I cannot open the dashboard
 
