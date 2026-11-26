@@ -12,7 +12,7 @@ const (
 	settingsScript = "GET https://static.twitchcdn.net/config/settings.abc123.js"
 	masterPlaylist = "GET https://usher.ttvnw.net/api/channel/hls/streamer.m3u8?sig=signature&token=token%2B%26%3D"
 	mediaPlaylist  = "GET https://video.example/media/playlist.m3u8"
-	firstSegment   = "HEAD https://video.example/media/one.ts"
+	newestSegment  = "HEAD https://video.example/media/three.ts"
 	spadeTrack     = "POST https://spade.example/track"
 
 	playbackVariables = `{"isLive":true,"isVod":false,"login":"streamer","platform":"web","playerType":"site","vodID":""}`
@@ -34,9 +34,7 @@ func serveLiveStream(twitch *fakeTwitch) {
 	twitch.answer("PlaybackAccessToken", playbackVariables, ok(playbackToken))
 	twitch.serve(masterPlaylist, ok(masterPlaylistBody))
 	twitch.serve(mediaPlaylist, ok(mediaPlaylistBody))
-	twitch.serve(firstSegment, code(200, ""))
-	twitch.serve("HEAD https://video.example/media/two.ts", code(200, ""))
-	twitch.serve("HEAD https://video.example/media/three.ts", code(200, ""))
+	twitch.serve(newestSegment, code(200, ""))
 	twitch.serve(spadeTrack, code(204, ""))
 }
 
@@ -65,7 +63,7 @@ func TestClient_SendMinuteWatched(t *testing.T) {
 		if !equal(fake.twitch.Headers, wantHeaders) {
 			t.Errorf("spade request headers = %v, want %v", fake.twitch.Headers, wantHeaders)
 		}
-		wantWatched := []string{"https://video.example/media/one.ts", "https://video.example/media/two.ts", "https://video.example/media/three.ts"}
+		wantWatched := []string{"https://video.example/media/three.ts"}
 		if !equal(fake.twitch.Watched, wantWatched) {
 			t.Errorf("segments asked for = %v, want %v", fake.twitch.Watched, wantWatched)
 		}
@@ -89,7 +87,7 @@ func TestClient_SendMinuteWatched(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SendMinuteWatched error = %v, want none", err)
 		}
-		wantWatched := []string{"https://video.example/media/one.ts", "https://video.example/media/two.ts", "https://video.example/media/three.ts"}
+		wantWatched := []string{"https://video.example/media/three.ts"}
 		if !equal(fake.twitch.Watched, wantWatched) {
 			t.Errorf("segments asked for = %v, want %v", fake.twitch.Watched, wantWatched)
 		}

@@ -152,7 +152,7 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 	t.Run("a segment answering 503", func(t *testing.T) {
 		client, fake := setup(t)
 		serveLiveStream(fake.twitch)
-		fake.twitch.serve(firstSegment, code(503, ""))
+		fake.twitch.serve(newestSegment, code(503, ""))
 		streamer := newWatchedStreamer()
 
 		err := client.SendMinuteWatched(streamer)
@@ -163,7 +163,7 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 		if want := []string{"error: minute watch Streamer: stream segment returned status 503"}; !equal(fake.logger.Lines, want) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, want)
 		}
-		if want := []string{"https://video.example/media/one.ts"}; !equal(fake.twitch.Watched, want) {
+		if want := []string{"https://video.example/media/three.ts"}; !equal(fake.twitch.Watched, want) {
 			t.Errorf("segments asked for = %v, want %v", fake.twitch.Watched, want)
 		}
 		if streamer.Stream.PlaylistURL != "" {
@@ -177,7 +177,7 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 	t.Run("a segment answering 503, anonymized", func(t *testing.T) {
 		client, fake := setupAnonymized(t)
 		serveLiveStream(fake.twitch)
-		fake.twitch.serve(firstSegment, code(503, ""))
+		fake.twitch.serve(newestSegment, code(503, ""))
 
 		err := client.SendMinuteWatched(newWatchedStreamer())
 
@@ -192,7 +192,7 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 	t.Run("a segment down", func(t *testing.T) {
 		client, fake := setup(t)
 		serveLiveStream(fake.twitch)
-		fake.twitch.serve(firstSegment, down("connection refused"))
+		fake.twitch.serve(newestSegment, down("connection refused"))
 		streamer := newWatchedStreamer()
 
 		err := client.SendMinuteWatched(streamer)
@@ -200,14 +200,61 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SendMinuteWatched error = %v, want none", err)
 		}
-		if want := []string{"error: minute watch Streamer: stream segment request failed"}; !equal(fake.logger.Lines, want) {
+		if want := []string{"error: minute watch Streamer: stream segment request failed: connection refused"}; !equal(fake.logger.Lines, want) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, want)
 		}
-		if want := "https://video.example/media/playlist.m3u8"; streamer.Stream.PlaylistURL != want {
-			t.Errorf("playlist URL = %q, want it kept as %q", streamer.Stream.PlaylistURL, want)
+		if streamer.Stream.PlaylistURL != "" {
+			t.Errorf("playlist URL = %q, want it forgotten", streamer.Stream.PlaylistURL)
 		}
 		if !equal(fake.twitch.Tracked, tracked) {
 			t.Errorf("events tracked = %v, want %v", fake.twitch.Tracked, tracked)
+		}
+	})
+
+	t.Run("a segment down for a second minute", func(t *testing.T) {
+		client, fake := setup(t)
+		serveLiveStream(fake.twitch)
+		fake.twitch.serve(newestSegment, down("connection refused"))
+		streamer := newWatchedStreamer()
+		if err := client.SendMinuteWatched(streamer); err != nil {
+			t.Fatalf("first SendMinuteWatched error = %v, want none", err)
+		}
+
+		err := client.SendMinuteWatched(streamer)
+
+		if err != nil {
+			t.Fatalf("SendMinuteWatched error = %v, want none", err)
+		}
+		if want := []string{"error: minute watch Streamer: stream segment request failed: connection refused"}; !equal(fake.logger.Lines, want) {
+			t.Errorf("logged %q, want the failure once: %q", fake.logger.Lines, want)
+		}
+	})
+
+	t.Run("a segment down again after a minute that worked", func(t *testing.T) {
+		client, fake := setup(t)
+		serveLiveStream(fake.twitch)
+		streamer := newWatchedStreamer()
+		fake.twitch.serve(newestSegment, down("connection refused"))
+		if err := client.SendMinuteWatched(streamer); err != nil {
+			t.Fatalf("first SendMinuteWatched error = %v, want none", err)
+		}
+		fake.twitch.serve(newestSegment, code(200, ""))
+		if err := client.SendMinuteWatched(streamer); err != nil {
+			t.Fatalf("second SendMinuteWatched error = %v, want none", err)
+		}
+		fake.twitch.serve(newestSegment, down("connection refused"))
+
+		err := client.SendMinuteWatched(streamer)
+
+		if err != nil {
+			t.Fatalf("SendMinuteWatched error = %v, want none", err)
+		}
+		want := []string{
+			"error: minute watch Streamer: stream segment request failed: connection refused",
+			"error: minute watch Streamer: stream segment request failed: connection refused",
+		}
+		if !equal(fake.logger.Lines, want) {
+			t.Errorf("logged %q, want %q", fake.logger.Lines, want)
 		}
 	})
 
@@ -269,7 +316,7 @@ func TestClient_SendMinuteWatched_Playlist(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SendMinuteWatched error = %v, want none", err)
 		}
-		if want := []string{"error: minute watch Streamer: stream playlist request failed"}; !equal(fake.logger.Lines, want) {
+		if want := []string{"error: minute watch Streamer: stream playlist request failed: connection refused"}; !equal(fake.logger.Lines, want) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, want)
 		}
 	})

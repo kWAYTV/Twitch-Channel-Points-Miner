@@ -195,6 +195,110 @@ func TestClient_ClaimAllDropsFromInventoryWithStatuses(t *testing.T) {
 		}
 	})
 
+	t.Run("a drop Twitch says was claimed before", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(`{"data":{"claimDropRewards":{"status":"DROP_INSTANCE_ALREADY_CLAIMED"}}}`))
+
+		claimed, statuses, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none: it is not a new claim", claimed)
+		}
+		if want := []DropStatus{tokenStatus}; !equal(statuses, want) {
+			t.Errorf("statuses = %+v, want %+v", statuses, want)
+		}
+		if len(fake.clock.Slept) != 0 {
+			t.Errorf("waits = %v, want none", fake.clock.Slept)
+		}
+	})
+
+	t.Run("a second check, the claimed drop still listed as unclaimed", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+		if _, _, err := client.ClaimAllDropsFromInventoryWithStatuses(); err != nil {
+			t.Fatalf("first check: %v", err)
+		}
+
+		claimed, statuses, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none", claimed)
+		}
+		if want := []DropStatus{tokenStatus}; !equal(statuses, want) {
+			t.Errorf("statuses = %+v, want %+v", statuses, want)
+		}
+		if got, want := fake.twitch.sent("DropsPage_ClaimDropRewards"), []string{firstDropVariables}; !equal(got, want) {
+			t.Errorf("drop claims sent = %v, want the first check's only: %v", got, want)
+		}
+	})
+
+	t.Run("a second check after a claim Twitch refused", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(`{"data":{"claimDropRewards":{"status":"ELIGIBLE_FOR_NONE"}}}`))
+		if _, _, err := client.ClaimAllDropsFromInventoryWithStatuses(); err != nil {
+			t.Fatalf("first check: %v", err)
+		}
+
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none", claimed)
+		}
+		if got, want := fake.twitch.sent("DropsPage_ClaimDropRewards"), []string{firstDropVariables, firstDropVariables}; !equal(got, want) {
+			t.Errorf("drop claims sent = %v, want it tried again: %v", got, want)
+		}
+	})
+
+	t.Run("a drop of an excluded game", func(t *testing.T) {
+		client, fake := setup(t)
+		client.ExcludeGamesFromDropClaims(map[string]struct{}{"tanks": {}})
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+
+		claimed, statuses, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none", claimed)
+		}
+		if want := []DropStatus{tokenStatus}; !equal(statuses, want) {
+			t.Errorf("statuses = %+v, want %+v", statuses, want)
+		}
+		if got := fake.twitch.sent("DropsPage_ClaimDropRewards"); len(got) != 0 {
+			t.Errorf("drop claims sent = %v, want none", got)
+		}
+	})
+
+	t.Run("a drop of a game that is not the excluded one", func(t *testing.T) {
+		client, fake := setup(t)
+		client.ExcludeGamesFromDropClaims(map[string]struct{}{"planes": {}})
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if want := []ClaimedDrop{tokenDrop}; !equal(claimed, want) {
+			t.Errorf("claimed = %+v, want %+v", claimed, want)
+		}
+	})
+
 	t.Run("a drop not started, with no instance id", func(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.answer("Inventory", inventoryVariables, ok(`{"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[{"name":"Summer","game":{"displayName":"Tanks"},"timeBasedDrops":[{"name":"Token","requiredMinutesWatched":180,"self":{"dropInstanceID":null,"currentMinutesWatched":0,"isClaimed":false}}]}]}}}}`))

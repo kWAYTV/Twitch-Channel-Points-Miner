@@ -43,7 +43,7 @@ Turn on `watch_queue_logging` to have the miner explain which streamers got the 
 ```
 
 - `game_priority` prefers streamers playing these games, the first game the most.
-- `game_exclude` never watches a streamer while they play one of these games.
+- `game_exclude` never watches a streamer while they play one of these games, and never claims their drops.
 
 Names are matched without regard to upper or lower case, and have to be the game's name as Twitch shows it.
 

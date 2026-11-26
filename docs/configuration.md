@@ -31,7 +31,7 @@ Explained in [streamers and watching](streamers.md).
 | `streamer_overrides` | `{}` | Settings for one streamer, keyed by login. |
 | `watch_priority` | `["STREAK", "DROPS", "ORDER"]` | How the two watch slots are filled. Also `SUBSCRIBED`, `POINTS_ASCENDING`, `POINTS_DESCENDING`. |
 | `game_priority` | `[]` | Games to prefer, in order. |
-| `game_exclude` | `[]` | Games never to watch. |
+| `game_exclude` | `[]` | Games never to watch, and whose drops are never claimed. |
 
 ## What to claim
 

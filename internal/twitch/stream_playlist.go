@@ -98,23 +98,36 @@ func (t *Client) sendWatchPlaylist(streamer *domain.Streamer) error {
 		streamer.Stream.PlaylistURL = ""
 		return err
 	}
-	for _, segment := range segments {
-		req, err := http.NewRequestWithContext(ctx, http.MethodHead, segment.String(), nil)
-		if err != nil {
-			return errors.New("invalid stream segment URL")
-		}
-		req.Header.Set("User-Agent", t.userAgent)
-		resp, err := t.client.Do(req)
-		if err != nil {
-			return errors.New("stream segment request failed")
-		}
-		resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			streamer.Stream.PlaylistURL = ""
-			return fmt.Errorf("stream segment returned status %d", resp.StatusCode)
-		}
+	// The newest segment is the one a player would fetch next. Asking for
+	// every listed segment in turn could outlast the time allowed on a slow
+	// connection.
+	newest := segments[len(segments)-1]
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, newest.String(), nil)
+	if err != nil {
+		return errors.New("invalid stream segment URL")
+	}
+	req.Header.Set("User-Agent", t.userAgent)
+	resp, err := t.client.Do(req)
+	if err != nil {
+		streamer.Stream.PlaylistURL = ""
+		return fmt.Errorf("stream segment request failed: %w", causeWithoutURL(err))
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		streamer.Stream.PlaylistURL = ""
+		return fmt.Errorf("stream segment returned status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// causeWithoutURL is why a request failed, without the address it was sent
+// to: a stream's address names the channel and carries its access token.
+func causeWithoutURL(err error) error {
+	var failed *url.Error
+	if errors.As(err, &failed) {
+		return failed.Err
+	}
+	return err
 }
 
 func (t *Client) readStreamPlaylist(ctx context.Context, address string) ([]*url.URL, error) {
@@ -126,7 +139,7 @@ func (t *Client) readStreamPlaylist(ctx context.Context, address string) ([]*url
 	req.Close = true
 	resp, err := t.client.Do(req)
 	if err != nil {
-		return nil, errors.New("stream playlist request failed")
+		return nil, fmt.Errorf("stream playlist request failed: %w", causeWithoutURL(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

@@ -6,13 +6,7 @@ func (t *Client) SendMinuteWatched(streamer *domain.Streamer) error {
 	if err := t.UpdateStream(streamer); err != nil {
 		return err
 	}
-	if err := t.sendWatchPlaylist(streamer); err != nil && t.logger != nil {
-		name := displayName(streamer.Username)
-		if t.anonymizer != nil && t.anonymizer.Enabled() {
-			name = t.anonymizer.StreamerName(streamer)
-		}
-		t.logger.Errorf("minute watch %s: %v", name, err)
-	}
+	t.reportPlaylistCheck(streamer, t.sendWatchPlaylist(streamer))
 	if streamer.Stream.SpadeURL == "" {
 		if err := t.GetSpadeURL(streamer); err != nil {
 			return err
@@ -24,4 +18,22 @@ func (t *Client) SendMinuteWatched(streamer *domain.Streamer) error {
 		streamer.Stream.UpdateMinuteWatched()
 	}
 	return err
+}
+
+// reportPlaylistCheck logs a failed playlist check. The minute is still
+// counted without it, so a failure that repeats is logged once, and again only
+// after a check has worked in between.
+func (t *Client) reportPlaylistCheck(streamer *domain.Streamer, err error) {
+	if err == nil {
+		t.playlistFailures.Delete(streamer.Username)
+		return
+	}
+	if _, reported := t.playlistFailures.LoadOrStore(streamer.Username, struct{}{}); reported || t.logger == nil {
+		return
+	}
+	name := displayName(streamer.Username)
+	if t.anonymizer != nil && t.anonymizer.Enabled() {
+		name = t.anonymizer.StreamerName(streamer)
+	}
+	t.logger.Errorf("minute watch %s: %v", name, err)
 }

@@ -61,6 +61,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	m.logLoadSummary(streamerObjs, m.now().Sub(loadStartedAt))
 
 	claimDropsEnabled := m.shouldClaimDrops(streamerObjs)
+	tw.ExcludeGamesFromDropClaims(m.gameExclusions)
 	dropClaimer := drops.NewClaimer(tw, m.logger, m.showDropsProgress)
 	if m.ClaimDropsStartup && claimDropsEnabled {
 		dropClaimer.Claim("startup drop claim failed")

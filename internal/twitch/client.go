@@ -61,6 +61,10 @@ type Client struct {
 	logger         debugLogger
 	anonymizer     *privacy.Anonymizer
 	onGameChange   func(streamer *domain.Streamer, previous, current string)
+	dropClaims     dropClaims
+	// playlistFailures holds the streamers whose playlist check is failing,
+	// so the failure is logged once and not on every minute watched.
+	playlistFailures sync.Map
 	// sleep replaces time.Sleep when set, so waits can be skipped under test.
 	sleep func(time.Duration)
 	// now replaces time.Now when set.

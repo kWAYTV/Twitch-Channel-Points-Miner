@@ -28,8 +28,21 @@ type DropStatus struct {
 	Claimed        bool
 }
 
-// ClaimDrop claims a single drop instance.
+// The answers to a claim that mean the drop is the account's.
+const (
+	dropClaimed        = "ELIGIBLE_FOR_ALL"
+	dropAlreadyClaimed = "DROP_INSTANCE_ALREADY_CLAIMED"
+)
+
+// ClaimDrop claims a single drop instance, and reports whether the account
+// has it afterwards.
 func (t *Client) ClaimDrop(dropInstanceID string) (bool, error) {
+	status, err := t.claimDrop(dropInstanceID)
+	return status == dropClaimed || status == dropAlreadyClaimed, err
+}
+
+// claimDrop asks Twitch for the drop and returns its answer.
+func (t *Client) claimDrop(dropInstanceID string) (string, error) {
 	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsPageClaimDropRewards)
 	if op.Variables == nil {
 		op.Variables = map[string]interface{}{}
@@ -37,15 +50,10 @@ func (t *Client) ClaimDrop(dropInstanceID string) (bool, error) {
 	op.Variables["input"] = map[string]interface{}{"dropInstanceID": dropInstanceID}
 	resp, err := t.PostGQL(op)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	status := jsonvalue.At(resp, "data.claimDropRewards.status")
-	switch status {
-	case "DROP_INSTANCE_ALREADY_CLAIMED", "ELIGIBLE_FOR_ALL":
-		return true, nil
-	default:
-		return false, nil
-	}
+	status, _ := jsonvalue.At(resp, "data.claimDropRewards.status").(string)
+	return status, nil
 }
 
 func (t *Client) ClaimAllDropsFromInventory() ([]ClaimedDrop, error) {
@@ -62,17 +70,22 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 	statuses := dropStatusesFromInventory(inv)
 	var claimErr error
 	for _, status := range statuses {
-		if status.DropInstanceID == "" || status.Claimed {
+		if status.DropInstanceID == "" || status.Claimed || t.dropClaims.skips(status) {
 			continue
 		}
-		ok, err := t.ClaimDrop(status.DropInstanceID)
+		answer, err := t.claimDrop(status.DropInstanceID)
 		if err != nil {
 			if claimErr == nil {
 				claimErr = err
 			}
 			continue
 		}
-		if ok {
+		if answer == dropClaimed || answer == dropAlreadyClaimed {
+			t.dropClaims.settle(status.DropInstanceID)
+		}
+		// Only a drop claimed just now is reported: one that was claimed
+		// before is nothing new.
+		if answer == dropClaimed {
 			claimedDrops = append(claimedDrops, ClaimedDrop{
 				RewardName:    status.RewardName,
 				CampaignName:  status.CampaignName,
