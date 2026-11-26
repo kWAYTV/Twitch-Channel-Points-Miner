@@ -13,16 +13,15 @@ type filterConditionConfig struct {
 }
 
 type betConfig struct {
-	Strategy           string                 `json:"strategy"`
-	Percentage         *int                   `json:"percentage"`
-	PercentageGap      *int                   `json:"percentage_gap"`
-	MaxPoints          *int                   `json:"max_points"`
-	StealthMode        *bool                  `json:"stealth_mode"`
-	DeductStakeOnPlace *bool                  `json:"deduct_stake_on_place"`
-	DelayMode          string                 `json:"delay_mode"`
-	Delay              *float64               `json:"delay"`
-	MinimumPoints      *int                   `json:"minimum_points"`
-	FilterCondition    *filterConditionConfig `json:"filter_condition"`
+	Strategy        string                 `json:"strategy"`
+	Percentage      *int                   `json:"percentage"`
+	PercentageGap   *int                   `json:"percentage_gap"`
+	MaxPoints       *int                   `json:"max_points"`
+	StealthMode     *bool                  `json:"stealth_mode"`
+	DelayMode       string                 `json:"delay_mode"`
+	Delay           *float64               `json:"delay"`
+	MinimumPoints   *int                   `json:"minimum_points"`
+	FilterCondition *filterConditionConfig `json:"filter_condition"`
 }
 
 func mergeBetSettings(base domain.BetSettings, override betConfig) domain.BetSettings {
@@ -44,9 +43,6 @@ func mergeBetSettings(base domain.BetSettings, override betConfig) domain.BetSet
 	}
 	if override.StealthMode != nil {
 		out.StealthMode = override.StealthMode
-	}
-	if override.DeductStakeOnPlace != nil {
-		out.DeductStakeOnPlace = override.DeductStakeOnPlace
 	}
 	if override.FilterCondition != nil {
 		out.FilterCondition = mergeFilterCondition(out.FilterCondition, override.FilterCondition)

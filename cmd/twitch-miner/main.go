@@ -17,7 +17,7 @@ func main() {
 	applyTimezoneOverride(cfg.Timezone, logger)
 
 	session := miner.New(minerOptionsFrom(cfg, loggerSettings))
-	startAnalytics(cfg.Analytics, logger)
+	startDashboard(cfg.Dashboard, logger)
 	startTelegram(cfg.Telegram)
 
 	if len(cfg.Streamers) > 0 {

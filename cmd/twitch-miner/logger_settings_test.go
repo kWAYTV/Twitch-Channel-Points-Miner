@@ -11,13 +11,12 @@ import (
 func TestLoggerSettingsFrom(t *testing.T) {
 	t.Run("every setting set", func(t *testing.T) {
 		cfg := config{
-			SaveLogs:    true,
-			Emojis:      true,
-			ShowSeconds: true,
-			Debug:       true,
-			DebugDeep:   true,
-			Privacy:     privacyConfig{AnonymizeLogs: true},
-			Discord:     discordConfig{WebhookAPI: "https://discord.com/api/webhooks/1/a", Events: []string{"BET_WIN"}},
+			SaveLogs:      true,
+			Emojis:        true,
+			ShowSeconds:   true,
+			Debug:         debugFull,
+			AnonymizeLogs: true,
+			Discord:       discordConfig{Webhook: "https://discord.com/api/webhooks/1/a", Events: []string{"BET_WIN"}},
 		}
 		want := logging.LoggerSettings{
 			Save:          true,
@@ -49,9 +48,9 @@ func TestLoggerSettingsFrom(t *testing.T) {
 		{name: "only saving logs", cfg: config{SaveLogs: true}, want: logging.LoggerSettings{Save: true}},
 		{name: "only emojis", cfg: config{Emojis: true}, want: logging.LoggerSettings{Emoji: true}},
 		{name: "only seconds", cfg: config{ShowSeconds: true}, want: logging.LoggerSettings{ShowSeconds: true}},
-		{name: "only debug", cfg: config{Debug: true}, want: logging.LoggerSettings{Debug: true}},
-		{name: "only deep debug", cfg: config{DebugDeep: true}, want: logging.LoggerSettings{DebugDeep: true}},
-		{name: "only anonymous logs", cfg: config{Privacy: privacyConfig{AnonymizeLogs: true}}, want: logging.LoggerSettings{AnonymizeLogs: true}},
+		{name: "only debug", cfg: config{Debug: debugSummary}, want: logging.LoggerSettings{Debug: true}},
+		{name: "only full debug", cfg: config{Debug: debugFull}, want: logging.LoggerSettings{Debug: true, DebugDeep: true}},
+		{name: "only anonymous logs", cfg: config{AnonymizeLogs: true}, want: logging.LoggerSettings{AnonymizeLogs: true}},
 	}
 	for _, tt := range oneSwitch {
 		t.Run(tt.name, func(t *testing.T) {

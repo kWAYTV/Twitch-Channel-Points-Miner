@@ -1,6 +1,5 @@
 {
   "username": "your-twitch-username",
-  "password": "",
   "auto_update": true,
 
   "streamers": [],
@@ -11,15 +10,13 @@
   "game_exclude": [],
 
   "claim_drops": true,
-  "claim_drops_startup": true,
   "claim_moments": true,
   "follow_raid": true,
   "community_goals": false,
   "chat_presence": "ONLINE",
-  "disable_at_in_nickname": false,
-  "watch_streak_warm_start_cache": true,
+  "mention_without_at": false,
 
-  "betting(make_predictions)": true,
+  "make_predictions": true,
   "bet": {
     "strategy": "SMART",
     "percentage": 5,
@@ -27,7 +24,6 @@
     "max_points": 50000,
     "minimum_points": 0,
     "stealth_mode": false,
-    "deduct_stake_on_place": true,
     "delay_mode": "FROM_END",
     "delay": 6,
     "filter_condition": {
@@ -38,17 +34,17 @@
   },
 
   "discord": {
-    "webhook_api": "",
+    "webhook": "",
     "events": []
   },
   "telegram": {
     "token": "",
     "chat_id": "",
     "events": [],
-    "disable_notification": false
+    "silent": false
   },
 
-  "analytics": {
+  "dashboard": {
     "enabled": true,
     "host": "127.0.0.1",
     "port": 5000
@@ -58,13 +54,9 @@
   "show_seconds": false,
   "show_game": true,
   "show_drops_progress": false,
-  "watch_queue_logging": false,
+  "show_watch_queue": false,
   "save_logs": false,
   "timezone": null,
-  "privacy": {
-    "anonymize_logs": false
-  },
-  "debug": false,
-  "debug_deep": false,
-  "disable_ssl_cert_verification": false
+  "anonymize_logs": false,
+  "debug": false
 }

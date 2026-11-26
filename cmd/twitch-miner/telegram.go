@@ -36,18 +36,18 @@ func (c *chatID) UnmarshalJSON(data []byte) error {
 }
 
 type telegramConfig struct {
-	ChatID              chatID   `json:"chat_id"`
-	Token               string   `json:"token"`
-	Events              []string `json:"events"`
-	DisableNotification bool     `json:"disable_notification"`
+	ChatID chatID   `json:"chat_id"`
+	Token  string   `json:"token"`
+	Events []string `json:"events"`
+	Silent bool     `json:"silent"`
 }
 
 func defaultTelegramConfig() map[string]interface{} {
 	return map[string]interface{}{
-		"chat_id":              "",
-		"token":                "",
-		"events":               []interface{}{},
-		"disable_notification": false,
+		"chat_id": "",
+		"token":   "",
+		"events":  []interface{}{},
+		"silent":  false,
 	}
 }
 
@@ -56,7 +56,7 @@ func (c telegramConfig) settings() notify.TelegramSettings {
 		ChatID:              string(c.ChatID),
 		Token:               c.Token,
 		Events:              c.Events,
-		DisableNotification: c.DisableNotification,
+		DisableNotification: c.Silent,
 	}
 }
 

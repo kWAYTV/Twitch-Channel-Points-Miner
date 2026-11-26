@@ -20,7 +20,7 @@ var filterConditionLayout = &layout{
 var betLayout = &layout{
 	groups: [][]string{{
 		"strategy", "percentage", "percentage_gap", "max_points", "minimum_points", "stealth_mode",
-		"deduct_stake_on_place", "delay_mode", "delay", "filter_condition",
+		"delay_mode", "delay", "filter_condition",
 	}},
 	children: map[string]*layout{"filter_condition": filterConditionLayout},
 }
@@ -36,32 +36,30 @@ var streamerOverrideLayout = &layout{
 var configLayout = &layout{
 	groups: [][]string{
 		// Account
-		{"username", "password", "auto_update"},
+		{"username", "auto_update"},
 		// Who to mine and in which order
 		{"streamers", "streamers_exclude", "streamer_overrides", "watch_priority", "game_priority", "game_exclude"},
 		// What to claim and join
 		{
-			"claim_drops", "claim_drops_startup", "claim_moments", "follow_raid", "community_goals", "chat_presence",
-			"disable_at_in_nickname", "watch_streak_warm_start_cache",
+			"claim_drops", "claim_moments", "follow_raid", "community_goals", "chat_presence", "mention_without_at",
 		},
 		// Predictions
-		{"betting(make_predictions)", "bet"},
+		{"make_predictions", "bet"},
 		// Notifications
 		{"discord", "telegram"},
 		// Dashboard
-		{"analytics"},
+		{"dashboard"},
 		// Console and logs
 		{
-			"emojis", "show_seconds", "show_game", "show_drops_progress", "watch_queue_logging", "save_logs", "timezone",
-			"privacy", "debug", "debug_deep", "disable_ssl_cert_verification",
+			"emojis", "show_seconds", "show_game", "show_drops_progress", "show_watch_queue", "save_logs", "timezone",
+			"anonymize_logs", "debug",
 		},
 	},
 	children: map[string]*layout{
 		"streamer_overrides": {each: streamerOverrideLayout},
 		"bet":                betLayout,
-		"discord":            {groups: [][]string{{"webhook_api", "events"}}},
-		"telegram":           {groups: [][]string{{"token", "chat_id", "events", "disable_notification"}}},
-		"analytics":          {groups: [][]string{{"enabled", "host", "port"}}},
-		"privacy":            {groups: [][]string{{"anonymize_logs"}}},
+		"discord":            {groups: [][]string{{"webhook", "events"}}},
+		"telegram":           {groups: [][]string{{"token", "chat_id", "events", "silent"}}},
+		"dashboard":          {groups: [][]string{{"enabled", "host", "port"}}},
 	},
 }

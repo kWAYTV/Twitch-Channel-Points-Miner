@@ -154,24 +154,9 @@ func TestClient_connectAndListen(t *testing.T) {
 		}
 	})
 
-	t.Run("a self-signed server, certificate checks off", func(t *testing.T) {
-		endpoint := fakePubSubTLS(t, func(conn *websocket.Conn) {
-			receive(conn)
-			send(conn, `{"type":"RECONNECT"}`)
-			untilClosed(conn)
-		})
-		h := setup(world{endpoint: endpoint, insecure: true})
-
-		err := listen(t, h, []string{"video-playback-by-id.123"}, make(chan struct{}))
-
-		if !errors.Is(err, ErrReconnectRequested) {
-			t.Errorf("connectAndListen = %v, want it to be ErrReconnectRequested", err)
-		}
-	})
-
-	t.Run("a self-signed server, certificate checks on", func(t *testing.T) {
+	t.Run("a self-signed server", func(t *testing.T) {
 		endpoint := fakePubSubTLS(t, untilClosed)
-		h := setup(world{endpoint: endpoint, insecure: false})
+		h := setup(world{endpoint: endpoint})
 
 		err := listen(t, h, []string{"video-playback-by-id.123"}, make(chan struct{}))
 

@@ -85,21 +85,6 @@ func TestClient_Start(t *testing.T) {
 		}
 	})
 
-	t.Run("no user ID, certificate checks off", func(t *testing.T) {
-		h := setup(world{endpoint: notPubSub(t), insecure: true})
-		h.account.ID = ""
-
-		h.client.Start(make(chan struct{}))
-
-		want := []string{
-			"info: SSL certificate verification is disabled! Be aware!",
-			"error: PubSub topic error: no user id for pubsub",
-		}
-		if got := h.logger.Lines; !reflect.DeepEqual(got, want) {
-			t.Errorf("lines = %q, want %q", got, want)
-		}
-	})
-
 	t.Run("the server asks to reconnect", func(t *testing.T) {
 		var connections atomic.Int32
 		reconnected := make(chan sent, 1)

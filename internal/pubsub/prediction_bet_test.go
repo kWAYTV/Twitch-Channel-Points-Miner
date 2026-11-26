@@ -44,35 +44,6 @@ func TestClient_placePrediction(t *testing.T) {
 		}
 	})
 
-	t.Run("deduct_stake_on_place off", func(t *testing.T) {
-		streamer := bettor()
-		streamer.Settings.Bet.DeductStakeOnPlace = pointer(false)
-		h := betDue(t, world{streamers: []*domain.Streamer{streamer}})
-
-		h.timers[0].fire()
-
-		want := effects{
-			Timers: []time.Duration{2 * time.Minute},
-			Bets:   []bet{{"ev-1", "yes", 50}},
-			Lines:  []string{betStartLine, betPlacedLine},
-		}
-		if got := h.effects(); !reflect.DeepEqual(got, want) {
-			t.Errorf("effects = %+v, want %+v", got, want)
-		}
-	})
-
-	t.Run("deduct_stake_on_place on", func(t *testing.T) {
-		streamer := bettor()
-		streamer.Settings.Bet.DeductStakeOnPlace = pointer(true)
-		h := betDue(t, world{streamers: []*domain.Streamer{streamer}})
-
-		h.timers[0].fire()
-
-		if got, want := h.gains, []gain{{"tester", -50, "PREDICTION", 0}}; !reflect.DeepEqual(got, want) {
-			t.Errorf("gains = %+v, want %+v", got, want)
-		}
-	})
-
 	t.Run("no gain handler", func(t *testing.T) {
 		streamer := bettor()
 		h := betDue(t, world{streamers: []*domain.Streamer{streamer}, noHandlers: true})
@@ -83,18 +54,6 @@ func TestClient_placePrediction(t *testing.T) {
 			t.Errorf("bets = %+v, want %+v", got, want)
 		}
 		if got, want := streamer.ChannelPoints, 950; got != want {
-			t.Errorf("balance = %d, want %d", got, want)
-		}
-	})
-
-	t.Run("no gain handler, deduct_stake_on_place off", func(t *testing.T) {
-		streamer := bettor()
-		streamer.Settings.Bet.DeductStakeOnPlace = pointer(false)
-		h := betDue(t, world{streamers: []*domain.Streamer{streamer}, noHandlers: true})
-
-		h.timers[0].fire()
-
-		if got, want := streamer.ChannelPoints, 1000; got != want {
 			t.Errorf("balance = %d, want %d", got, want)
 		}
 	})

@@ -12,7 +12,7 @@ import (
 )
 
 func TestMiner_resolveGameName(t *testing.T) {
-	showGame := Options{Username: "account", ShowGame: true, WatchStreakWarmStartCache: true}
+	showGame := Options{Username: "account", ShowGame: true}
 
 	t.Run("no streamer", func(t *testing.T) {
 		h := setup(t, showGame)

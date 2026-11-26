@@ -164,7 +164,7 @@ func TestMarkStream(t *testing.T) {
 
 func TestMiner_syncStreakSince(t *testing.T) {
 	startedAt := testNow.Add(-5 * time.Minute)
-	cached := Options{Username: "account", WatchStreakWarmStartCache: true}
+	cached := Options{Username: "account"}
 	tests := []struct {
 		name       string
 		before     streamMark

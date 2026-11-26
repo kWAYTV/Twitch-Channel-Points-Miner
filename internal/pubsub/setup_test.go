@@ -37,7 +37,6 @@ type world struct {
 	// now is the time the client reads; noon when left zero.
 	now       time.Time
 	endpoint  string
-	insecure  bool
 	anonymise bool
 	// deepDebug gives the client a logger that offers deep debug output.
 	deepDebug bool
@@ -89,7 +88,7 @@ func setup(w world) *harness {
 	if w.noHandlers {
 		onGain, onPresence = nil, nil
 	}
-	h.client = newClient(env, h.account, logger, privacy.New(w.anonymise), w.streamers, w.insecure, onGain, onPresence)
+	h.client = newClient(env, h.account, logger, privacy.New(w.anonymise), w.streamers, onGain, onPresence)
 	return h
 }
 

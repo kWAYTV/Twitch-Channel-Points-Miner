@@ -11,7 +11,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
-var cacheOptions = Options{Username: "account", WatchStreakWarmStartCache: true}
+var cacheOptions = Options{Username: "account"}
 
 // resolvedAlice is onlineStreamer("alice", "1", "Poker") with its watch streak resolved.
 func resolvedAlice() *domain.Streamer {
@@ -73,23 +73,6 @@ func TestMiner_loadWarmStartCache(t *testing.T) {
 			t.Errorf("applyWarmStartCache() = true, want false")
 		}
 	})
-
-	t.Run("the warm-start cache turned off", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "log", "watch_streak_cache.account.json")
-		earlier := setup(t, cacheOptions)
-		earlier.miner.warmStartCachePath = path
-		earlier.miner.loadWarmStartCache()
-		earlier.miner.saveWarmStartCacheSnapshot([]*domain.Streamer{resolvedAlice()})
-		h := setup(t, Options{Username: "account"})
-		h.miner.warmStartCachePath = path
-		alice := onlineStreamer("alice", "1", "Poker")
-
-		h.miner.loadWarmStartCache()
-
-		if applied := h.miner.applyWarmStartCache(alice); applied {
-			t.Errorf("applyWarmStartCache() = true, want false")
-		}
-	})
 }
 
 func TestMiner_saveWarmStartCacheSnapshot(t *testing.T) {
@@ -111,8 +94,9 @@ func TestMiner_saveWarmStartCacheSnapshot(t *testing.T) {
 		}
 	})
 
-	t.Run("the warm-start cache turned off", func(t *testing.T) {
-		h := setup(t, Options{Username: "account"})
+	t.Run("before the cache is loaded", func(t *testing.T) {
+		h := setup(t, cacheOptions)
+		h.miner.warmStartCache = nil
 
 		h.miner.saveWarmStartCacheSnapshot([]*domain.Streamer{onlineStreamer("alice", "1", "Poker")})
 
@@ -165,8 +149,9 @@ func TestMiner_syncWarmStartCacheFromStreamer(t *testing.T) {
 		h.miner.syncWarmStartCacheFromStreamer(nil)
 	})
 
-	t.Run("the warm-start cache turned off", func(t *testing.T) {
-		h := setup(t, Options{Username: "account"})
+	t.Run("before the cache is loaded", func(t *testing.T) {
+		h := setup(t, cacheOptions)
+		h.miner.warmStartCache = nil
 
 		h.miner.syncWarmStartCacheFromStreamer(onlineStreamer("alice", "1", "Poker"))
 
@@ -283,8 +268,9 @@ func TestMiner_applyWarmStartCache(t *testing.T) {
 		}
 	})
 
-	t.Run("the warm-start cache turned off", func(t *testing.T) {
-		h := setup(t, Options{Username: "account"})
+	t.Run("before the cache is loaded", func(t *testing.T) {
+		h := setup(t, cacheOptions)
+		h.miner.warmStartCache = nil
 
 		if got := h.miner.applyWarmStartCache(onlineStreamer("alice", "1", "Poker")); got {
 			t.Errorf("applyWarmStartCache() = true, want false")

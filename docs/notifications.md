@@ -4,23 +4,23 @@ The miner can send what happens to a Discord channel, a Telegram chat, or both. 
 
 ```json
 "discord": {
-  "webhook_api": "https://discord.com/api/webhooks/...",
+  "webhook": "https://discord.com/api/webhooks/...",
   "events": []
 },
 "telegram": {
   "token": "123456:ABC...",
   "chat_id": 123456789,
   "events": ["STREAMER_ONLINE", "BET_WIN", "BET_LOSE"],
-  "disable_notification": false
+  "silent": false
 }
 ```
 
 ## Discord
 
 1. In Discord, open the channel's settings, then Integrations, then Webhooks, and create a webhook.
-2. Copy its URL into `discord.webhook_api`.
+2. Copy its URL into `discord.webhook`.
 
-An empty `webhook_api` turns Discord off.
+An empty `webhook` turns Discord off.
 
 ## Telegram
 
@@ -28,7 +28,7 @@ An empty `webhook_api` turns Discord off.
 2. Open a chat with your new bot and send it any message. A bot cannot write to you first.
 3. Set `telegram.chat_id` to your numeric chat id. For a public channel the bot is an admin of, `"@channelname"` works too.
 
-`disable_notification: true` delivers messages silently. An empty `token` or `chat_id` turns Telegram off.
+`"silent": true` delivers messages silently. An empty `token` or `chat_id` turns Telegram off.
 
 Treat the token and the webhook URL like passwords: anyone who has one can post as your bot or to your channel.
 

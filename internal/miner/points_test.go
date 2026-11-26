@@ -156,7 +156,7 @@ func TestMiner_logPointsDelta(t *testing.T) {
 }
 
 func TestMiner_handlePubSubGain(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 	resolvedEntry := streak.WarmStartEntry{
 		AccountName:     "account",
 		StreamerLogin:   "alice",

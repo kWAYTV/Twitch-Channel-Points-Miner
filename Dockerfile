@@ -28,6 +28,10 @@ USER 1000:1000
 WORKDIR /data
 # config.json, cookies/, log/ and analytics/ live in /data.
 # The image is the unit of update, so the self-updater is forced off.
+# The dashboard address is set under its older name on purpose: a
+# TCPM_DASHBOARD_ADDR or a TCPM_ANALYTICS_ADDR given to the container both
+# take priority over it. Set as TCPM_DASHBOARD_ADDR here, it would beat a
+# TCPM_ANALYTICS_ADDR from an existing compose file.
 ENV TCPM_DATA_DIR=/data \
     TCPM_DISABLE_AUTO_UPDATE=1 \
     TCPM_ANALYTICS_ADDR=0.0.0.0:5000

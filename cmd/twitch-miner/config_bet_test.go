@@ -12,16 +12,15 @@ func ptr[T any](v T) *T { return &v }
 // customBet has every field set to something other than its default.
 func customBet() domain.BetSettings {
 	return domain.BetSettings{
-		Strategy:           "PERCENTAGE",
-		Percentage:         ptr(10),
-		PercentageGap:      ptr(30),
-		MaxPoints:          ptr(1000),
-		MinimumPoints:      ptr(100),
-		StealthMode:        ptr(true),
-		DeductStakeOnPlace: ptr(false),
-		FilterCondition:    &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
-		Delay:              ptr(10.0),
-		DelayMode:          "FROM_START",
+		Strategy:        "PERCENTAGE",
+		Percentage:      ptr(10),
+		PercentageGap:   ptr(30),
+		MaxPoints:       ptr(1000),
+		MinimumPoints:   ptr(100),
+		StealthMode:     ptr(true),
+		FilterCondition: &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
+		Delay:           ptr(10.0),
+		DelayMode:       "FROM_START",
 	}
 }
 
@@ -36,16 +35,15 @@ func TestMergeBetSettings(t *testing.T) {
 	t.Run("nothing overridden and nothing in the base", func(t *testing.T) {
 		got := mergeBetSettings(domain.BetSettings{}, betConfig{})
 		want := domain.BetSettings{
-			Strategy:           "SMART",
-			Percentage:         ptr(5),
-			PercentageGap:      ptr(20),
-			MaxPoints:          ptr(50000),
-			MinimumPoints:      ptr(0),
-			StealthMode:        ptr(false),
-			DeductStakeOnPlace: ptr(true),
-			FilterCondition:    nil,
-			Delay:              ptr(6.0),
-			DelayMode:          "FROM_END",
+			Strategy:        "SMART",
+			Percentage:      ptr(5),
+			PercentageGap:   ptr(20),
+			MaxPoints:       ptr(50000),
+			MinimumPoints:   ptr(0),
+			StealthMode:     ptr(false),
+			FilterCondition: nil,
+			Delay:           ptr(6.0),
+			DelayMode:       "FROM_END",
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("mergeBetSettings() = %+v, want %+v", got, want)
@@ -54,29 +52,27 @@ func TestMergeBetSettings(t *testing.T) {
 
 	t.Run("everything overridden", func(t *testing.T) {
 		override := betConfig{
-			Strategy:           "HIGH_ODDS",
-			Percentage:         ptr(7),
-			PercentageGap:      ptr(15),
-			MaxPoints:          ptr(2500),
-			MinimumPoints:      ptr(300),
-			StealthMode:        ptr(false),
-			DeductStakeOnPlace: ptr(true),
-			FilterCondition:    &filterConditionConfig{By: "odds", Where: "lte", Value: ptr(1.5)},
-			Delay:              ptr(2.5),
-			DelayMode:          "PERCENTAGE",
+			Strategy:        "HIGH_ODDS",
+			Percentage:      ptr(7),
+			PercentageGap:   ptr(15),
+			MaxPoints:       ptr(2500),
+			MinimumPoints:   ptr(300),
+			StealthMode:     ptr(false),
+			FilterCondition: &filterConditionConfig{By: "odds", Where: "lte", Value: ptr(1.5)},
+			Delay:           ptr(2.5),
+			DelayMode:       "PERCENTAGE",
 		}
 		got := mergeBetSettings(customBet(), override)
 		want := domain.BetSettings{
-			Strategy:           "HIGH_ODDS",
-			Percentage:         ptr(7),
-			PercentageGap:      ptr(15),
-			MaxPoints:          ptr(2500),
-			MinimumPoints:      ptr(300),
-			StealthMode:        ptr(false),
-			DeductStakeOnPlace: ptr(true),
-			FilterCondition:    &domain.FilterCondition{By: "ODDS", Where: "LTE", Value: ptr(1.5)},
-			Delay:              ptr(2.5),
-			DelayMode:          "PERCENTAGE",
+			Strategy:        "HIGH_ODDS",
+			Percentage:      ptr(7),
+			PercentageGap:   ptr(15),
+			MaxPoints:       ptr(2500),
+			MinimumPoints:   ptr(300),
+			StealthMode:     ptr(false),
+			FilterCondition: &domain.FilterCondition{By: "ODDS", Where: "LTE", Value: ptr(1.5)},
+			Delay:           ptr(2.5),
+			DelayMode:       "PERCENTAGE",
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("mergeBetSettings() = %+v, want %+v", got, want)
@@ -96,7 +92,6 @@ func TestMergeBetSettings(t *testing.T) {
 		{name: "only the maximum points", override: betConfig{MaxPoints: ptr(2500)}, change: func(want *domain.BetSettings) { want.MaxPoints = ptr(2500) }},
 		{name: "only the minimum points", override: betConfig{MinimumPoints: ptr(300)}, change: func(want *domain.BetSettings) { want.MinimumPoints = ptr(300) }},
 		{name: "only stealth mode", override: betConfig{StealthMode: ptr(false)}, change: func(want *domain.BetSettings) { want.StealthMode = ptr(false) }},
-		{name: "only the stake deduction", override: betConfig{DeductStakeOnPlace: ptr(true)}, change: func(want *domain.BetSettings) { want.DeductStakeOnPlace = ptr(true) }},
 		{name: "only the delay mode", override: betConfig{DelayMode: "PERCENTAGE"}, change: func(want *domain.BetSettings) { want.DelayMode = "PERCENTAGE" }},
 		{name: "only the delay", override: betConfig{Delay: ptr(2.5)}, change: func(want *domain.BetSettings) { want.Delay = ptr(2.5) }},
 		{

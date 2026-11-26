@@ -123,7 +123,7 @@ func TestWatchInterval(t *testing.T) {
 }
 
 func TestMiner_watchMinute(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 
 	t.Run("a minute sent", func(t *testing.T) {
 		h := setup(t, options)

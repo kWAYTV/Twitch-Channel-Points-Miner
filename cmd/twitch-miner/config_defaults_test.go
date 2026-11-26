@@ -70,16 +70,16 @@ func TestFillMissing(t *testing.T) {
 		},
 		{
 			name:         "a group that is null",
-			settings:     map[string]interface{}{"privacy": nil},
-			defaults:     map[string]interface{}{"privacy": map[string]interface{}{"anonymize_logs": false}},
-			wantSettings: map[string]interface{}{"privacy": map[string]interface{}{"anonymize_logs": false}},
+			settings:     map[string]interface{}{"dashboard": nil},
+			defaults:     map[string]interface{}{"dashboard": map[string]interface{}{"enabled": true}},
+			wantSettings: map[string]interface{}{"dashboard": map[string]interface{}{"enabled": true}},
 			wantAdded:    true,
 		},
 		{
 			name:         "a group that is a plain value",
-			settings:     map[string]interface{}{"privacy": "yes"},
-			defaults:     map[string]interface{}{"privacy": map[string]interface{}{"anonymize_logs": false}},
-			wantSettings: map[string]interface{}{"privacy": map[string]interface{}{"anonymize_logs": false}},
+			settings:     map[string]interface{}{"dashboard": "yes"},
+			defaults:     map[string]interface{}{"dashboard": map[string]interface{}{"enabled": true}},
+			wantSettings: map[string]interface{}{"dashboard": map[string]interface{}{"enabled": true}},
 			wantAdded:    true,
 		},
 		{

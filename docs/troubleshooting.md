@@ -24,8 +24,8 @@ PUID=$(id -u) PGID=$(id -g) docker compose up -d
 
 ## I cannot open the dashboard
 
-- **On the same machine:** check `analytics.enabled` is `true` and nothing else uses port 5000. Change `analytics.port` if something does.
-- **From another machine:** outside Docker the page only listens on `127.0.0.1`. Set `analytics.host` to `0.0.0.0`.
+- **On the same machine:** check `dashboard.enabled` is `true` and nothing else uses port 5000. Change `dashboard.port` if something does.
+- **From another machine:** outside Docker the page only listens on `127.0.0.1`. Set `dashboard.host` to `0.0.0.0`.
 - **In Docker:** check the port is published (`docker compose ps`), and that it is not published on `127.0.0.1` only.
 
 More in [dashboard](dashboard.md).
@@ -47,8 +47,8 @@ Set `timezone` in `config.json` to an IANA name such as `Europe/Madrid`. In Dock
 
 ## I need more detail in the logs
 
-- `watch_queue_logging` explains who is being watched and why.
+- `show_watch_queue` explains who is being watched and why.
 - `save_logs` also writes the console output to `log/<username>.log`.
-- `debug` adds a summary of each request. `debug_deep` adds full payloads, which include private data: do not share them unredacted. Deep debug is ignored while `privacy.anonymize_logs` is on.
+- `"debug": true` adds a summary of each request. `"debug": "full"` also adds full payloads, which include private data: do not share them unredacted. Full payloads are left out while `anonymize_logs` is on.
 
-When reporting a bug, turn on `privacy.anonymize_logs` to replace streamer names and balances with stand-ins before you paste a log.
+When reporting a bug, turn on `anonymize_logs` to replace streamer names and balances with stand-ins before you paste a log.

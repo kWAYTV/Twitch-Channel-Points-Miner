@@ -42,7 +42,6 @@ type Client struct {
 	account     Account
 	logger      Logger
 	anonymizer  *privacy.Anonymizer
-	disableSSL  bool
 	env         environment
 	streamers   []*domain.Streamer
 	streamerMap map[string]*domain.Streamer
@@ -86,11 +85,10 @@ func NewClient(
 	logger Logger,
 	anonymizer *privacy.Anonymizer,
 	streamers []*domain.Streamer,
-	disableSSL bool,
 	onGain func(*domain.Streamer, int, string, int),
 	onPresence func(*domain.Streamer, bool, string),
 ) *Client {
-	return newClient(twitchEnvironment(), account, logger, anonymizer, streamers, disableSSL, onGain, onPresence)
+	return newClient(twitchEnvironment(), account, logger, anonymizer, streamers, onGain, onPresence)
 }
 
 func newClient(
@@ -99,7 +97,6 @@ func newClient(
 	logger Logger,
 	anonymizer *privacy.Anonymizer,
 	streamers []*domain.Streamer,
-	disableSSL bool,
 	onGain func(*domain.Streamer, int, string, int),
 	onPresence func(*domain.Streamer, bool, string),
 ) *Client {
@@ -113,7 +110,6 @@ func newClient(
 		account:         account,
 		logger:          logger,
 		anonymizer:      anonymizer,
-		disableSSL:      disableSSL,
 		env:             env,
 		streamers:       streamers,
 		streamerMap:     streamerMap,
@@ -125,9 +121,6 @@ func newClient(
 }
 
 func (p *Client) Start(stop <-chan struct{}) {
-	if p.disableSSL {
-		p.logger.Printf("SSL certificate verification is disabled! Be aware!")
-	}
 	topics, err := p.buildTopics()
 	if err != nil {
 		p.logger.Errorf("PubSub topic error: %v", err)

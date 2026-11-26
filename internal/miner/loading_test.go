@@ -108,7 +108,7 @@ func TestMiner_logLoadSummary(t *testing.T) {
 }
 
 func TestMiner_loadStreamer(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 	startedAt := testNow.Add(-5 * time.Minute)
 	defaults := domain.StreamerSettings{}
 	defaults.Default()

@@ -24,7 +24,7 @@ type harness struct {
 }
 
 // setup builds a miner from options on fakes: Twitch, the chat rooms, an in-memory
-// warm-start cache when the option asks for one, a log buffer, and a clock at testNow.
+// warm-start cache, a log buffer, and a clock at testNow.
 func setup(t *testing.T, options Options) *harness {
 	t.Helper()
 	h := &harness{
@@ -38,10 +38,8 @@ func setup(t *testing.T, options Options) *harness {
 	m.twitch = h.twitch
 	m.chat = h.chat
 	m.clock = func() time.Time { return h.now }
-	if options.WatchStreakWarmStartCache {
-		h.cache = streak.NewWarmStartCache(options.Username, "")
-		m.warmStartCache = h.cache
-	}
+	h.cache = streak.NewWarmStartCache(options.Username, "")
+	m.warmStartCache = h.cache
 	h.miner = m
 	return h
 }

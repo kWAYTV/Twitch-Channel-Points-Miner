@@ -63,10 +63,10 @@ func TestChatID_UnmarshalJSON(t *testing.T) {
 func TestTelegramConfig_settings(t *testing.T) {
 	t.Run("every field set", func(t *testing.T) {
 		cfg := telegramConfig{
-			ChatID:              "-1001234567890",
-			Token:               "123:abc",
-			Events:              []string{"BET_WIN", "STREAMER_ONLINE"},
-			DisableNotification: true,
+			ChatID: "-1001234567890",
+			Token:  "123:abc",
+			Events: []string{"BET_WIN", "STREAMER_ONLINE"},
+			Silent: true,
 		}
 		want := notify.TelegramSettings{
 			ChatID:              "-1001234567890",

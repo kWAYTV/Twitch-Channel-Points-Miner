@@ -52,7 +52,7 @@ func setup(t *testing.T) *fixture {
 		prompt:      &bytes.Buffer{},
 		cookiesPath: filepath.Join(t.TempDir(), "cookies", "miner.json"),
 	}
-	f.login = newLogin("client-1", "device-1", "miner", "TestAgent/1.0", "", twitchSide{
+	f.login = newLogin("client-1", "device-1", "miner", "TestAgent/1.0", twitchSide{
 		gqlURL:    f.twitch.URL + "/gql",
 		deviceURL: f.twitch.URL + "/oauth2/device",
 		tokenURL:  f.twitch.URL + "/oauth2/token",

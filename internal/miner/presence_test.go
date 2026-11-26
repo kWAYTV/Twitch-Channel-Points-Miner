@@ -30,7 +30,7 @@ func aliceEntry(online, streakMissing bool) streak.WarmStartEntry {
 }
 
 func TestMiner_setPresence(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 
 	t.Run("first seen, online", func(t *testing.T) {
 		h := setup(t, options)
@@ -277,7 +277,7 @@ func TestMiner_handlePubSubPresence(t *testing.T) {
 }
 
 func TestMiner_updatePresence(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 	unseen := func(h *harness) *domain.Streamer {
 		alice := h.live("alice", "1", "Poker")
 		alice.PresenceKnown = false

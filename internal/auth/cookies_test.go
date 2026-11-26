@@ -12,7 +12,7 @@ import (
 
 // offlineLogin is a login with no Twitch to reach: enough to load and save cookies.
 func offlineLogin() *Login {
-	return newLogin("client-1", "device-1", "miner", "TestAgent/1.0", "", twitchSide{})
+	return newLogin("client-1", "device-1", "miner", "TestAgent/1.0", twitchSide{})
 }
 
 func cookieFile(t *testing.T, content string) string {

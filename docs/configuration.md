@@ -8,6 +8,7 @@ Every key in `config.json`, in the order the file is written. Only `username` ha
 - It is written in the groups below, with a blank line between them.
 - A key added by a newer version is filled in with its default, in its place.
 - A file in another layout is rewritten once in this one. Every value is kept.
+- A file from an older version is converted when it is loaded, and rewritten once. See [settings from older versions](#settings-from-older-versions).
 - A key the miner does not know is kept, at the end of the file, and ignored.
 
 Where the file is looked for is described in [getting started](getting-started.md#where-files-are-kept).
@@ -17,7 +18,6 @@ Where the file is looked for is described in [getting started](getting-started.m
 | Key | Default | Meaning |
 |---|---|---|
 | `username` | | Twitch login to mine with. |
-| `password` | `""` | Not needed: [login](getting-started.md#logging-in) uses a code, not your password. |
 | `auto_update` | `true` | Replace the binary when a newer release is published. Always off in the Docker image. |
 
 ## Streamers
@@ -39,14 +39,12 @@ Explained in [streamers and watching](streamers.md#what-is-claimed).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `claim_drops` | `true` | Claim drops from the inventory every 30 minutes. |
-| `claim_drops_startup` | `true` | Also claim once at startup. |
+| `claim_drops` | `true` | Claim drops from the inventory at startup and every 30 minutes. |
 | `claim_moments` | `true` | Claim Twitch Moments. |
 | `follow_raid` | `true` | Join raids. |
 | `community_goals` | `false` | Contribute points to community goals. |
 | `chat_presence` | `"ONLINE"` | When to sit in a streamer's chat: `ALWAYS`, `NEVER`, `ONLINE` or `OFFLINE`. |
-| `disable_at_in_nickname` | `false` | Treat a plain username in chat as a mention, without `@`. |
-| `watch_streak_warm_start_cache` | `true` | Remember watch-streak state across restarts. |
+| `mention_without_at` | `false` | Treat a plain username in chat as a mention, without `@`. |
 
 ## Predictions
 
@@ -54,14 +52,13 @@ Explained in [predictions](predictions.md).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `betting(make_predictions)` | `true` | Place predictions. |
+| `make_predictions` | `true` | Place predictions. |
 | `bet.strategy` | `"SMART"` | How the outcome is chosen: `SMART`, `MOST_VOTED`, `HIGH_ODDS`, `PERCENTAGE`, `SMART_MONEY`, `NUMBER_1` to `NUMBER_8`. |
 | `bet.percentage` | `5` | Percent of the balance to bet. |
 | `bet.percentage_gap` | `20` | For `SMART`: how close the two most-voted outcomes must be to switch to the highest odds. |
 | `bet.max_points` | `50000` | Most points placed on one bet. |
 | `bet.minimum_points` | `0` | Do not bet while the balance is at or below this. |
 | `bet.stealth_mode` | `false` | Keep the stake under the highest bet on the outcome. |
-| `bet.deduct_stake_on_place` | `true` | Subtract the stake from the shown balance when the bet is placed. |
 | `bet.delay_mode` | `"FROM_END"` | What `delay` counts from: `FROM_END`, `FROM_START` or `PERCENTAGE`. |
 | `bet.delay` | `6` | Seconds, or a fraction of the window with `PERCENTAGE`. |
 | `bet.filter_condition` | off | Skip a bet unless a figure meets a rule: `by`, `where`, `value`. |
@@ -72,12 +69,12 @@ Explained in [notifications](notifications.md).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `discord.webhook_api` | `""` | The webhook URL. Empty turns Discord off. |
+| `discord.webhook` | `""` | The webhook URL. Empty turns Discord off. |
 | `discord.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
 | `telegram.token` | `""` | The bot token from @BotFather. |
 | `telegram.chat_id` | `""` | Your numeric chat id, or `@channelname`. |
 | `telegram.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
-| `telegram.disable_notification` | `false` | Deliver silently. |
+| `telegram.silent` | `false` | Deliver silently. |
 
 ## Dashboard
 
@@ -85,9 +82,9 @@ Explained in [dashboard](dashboard.md).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `analytics.enabled` | `true` | Record history and serve the web page. |
-| `analytics.host` | `"127.0.0.1"` | Address to listen on. `0.0.0.0` answers on every interface. |
-| `analytics.port` | `5000` | Port to listen on. |
+| `dashboard.enabled` | `true` | Record history and serve the web page. |
+| `dashboard.host` | `"127.0.0.1"` | Address to listen on. `0.0.0.0` answers on every interface. |
+| `dashboard.port` | `5000` | Port to listen on. |
 
 ## Console and logs
 
@@ -97,15 +94,42 @@ Explained in [dashboard](dashboard.md).
 | `show_seconds` | `false` | Include seconds in timestamps. |
 | `show_game` | `true` | Show what a streamer is playing. |
 | `show_drops_progress` | `false` | Log drop progress at each inventory check. |
-| `watch_queue_logging` | `false` | Explain which streamers got the watch slots and why. |
+| `show_watch_queue` | `false` | Explain which streamers got the watch slots and why. |
 | `save_logs` | `false` | Also write the console output to `log/<username>.log`. |
 | `timezone` | `null` (detect) | IANA name such as `Europe/Madrid`, for systems that cannot detect it. |
-| `privacy.anonymize_logs` | `false` | Replace streamer names and balances in logs with stand-ins. |
-| `debug` | `false` | Log a summary of each request. |
-| `debug_deep` | `false` | Log full payloads. Ignored while logs are anonymised. |
-| `disable_ssl_cert_verification` | `false` | Skip TLS verification for the PubSub connection only. Leave off. |
+| `anonymize_logs` | `false` | Replace streamer names and balances in logs with stand-ins. |
+| `debug` | `false` | `true` logs a summary of each request. `"full"` also logs full payloads, which are left out while logs are anonymised. |
 
-`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed. An old file may still contain them; they are ignored.
+## Settings from older versions
+
+A file written for an older version keeps working. It is converted when it is loaded and rewritten once with the names below. Nothing has to be edited by hand.
+
+Renamed:
+
+| Old key | New key |
+|---|---|
+| `betting(make_predictions)` | `make_predictions` |
+| `analytics` | `dashboard` |
+| `discord.webhook_api` | `discord.webhook` |
+| `telegram.disable_notification` | `telegram.silent` |
+| `privacy.anonymize_logs` | `anonymize_logs` |
+| `disable_at_in_nickname` | `mention_without_at` |
+| `watch_queue_logging` | `show_watch_queue` |
+| `debug` with `debug_deep` | `debug`: `false`, `true` or `"full"`. `"full"` is what `debug` and `debug_deep` both on used to be. |
+
+If a file has both the old and the new key, the new one is used.
+
+Removed, because the behaviour is now fixed:
+
+| Old key | Now |
+|---|---|
+| `password` | Was not used. [Login](getting-started.md#logging-in) is by code. |
+| `claim_drops_startup` | Drops are claimed at startup whenever `claim_drops` is on. |
+| `watch_streak_warm_start_cache` | Watch-streak state is always remembered across restarts. |
+| `bet.deduct_stake_on_place` | The stake always leaves the shown balance when the bet is placed. |
+| `disable_ssl_cert_verification` | Certificates are always verified. |
+
+`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed earlier. They are not converted: a file that still has them keeps them at the end, and they are ignored.
 
 ## Environment variables
 
@@ -115,7 +139,7 @@ These override the file and are mostly useful in containers.
 |---|---|
 | `TCPM_CONFIG` | Path of `config.json`. |
 | `TCPM_DATA_DIR` | Folder for `config.json`, `cookies/`, `log/` and `analytics/`. |
-| `TCPM_ANALYTICS_ADDR` | Dashboard listen address, for example `0.0.0.0:8080`. Overrides `analytics.host` and `analytics.port`. |
+| `TCPM_ANALYTICS_ADDR` | Dashboard listen address, for example `0.0.0.0:8080`. Overrides `dashboard.host` and `dashboard.port`. |
 | `TCPM_DISABLE_AUTO_UPDATE` | `1` turns the self-updater off whatever the config says. |
 | `TZ` | Time zone for timestamps in a container. |
 

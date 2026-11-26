@@ -7,14 +7,18 @@ import (
 	"os"
 )
 
-// loadOrCreateConfig reads the config, adds any key a newer version introduced,
-// and writes the file back when it was missing, incomplete or not laid out the
-// way the program writes it.
+// loadOrCreateConfig reads the config, converts the settings of an older
+// version, adds any key a newer version introduced, and writes the file back
+// when it was missing, incomplete, converted or not laid out the way the
+// program writes it.
 func loadOrCreateConfig(path string) (config, error) {
 	settings, onDisk, err := readSettings(path)
 	if err != nil {
 		return config{}, err
 	}
+	// A converted file no longer matches what is on disk, so it is written back
+	// below the way a file in another layout is.
+	migrateSettings(settings)
 	added := fillMissing(settings, defaultConfig())
 	if onDisk == nil || added {
 		if err := writeSettings(path, settings); err != nil {
@@ -26,7 +30,8 @@ func loadOrCreateConfig(path string) (config, error) {
 	return decodeConfig(settings)
 }
 
-// tidySettings rewrites a complete config whose only difference is its layout.
+// tidySettings rewrites a complete config that differs from the file on disk
+// only in its layout or in settings converted from an older version.
 // Nothing depends on it, so a file that cannot be written is left as it is.
 func tidySettings(path string, settings map[string]interface{}, onDisk []byte) {
 	formatted, err := formatSettings(settings)

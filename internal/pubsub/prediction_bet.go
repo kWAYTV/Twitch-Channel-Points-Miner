@@ -64,14 +64,10 @@ func (p *Client) logSkippedBet(streamer *domain.Streamer, skipped skippedBet) {
 	p.logger.Eventf(skipped.event, "Skip bet for %s: %s", p.anonymizer.Shown(streamer), skipped.detail)
 }
 
-// deductStake takes the stake off the balance right away when the streamer's
-// settings ask for it. The payout or refund arrives later as a points event.
+// deductStake takes the stake off the balance right away. The payout or refund
+// arrives later as a points event.
 func (p *Client) deductStake(streamer *domain.Streamer, stake int) {
-	deduct := domain.DefaultBetDeductStakeOnPlace
-	if setting := streamer.Settings.Bet.DeductStakeOnPlace; setting != nil {
-		deduct = *setting
-	}
-	if !deduct || stake <= 0 {
+	if stake <= 0 {
 		return
 	}
 	if p.onGain != nil {

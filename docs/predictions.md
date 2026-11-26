@@ -1,11 +1,11 @@
 # Predictions
 
-With `"betting(make_predictions)": true` the miner bets your channel points on a streamer's predictions. Bets can lose: set limits you are comfortable with, or turn it off.
+With `"make_predictions": true` the miner bets your channel points on a streamer's predictions. Bets can lose: set limits you are comfortable with, or turn it off.
 
 All settings below live under `bet`. They can be changed for one streamer under `streamer_overrides.<login>.bet` (see [per-streamer overrides](streamers.md#per-streamer-overrides)).
 
 ```json
-"betting(make_predictions)": true,
+"make_predictions": true,
 "bet": {
   "strategy": "SMART",
   "percentage": 5,
@@ -13,7 +13,6 @@ All settings below live under `bet`. They can be changed for one streamer under 
   "max_points": 50000,
   "minimum_points": 0,
   "stealth_mode": false,
-  "deduct_stake_on_place": true,
   "delay_mode": "FROM_END",
   "delay": 6,
   "filter_condition": { "by": null, "where": null, "value": null }
@@ -44,7 +43,7 @@ All settings below live under `bet`. They can be changed for one streamer under 
 
 `minimum_points` skips betting while your balance on the channel is at or below it. Use it to keep a reserve.
 
-`deduct_stake_on_place` subtracts the stake from the balance the miner shows as soon as the bet is placed, instead of waiting for Twitch to report it.
+The stake is subtracted from the balance the miner shows as soon as the bet is placed, without waiting for Twitch to report it.
 
 ## When the bet is placed
 

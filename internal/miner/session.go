@@ -26,7 +26,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	m.stop = make(chan struct{})
 	m.initialPoints = make(map[string]int)
 
-	tw, err := twitch.NewClient(m.Username, twitchapi.AndroidTVUserAgent, m.Password, m.logger, m.anonymizer)
+	tw, err := twitch.NewClient(m.Username, twitchapi.AndroidTVUserAgent, m.logger, m.anonymizer)
 	if err != nil {
 		m.logger.Fatalf("failed to create twitch client: %v", err)
 	}
@@ -63,7 +63,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	claimDropsEnabled := m.shouldClaimDrops(streamerObjs)
 	tw.ExcludeGamesFromDropClaims(m.gameExclusions)
 	dropClaimer := drops.NewClaimer(tw, m.logger, m.showDropsProgress)
-	if m.ClaimDropsStartup && claimDropsEnabled {
+	if claimDropsEnabled {
 		dropClaimer.Claim("startup drop claim failed")
 	}
 
@@ -91,7 +91,6 @@ func (m *Miner) startPubSub(tw *twitch.Client, streamers []*domain.Streamer, sto
 		m.logger,
 		m.anonymizer,
 		streamers,
-		m.DisableSSLCertVerification,
 		m.handlePubSubGain,
 		m.handlePubSubPresence,
 	)

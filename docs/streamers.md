@@ -33,7 +33,7 @@ Twitch credits watch time on at most two streams at once, so the miner watches u
 
 An unknown value, or an empty list, falls back to the default above.
 
-Turn on `watch_queue_logging` to have the miner explain which streamers got the slots and why.
+Turn on `show_watch_queue` to have the miner explain which streamers got the slots and why.
 
 ### Games
 
@@ -51,7 +51,7 @@ Names are matched without regard to upper or lower case, and have to be the game
 
 Twitch awards a watch streak bonus for watching a channel's streams on consecutive occasions. With `STREAK` in `watch_priority`, a streamer who has just gone live and has not paid out the streak yet is moved to the front until the bonus arrives or enough minutes have been watched.
 
-`watch_streak_warm_start_cache` (on by default) saves what the miner knows about each streak to `log/watch_streak_cache.<username>.json`, so a restart does not make it chase streaks it already earned.
+The miner saves what it knows about each streak to `log/watch_streak_cache.<username>.json`, so a restart does not make it chase streaks it already earned.
 
 Streaks can be turned off for one streamer with `"watch_streak": false` in an [override](#per-streamer-overrides).
 
@@ -59,8 +59,7 @@ Streaks can be turned off for one streamer with `"watch_streak": false` in an [o
 
 | Key | Default | What it does |
 |---|---|---|
-| `claim_drops` | `true` | Claims finished drops from your inventory every 30 minutes. |
-| `claim_drops_startup` | `true` | Also claims once at startup. |
+| `claim_drops` | `true` | Claims finished drops from your inventory at startup and every 30 minutes. |
 | `claim_moments` | `true` | Claims Twitch Moments when a streamer triggers one. |
 | `follow_raid` | `true` | Joins a raid, which pays a bonus. |
 | `community_goals` | `false` | Contributes points to a channel's active community goals, up to the per-stream limit Twitch sets and what the goal still needs. This spends your points. |
@@ -80,7 +79,7 @@ Bonus chests are always claimed.
 | `ALWAYS` | All the time. |
 | `NEVER` | Never. |
 
-The miner only reads chat; it never writes. When someone mentions you, it reports a `CHAT_MENTION`. With `disable_at_in_nickname` on, your plain username counts as a mention, not only `@username`.
+The miner only reads chat; it never writes. When someone mentions you, it reports a `CHAT_MENTION`. With `mention_without_at` on, your plain username counts as a mention, not only `@username`.
 
 ## Per-streamer overrides
 
@@ -101,7 +100,7 @@ The miner only reads chat; it never writes. When someone mentions you, it report
 
 | Key | Overrides |
 |---|---|
-| `make_predictions` | `betting(make_predictions)` |
+| `make_predictions` | `make_predictions` |
 | `follow_raid` | `follow_raid` |
 | `claim_drops` | `claim_drops` |
 | `claim_moments` | `claim_moments` |

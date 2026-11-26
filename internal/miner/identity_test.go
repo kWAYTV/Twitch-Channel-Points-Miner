@@ -72,7 +72,7 @@ func renamedStreamer(h *harness) *domain.Streamer {
 }
 
 func TestMiner_applyStreamerLoginChange(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 
 	t.Run("a new login", func(t *testing.T) {
 		h := setup(t, options)

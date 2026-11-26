@@ -2,14 +2,13 @@ package pubsub
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
@@ -86,17 +85,8 @@ func contextUntil(stop <-chan struct{}) (context.Context, context.CancelFunc) {
 func (p *Client) dial(ctx context.Context) (*websocket.Conn, error) {
 	handshake, cancel := context.WithTimeout(ctx, handshakeTimeout)
 	defer cancel()
-	conn, _, err := websocket.Dial(handshake, p.env.endpoint, p.dialOptions())
+	conn, _, err := websocket.Dial(handshake, p.env.endpoint, nil)
 	return conn, err
-}
-
-func (p *Client) dialOptions() *websocket.DialOptions {
-	if !p.disableSSL {
-		return nil
-	}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
-	return &websocket.DialOptions{HTTPClient: &http.Client{Transport: transport}}
 }
 
 // startWorkers handles queued messages until msgCh is closed or stop is.

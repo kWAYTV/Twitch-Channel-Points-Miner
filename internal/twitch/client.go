@@ -84,9 +84,9 @@ type clientParts struct {
 	now           func() time.Time
 }
 
-func NewClient(username, userAgent, password string, logger debugLogger, anonymizer *privacy.Anonymizer) (*Client, error) {
+func NewClient(username, userAgent string, logger debugLogger, anonymizer *privacy.Anonymizer) (*Client, error) {
 	deviceID := random.String(32)
-	login, err := auth.NewLogin(twitchapi.ClientID, deviceID, username, userAgent, password)
+	login, err := auth.NewLogin(twitchapi.ClientID, deviceID, username, userAgent)
 	if err != nil {
 		return nil, err
 	}

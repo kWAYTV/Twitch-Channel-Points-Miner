@@ -63,7 +63,7 @@ func parseChatPresence(mode string, fallback domain.IRCMode) domain.IRCMode {
 
 func buildBaseStreamerSettings(cfg config) domain.StreamerSettings {
 	streamerSettings := domain.StreamerSettings{
-		MakePredictions: cfg.BettingMakePredictions,
+		MakePredictions: cfg.MakePredictions,
 		FollowRaid:      cfg.FollowRaid,
 		ClaimDrops:      cfg.ClaimDrops,
 		ClaimMoments:    cfg.ClaimMoments,

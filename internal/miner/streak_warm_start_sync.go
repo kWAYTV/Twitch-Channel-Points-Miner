@@ -10,7 +10,7 @@ import (
 )
 
 func (m *Miner) loadWarmStartCache() {
-	if m == nil || !m.WatchStreakWarmStartCache {
+	if m == nil {
 		return
 	}
 	m.warmStartCache = streak.LoadWarmStartCache(m.warmStartCachePath, m.Username)

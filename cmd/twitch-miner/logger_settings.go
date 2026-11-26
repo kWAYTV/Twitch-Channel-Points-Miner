@@ -10,11 +10,11 @@ func loggerSettingsFrom(cfg config) logging.LoggerSettings {
 		Save:          cfg.SaveLogs,
 		Emoji:         cfg.Emojis,
 		ShowSeconds:   cfg.ShowSeconds,
-		Debug:         cfg.Debug,
-		DebugDeep:     cfg.DebugDeep,
-		AnonymizeLogs: cfg.Privacy.AnonymizeLogs,
+		Debug:         cfg.Debug != debugOff,
+		DebugDeep:     cfg.Debug == debugFull,
+		AnonymizeLogs: cfg.AnonymizeLogs,
 		Discord: notify.DiscordSettings{
-			WebhookAPI: cfg.Discord.WebhookAPI,
+			WebhookAPI: cfg.Discord.Webhook,
 			Events:     cfg.Discord.Events,
 		},
 	}

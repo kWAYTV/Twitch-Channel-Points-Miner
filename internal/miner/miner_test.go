@@ -13,25 +13,19 @@ func TestNew(t *testing.T) {
 		overrides := map[string]domain.StreamerSettings{"alice": {ClaimDrops: true}}
 
 		m := New(Options{
-			Username:                   "account",
-			Password:                   "secret",
-			ClaimDropsStartup:          true,
-			DisableSSLCertVerification: true,
-			StreamerSettings:           domain.StreamerSettings{WatchStreak: true, IRCMode: domain.IRCModeNever},
-			StreamerOverrides:          overrides,
-			WatchStreakWarmStartCache:  true,
+			Username:          "account",
+			StreamerSettings:  domain.StreamerSettings{WatchStreak: true, IRCMode: domain.IRCModeNever},
+			StreamerOverrides: overrides,
 		})
 
 		type public struct {
-			Username, Password                            string
-			ClaimDropsStartup, DisableSSLCertVerification bool
-			WatchStreak                                   bool
-			IRCMode                                       domain.IRCMode
-			StreamerOverrides                             map[string]domain.StreamerSettings
-			WatchStreakWarmStartCache                     bool
+			Username          string
+			WatchStreak       bool
+			IRCMode           domain.IRCMode
+			StreamerOverrides map[string]domain.StreamerSettings
 		}
-		got := public{m.Username, m.Password, m.ClaimDropsStartup, m.DisableSSLCertVerification, m.StreamerSettings.WatchStreak, m.StreamerSettings.IRCMode, m.StreamerOverrides, m.WatchStreakWarmStartCache}
-		want := public{"account", "secret", true, true, true, domain.IRCModeNever, overrides, true}
+		got := public{m.Username, m.StreamerSettings.WatchStreak, m.StreamerSettings.IRCMode, m.StreamerOverrides}
+		want := public{"account", true, domain.IRCModeNever, overrides}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("New() = %+v, want %+v", got, want)
 		}

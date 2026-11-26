@@ -16,7 +16,7 @@ docker compose up -d
 
 started=1
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-	if docker compose logs 2>&1 | grep -q "Analytics dashboard listening on http://0.0.0.0:5000"; then
+	if docker compose logs 2>&1 | grep -q "Dashboard listening on http://0.0.0.0:5000"; then
 		started=0
 		break
 	fi

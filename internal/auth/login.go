@@ -19,7 +19,6 @@ type Login struct {
 	DeviceID  string
 	Token     string
 	Username  string
-	Password  string
 	UserAgent string
 
 	client *http.Client
@@ -39,8 +38,8 @@ type twitchSide struct {
 	prompt    io.Writer
 }
 
-func NewLogin(clientID, deviceID, username, userAgent, password string) (*Login, error) {
-	return newLogin(clientID, deviceID, username, userAgent, password, twitchSide{
+func NewLogin(clientID, deviceID, username, userAgent string) (*Login, error) {
+	return newLogin(clientID, deviceID, username, userAgent, twitchSide{
 		gqlURL:    twitchapi.GQLOperations.URL,
 		deviceURL: "https://id.twitch.tv/oauth2/device",
 		tokenURL:  "https://id.twitch.tv/oauth2/token",
@@ -50,14 +49,13 @@ func NewLogin(clientID, deviceID, username, userAgent, password string) (*Login,
 	}), nil
 }
 
-func newLogin(clientID, deviceID, username, userAgent, password string, twitch twitchSide) *Login {
+func newLogin(clientID, deviceID, username, userAgent string, twitch twitchSide) *Login {
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{Jar: jar, Timeout: 30 * time.Second}
 	return &Login{
 		ClientID:  clientID,
 		DeviceID:  deviceID,
 		Username:  username,
-		Password:  password,
 		UserAgent: userAgent,
 		client:    client,
 		twitch:    twitch,

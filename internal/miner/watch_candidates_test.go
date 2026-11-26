@@ -95,10 +95,9 @@ func TestSortWatchCandidates(t *testing.T) {
 
 func TestMiner_watchCandidates(t *testing.T) {
 	options := Options{
-		Username:                  "account",
-		GamePriority:              []string{"chess"},
-		GameExclude:               []string{"slots"},
-		WatchStreakWarmStartCache: true,
+		Username:     "account",
+		GamePriority: []string{"chess"},
+		GameExclude:  []string{"slots"},
 	}
 
 	t.Run("no streamers", func(t *testing.T) {
@@ -257,7 +256,7 @@ func TestMiner_watchCandidates(t *testing.T) {
 }
 
 func TestMiner_refreshStreamForPreference(t *testing.T) {
-	options := Options{Username: "account", WatchStreakWarmStartCache: true}
+	options := Options{Username: "account"}
 
 	t.Run("before login", func(t *testing.T) {
 		m := New(Options{})

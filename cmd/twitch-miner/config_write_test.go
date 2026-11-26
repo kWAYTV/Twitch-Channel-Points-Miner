@@ -27,10 +27,10 @@ func TestFormatSettings(t *testing.T) {
 		},
 		{
 			name:     "keys of two groups",
-			settings: map[string]interface{}{"streamers": []interface{}{}, "password": "secret", "username": "me"},
+			settings: map[string]interface{}{"streamers": []interface{}{}, "auto_update": true, "username": "me"},
 			want: `{
   "username": "me",
-  "password": "secret",
+  "auto_update": true,
 
   "streamers": []
 }
@@ -160,12 +160,12 @@ func TestFormatSettings(t *testing.T) {
 		{
 			name: "a URL with characters HTML escapes",
 			settings: map[string]interface{}{"discord": map[string]interface{}{
-				"events":      []interface{}{"BET_WIN"},
-				"webhook_api": "https://discord.com/api/webhooks/1/a?x=1&y=<2>",
+				"events":  []interface{}{"BET_WIN"},
+				"webhook": "https://discord.com/api/webhooks/1/a?x=1&y=<2>",
 			}},
 			want: `{
   "discord": {
-    "webhook_api": "https://discord.com/api/webhooks/1/a?x=1&y=<2>",
+    "webhook": "https://discord.com/api/webhooks/1/a?x=1&y=<2>",
     "events": ["BET_WIN"]
   }
 }
@@ -181,9 +181,9 @@ func TestFormatSettings(t *testing.T) {
 		},
 		{
 			name:     "numbers as a JSON file gives them",
-			settings: map[string]interface{}{"analytics": map[string]interface{}{"port": 5000.0, "host": "127.0.0.1", "enabled": true}},
+			settings: map[string]interface{}{"dashboard": map[string]interface{}{"port": 5000.0, "host": "127.0.0.1", "enabled": true}},
 			want: `{
-  "analytics": {
+  "dashboard": {
     "enabled": true,
     "host": "127.0.0.1",
     "port": 5000

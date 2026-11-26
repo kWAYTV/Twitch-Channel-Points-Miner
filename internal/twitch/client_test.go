@@ -11,7 +11,7 @@ import (
 
 func TestNewClient(t *testing.T) {
 	t.Run("an account that has not logged in", func(t *testing.T) {
-		client, err := NewClient("miner", "agent", "password", &fakeLogger{}, nil)
+		client, err := NewClient("miner", "agent", &fakeLogger{}, nil)
 
 		if err != nil {
 			t.Fatalf("NewClient error = %v, want none", err)

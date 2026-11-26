@@ -10,15 +10,14 @@ import (
 // defaultBet is what an empty bet becomes once its defaults are filled in.
 func defaultBet() domain.BetSettings {
 	return domain.BetSettings{
-		Strategy:           "SMART",
-		Percentage:         ptr(5),
-		PercentageGap:      ptr(20),
-		MaxPoints:          ptr(50000),
-		MinimumPoints:      ptr(0),
-		StealthMode:        ptr(false),
-		DeductStakeOnPlace: ptr(true),
-		Delay:              ptr(6.0),
-		DelayMode:          "FROM_END",
+		Strategy:      "SMART",
+		Percentage:    ptr(5),
+		PercentageGap: ptr(20),
+		MaxPoints:     ptr(50000),
+		MinimumPoints: ptr(0),
+		StealthMode:   ptr(false),
+		Delay:         ptr(6.0),
+		DelayMode:     "FROM_END",
 	}
 }
 
@@ -136,23 +135,22 @@ func TestBuildBaseStreamerSettings(t *testing.T) {
 
 	t.Run("every setting set", func(t *testing.T) {
 		cfg := config{
-			BettingMakePredictions: true,
-			FollowRaid:             true,
-			ClaimDrops:             true,
-			ClaimMoments:           true,
-			CommunityGoals:         true,
-			IRCMode:                "never",
+			MakePredictions: true,
+			FollowRaid:      true,
+			ClaimDrops:      true,
+			ClaimMoments:    true,
+			CommunityGoals:  true,
+			IRCMode:         "never",
 			Bet: betConfig{
-				Strategy:           "PERCENTAGE",
-				Percentage:         ptr(10),
-				PercentageGap:      ptr(30),
-				MaxPoints:          ptr(1000),
-				MinimumPoints:      ptr(100),
-				StealthMode:        ptr(true),
-				DeductStakeOnPlace: ptr(false),
-				FilterCondition:    &filterConditionConfig{By: "total_users", Where: "gt", Value: ptr(50.0)},
-				Delay:              ptr(10.0),
-				DelayMode:          "FROM_START",
+				Strategy:        "PERCENTAGE",
+				Percentage:      ptr(10),
+				PercentageGap:   ptr(30),
+				MaxPoints:       ptr(1000),
+				MinimumPoints:   ptr(100),
+				StealthMode:     ptr(true),
+				FilterCondition: &filterConditionConfig{By: "total_users", Where: "gt", Value: ptr(50.0)},
+				Delay:           ptr(10.0),
+				DelayMode:       "FROM_START",
 			},
 		}
 		got := buildBaseStreamerSettings(cfg)
@@ -165,16 +163,15 @@ func TestBuildBaseStreamerSettings(t *testing.T) {
 			CommunityGoals:  true,
 			IRCMode:         "NEVER",
 			Bet: domain.BetSettings{
-				Strategy:           "PERCENTAGE",
-				Percentage:         ptr(10),
-				PercentageGap:      ptr(30),
-				MaxPoints:          ptr(1000),
-				MinimumPoints:      ptr(100),
-				StealthMode:        ptr(true),
-				DeductStakeOnPlace: ptr(false),
-				FilterCondition:    &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
-				Delay:              ptr(10.0),
-				DelayMode:          "FROM_START",
+				Strategy:        "PERCENTAGE",
+				Percentage:      ptr(10),
+				PercentageGap:   ptr(30),
+				MaxPoints:       ptr(1000),
+				MinimumPoints:   ptr(100),
+				StealthMode:     ptr(true),
+				FilterCondition: &domain.FilterCondition{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
+				Delay:           ptr(10.0),
+				DelayMode:       "FROM_START",
 			},
 		}
 		if !reflect.DeepEqual(got, want) {

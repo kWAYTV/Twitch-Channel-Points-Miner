@@ -23,57 +23,49 @@ const (
 )
 
 type Miner struct {
-	Username                   string
-	Password                   string
-	ClaimDropsStartup          bool
-	DisableSSLCertVerification bool
-	StreamerSettings           domain.StreamerSettings
-	StreamerOverrides          map[string]domain.StreamerSettings
-	WatchStreakWarmStartCache  bool
-	logger                     *logging.Logger
-	startedAt                  time.Time
-	twitch                     twitchAPI
-	clock                      func() time.Time
-	streamers                  []*domain.Streamer
-	initialPoints              map[string]int
-	initialPointsMu            sync.Mutex
-	startingUp                 atomic.Bool
-	stop                       chan struct{}
-	watchPriorities            []watchPriority
-	streamerExclusions         map[string]struct{}
-	gamePriority               []string
-	gamePriorityIndex          map[string]int
-	gameExclusions             map[string]struct{}
-	chat                       chatRooms
-	disableAtInNickname        bool
-	showGameInfo               bool
-	showDropsProgress          bool
-	logWatchQueue              bool
-	anonymizer                 *privacy.Anonymizer
-	warmStartCache             *streak.WarmStartCache
-	warmStartCachePath         string
-	activeStreakWatches        map[string]streak.ActiveWatch
-	activeStreakMu             sync.Mutex
+	Username            string
+	StreamerSettings    domain.StreamerSettings
+	StreamerOverrides   map[string]domain.StreamerSettings
+	logger              *logging.Logger
+	startedAt           time.Time
+	twitch              twitchAPI
+	clock               func() time.Time
+	streamers           []*domain.Streamer
+	initialPoints       map[string]int
+	initialPointsMu     sync.Mutex
+	startingUp          atomic.Bool
+	stop                chan struct{}
+	watchPriorities     []watchPriority
+	streamerExclusions  map[string]struct{}
+	gamePriority        []string
+	gamePriorityIndex   map[string]int
+	gameExclusions      map[string]struct{}
+	chat                chatRooms
+	disableAtInNickname bool
+	showGameInfo        bool
+	showDropsProgress   bool
+	logWatchQueue       bool
+	anonymizer          *privacy.Anonymizer
+	warmStartCache      *streak.WarmStartCache
+	warmStartCachePath  string
+	activeStreakWatches map[string]streak.ActiveWatch
+	activeStreakMu      sync.Mutex
 }
 
 // Options is everything a Miner is configured with.
 type Options struct {
-	Username                   string
-	Password                   string
-	ClaimDropsStartup          bool
-	DisableSSLCertVerification bool
-	Logger                     logging.LoggerSettings
-	StreamerSettings           domain.StreamerSettings
-	StreamerOverrides          map[string]domain.StreamerSettings
-	WatchPriority              []string
-	StreamersExclude           []string
-	GamePriority               []string
-	GameExclude                []string
-	DisableAtInNickname        bool
-	ShowGame                   bool
-	WatchQueueLogging          bool
-	WatchStreakWarmStartCache  bool
-	ShowDropsProgress          bool
+	Username            string
+	Logger              logging.LoggerSettings
+	StreamerSettings    domain.StreamerSettings
+	StreamerOverrides   map[string]domain.StreamerSettings
+	WatchPriority       []string
+	StreamersExclude    []string
+	GamePriority        []string
+	GameExclude         []string
+	DisableAtInNickname bool
+	ShowGame            bool
+	WatchQueueLogging   bool
+	ShowDropsProgress   bool
 }
 
 // New returns a Miner that is ready to Mine. It does not contact Twitch yet.
@@ -81,27 +73,23 @@ func New(options Options) *Miner {
 	options.StreamerSettings.Default()
 	gamePriority := normalizeNames(options.GamePriority)
 	m := &Miner{
-		Username:                   options.Username,
-		Password:                   options.Password,
-		ClaimDropsStartup:          options.ClaimDropsStartup,
-		DisableSSLCertVerification: options.DisableSSLCertVerification,
-		StreamerSettings:           options.StreamerSettings,
-		StreamerOverrides:          options.StreamerOverrides,
-		WatchStreakWarmStartCache:  options.WatchStreakWarmStartCache,
-		logger:                     logging.NewLogger(options.Logger, options.Username),
-		initialPoints:              make(map[string]int),
-		watchPriorities:            parseWatchPriorities(options.WatchPriority),
-		streamerExclusions:         nameSet(normalizeNames(options.StreamersExclude)),
-		gamePriority:               gamePriority,
-		gamePriorityIndex:          positions(gamePriority),
-		gameExclusions:             nameSet(normalizeNames(options.GameExclude)),
-		disableAtInNickname:        options.DisableAtInNickname,
-		showGameInfo:               options.ShowGame,
-		showDropsProgress:          options.ShowDropsProgress,
-		logWatchQueue:              options.WatchQueueLogging,
-		anonymizer:                 privacy.New(options.Logger.AnonymizeLogs),
-		warmStartCachePath:         warmStartCachePathFor(options.Username),
-		activeStreakWatches:        make(map[string]streak.ActiveWatch),
+		Username:            options.Username,
+		StreamerSettings:    options.StreamerSettings,
+		StreamerOverrides:   options.StreamerOverrides,
+		logger:              logging.NewLogger(options.Logger, options.Username),
+		initialPoints:       make(map[string]int),
+		watchPriorities:     parseWatchPriorities(options.WatchPriority),
+		streamerExclusions:  nameSet(normalizeNames(options.StreamersExclude)),
+		gamePriority:        gamePriority,
+		gamePriorityIndex:   positions(gamePriority),
+		gameExclusions:      nameSet(normalizeNames(options.GameExclude)),
+		disableAtInNickname: options.DisableAtInNickname,
+		showGameInfo:        options.ShowGame,
+		showDropsProgress:   options.ShowDropsProgress,
+		logWatchQueue:       options.WatchQueueLogging,
+		anonymizer:          privacy.New(options.Logger.AnonymizeLogs),
+		warmStartCachePath:  warmStartCachePathFor(options.Username),
+		activeStreakWatches: make(map[string]streak.ActiveWatch),
 	}
 	m.chat = chat.NewPresence(options.Username, m.chatToken, m.logger, options.DisableAtInNickname, m.anonymizer, m.styledStreamerName)
 	return m
