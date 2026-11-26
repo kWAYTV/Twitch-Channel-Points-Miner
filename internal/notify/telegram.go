@@ -1,7 +1,6 @@
 package notify
 
 import (
-	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -92,45 +91,11 @@ func (t *TelegramNotifier) Send(message Message, event events.Event) {
 // telegramFailure words why Telegram refused a message: the description in its
 // answer, or the HTTP status when it gave none.
 func telegramFailure(status string, body []byte) string {
-	var apiErr struct {
-		Description string `json:"description"`
-	}
-	_ = json.Unmarshal(body, &apiErr)
-	if apiErr.Description == "" {
-		return status
-	}
-	return apiErr.Description
+	return statedFailure(status, body, "description")
 }
 
-// formatTelegram renders a message for parse_mode HTML: the polarity glyph and the
-// headline in bold, then the details on one line. The glyph is the one the
-// console uses, and it is sent even when console emojis are turned off.
+// formatTelegram renders a message for parse_mode HTML, where a line ends with
+// a newline.
 func formatTelegram(event events.Event, message Message) string {
-	text := eventGlyphPrefix(event) + "<b>" + htmlEscape(limitRunes(headlineOf(event, message), headlineLimit)) + "</b>"
-	details := htmlEscape(strings.Join(message.Details, detailSeparator))
-	budget := telegramTextLimit - len([]rune(text)) - 1
-	if details == "" || budget < 1 {
-		return text
-	}
-	return text + "\n" + limitEscaped(details, budget)
-}
-
-func htmlEscape(s string) string {
-	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
-}
-
-// limitEscaped truncates an HTML-escaped string without splitting an entity.
-func limitEscaped(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	if n < 1 {
-		return ""
-	}
-	cut := string(r[:n-1])
-	if i := strings.LastIndex(cut, "&"); i >= 0 && !strings.Contains(cut[i:], ";") {
-		cut = cut[:i]
-	}
-	return strings.TrimSpace(cut) + "…"
+	return htmlMessage(event, message, "\n", telegramTextLimit)
 }

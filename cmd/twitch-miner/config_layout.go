@@ -46,13 +46,13 @@ var configLayout = &layout{
 		// Predictions
 		{"make_predictions", "bet"},
 		// Notifications
-		{"discord", "telegram"},
+		{"discord", "telegram", "matrix"},
 		// Dashboard
 		{"dashboard"},
 		// Console and logs
 		{
-			"emojis", "show_seconds", "show_game", "show_drops_progress", "show_watch_queue", "save_logs", "timezone",
-			"anonymize_logs", "debug",
+			"emojis", "show_seconds", "show_username", "show_game", "show_drops_progress", "show_watch_queue", "save_logs",
+			"timezone", "anonymize_logs", "debug",
 		},
 	},
 	children: map[string]*layout{
@@ -60,6 +60,7 @@ var configLayout = &layout{
 		"bet":                betLayout,
 		"discord":            {groups: [][]string{{"webhook", "events"}}},
 		"telegram":           {groups: [][]string{{"token", "chat_id", "events", "silent"}}},
+		"matrix":             {groups: [][]string{{"homeserver", "access_token", "room_id", "events"}}},
 		"dashboard":          {groups: [][]string{{"enabled", "host", "port"}}},
 	},
 }

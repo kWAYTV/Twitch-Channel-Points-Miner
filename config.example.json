@@ -43,6 +43,12 @@
     "events": [],
     "silent": false
   },
+  "matrix": {
+    "homeserver": "",
+    "access_token": "",
+    "room_id": "",
+    "events": []
+  },
 
   "dashboard": {
     "enabled": true,
@@ -52,6 +58,7 @@
 
   "emojis": true,
   "show_seconds": false,
+  "show_username": false,
   "show_game": true,
   "show_drops_progress": false,
   "show_watch_queue": false,

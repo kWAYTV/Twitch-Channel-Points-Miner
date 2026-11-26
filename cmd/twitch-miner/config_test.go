@@ -37,6 +37,7 @@ func defaultsDecoded() config {
 		Discord:           discordConfig{Events: []string{}},
 		Dashboard:         dashboardConfig{Enabled: true, Host: "127.0.0.1", Port: 5000},
 		Telegram:          telegramConfig{Events: []string{}},
+		Matrix:            matrixConfig{Events: []string{}},
 		StreamerOverrides: map[string]streamerSettingsConfig{},
 	}
 }
@@ -69,6 +70,7 @@ func TestDecodeConfig(t *testing.T) {
 			"debug":               "full",
 			"show_watch_queue":    true,
 			"show_seconds":        true,
+			"show_username":       true,
 			"claim_drops":         true,
 			"claim_moments":       true,
 			"make_predictions":    true,
@@ -90,6 +92,7 @@ func TestDecodeConfig(t *testing.T) {
 			"discord":             map[string]interface{}{"webhook": "https://discord.com/api/webhooks/1/a", "events": []interface{}{"BET_WIN"}},
 			"dashboard":           map[string]interface{}{"enabled": true, "host": "0.0.0.0", "port": 8080},
 			"telegram":            map[string]interface{}{"chat_id": -1001234567890, "token": "123:abc", "events": []interface{}{"BET_LOSE"}, "silent": true},
+			"matrix":              map[string]interface{}{"homeserver": "https://matrix.example.org", "access_token": "syt_secret", "room_id": "!room:example.org", "events": []interface{}{"BET_REFUND"}},
 			"bet": map[string]interface{}{
 				"strategy":         "PERCENTAGE",
 				"percentage":       10,
@@ -124,6 +127,7 @@ func TestDecodeConfig(t *testing.T) {
 			Debug:             debugFull,
 			ShowWatchQueue:    true,
 			ShowSeconds:       true,
+			ShowUsername:      true,
 			ClaimDrops:        true,
 			ClaimMoments:      true,
 			MakePredictions:   true,
@@ -145,6 +149,7 @@ func TestDecodeConfig(t *testing.T) {
 			Discord:           discordConfig{Webhook: "https://discord.com/api/webhooks/1/a", Events: []string{"BET_WIN"}},
 			Dashboard:         dashboardConfig{Enabled: true, Host: "0.0.0.0", Port: 8080},
 			Telegram:          telegramConfig{ChatID: "-1001234567890", Token: "123:abc", Events: []string{"BET_LOSE"}, Silent: true},
+			Matrix:            matrixConfig{Homeserver: "https://matrix.example.org", AccessToken: "syt_secret", RoomID: "!room:example.org", Events: []string{"BET_REFUND"}},
 			Bet: betConfig{
 				Strategy:        "PERCENTAGE",
 				Percentage:      ptr(10),

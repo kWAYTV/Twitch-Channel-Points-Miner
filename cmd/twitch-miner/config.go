@@ -13,6 +13,7 @@ type config struct {
 	Debug             debugLevel      `json:"debug"`
 	ShowWatchQueue    bool            `json:"show_watch_queue"`
 	ShowSeconds       bool            `json:"show_seconds"`
+	ShowUsername      bool            `json:"show_username"`
 	ClaimDrops        bool            `json:"claim_drops"`
 	ClaimMoments      bool            `json:"claim_moments"`
 	MakePredictions   bool            `json:"make_predictions"`
@@ -35,6 +36,7 @@ type config struct {
 	Discord           discordConfig   `json:"discord"`
 	Dashboard         dashboardConfig `json:"dashboard"`
 	Telegram          telegramConfig  `json:"telegram"`
+	Matrix            matrixConfig    `json:"matrix"`
 
 	StreamerOverrides map[string]streamerSettingsConfig `json:"streamer_overrides"`
 }

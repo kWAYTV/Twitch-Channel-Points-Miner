@@ -19,6 +19,7 @@ func main() {
 	session := miner.New(minerOptionsFrom(cfg, loggerSettings))
 	startDashboard(cfg.Dashboard, logger)
 	startTelegram(cfg.Telegram)
+	startMatrix(cfg.Matrix)
 
 	if len(cfg.Streamers) > 0 {
 		session.Mine(cfg.Streamers)

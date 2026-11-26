@@ -10,6 +10,7 @@ func loggerSettingsFrom(cfg config) logging.LoggerSettings {
 		Save:          cfg.SaveLogs,
 		Emoji:         cfg.Emojis,
 		ShowSeconds:   cfg.ShowSeconds,
+		ShowUsername:  cfg.ShowUsername,
 		Debug:         cfg.Debug != debugOff,
 		DebugDeep:     cfg.Debug == debugFull,
 		AnonymizeLogs: cfg.AnonymizeLogs,

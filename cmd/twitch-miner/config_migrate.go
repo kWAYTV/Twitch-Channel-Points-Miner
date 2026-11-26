@@ -22,6 +22,7 @@ var renamedSettings = []renamedSetting{
 	{"", "analytics", "dashboard"},
 	{"", "disable_at_in_nickname", "mention_without_at"},
 	{"", "watch_queue_logging", "show_watch_queue"},
+	{"", "show_username_in_console", "show_username"},
 	{"discord", "webhook_api", "webhook"},
 	{"telegram", "disable_notification", "silent"},
 }

@@ -83,7 +83,7 @@ func eventColor(event events.Event) int {
 	}
 }
 
-// eventGlyphPrefix is the polarity mark shared by Telegram and Discord ("🟢 ").
+// eventGlyphPrefix is the polarity mark every notifier puts first ("🟢 ").
 // Empty when the event has no glyph. Console `emojis` does not apply here.
 func eventGlyphPrefix(event events.Event) string {
 	emoji, _, ok := events.EventGlyph(event)

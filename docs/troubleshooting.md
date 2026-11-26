@@ -18,6 +18,24 @@ or run the container as your own user:
 PUID=$(id -u) PGID=$(id -g) docker compose up -d
 ```
 
+## No points for watching
+
+The log shows `minute watch <streamer>: ... lookup spade.twitch.tv ...`, or `failed 3 times, next try at ...`, and no `Reason: WATCH` gains arrive.
+
+Watch time is reported to `spade.twitch.tv`, which ad and tracker blocklists often block. Allow that host for the machine the miner runs on: in AdGuard Home or Pi-hole, add it to the allowlist, or as a rule for that one client:
+
+```
+@@||spade.twitch.tv^$client=192.168.1.54
+```
+
+Bonus chests, predictions and raids do not need it, so they keep working while watching earns nothing.
+
+## A drop is ready but not received
+
+`Drop <name> (<campaign>) is ready but not received: connect your <game> account` means Twitch accepted the claim but has nowhere to deliver it. Connect the game's account at <https://www.twitch.tv/drops/inventory>; the miner claims it at the next check.
+
+To stop collecting drops for a game, put it in `game_exclude`. To go after drops for some games only, list them in `game_priority`. More in [streamers and watching](streamers.md#drops).
+
 ## The miner stops with `invalid config`
 
 `config.json` is not valid JSON; the message says where. The usual causes are a missing or trailing comma and a missing quote. If you would rather start again, move the file away and the next start writes a fresh one.
@@ -37,6 +55,9 @@ The first delivery failure is printed to the console once, with the reason.
 - **Telegram, "chat not found":** send your bot a message first, and check `chat_id` is your numeric id.
 - **Telegram, "Unauthorized":** the token is wrong or was revoked. Get a new one from @BotFather.
 - **Discord:** the webhook was deleted, or the URL is incomplete.
+- **Matrix, "Invalid access token":** the token is wrong, or its session was logged out. Log in again and copy the new one.
+- **Matrix, "not in room" or "Unknown room":** `room_id` has to be the internal id that starts with `!`, and the account has to have joined the room.
+- **Matrix, "notifications are off":** `homeserver` has to start with `https://` or `http://`.
 - **Some events are missing:** an empty `events` list leaves out `GAIN_FOR_WATCH`, `DROP_STATUS` and `BET_FILTERS`. Use `["*"]` to get everything.
 
 More in [notifications](notifications.md).

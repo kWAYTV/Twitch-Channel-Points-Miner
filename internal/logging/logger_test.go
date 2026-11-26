@@ -23,7 +23,7 @@ var lineAtAnyTime = regexp.MustCompile(`^\[DEBUG\] \d\d:\d\d \d\d/\d\d/\d\d: hel
 
 func setup(settings LoggerSettings) (*Logger, *bytes.Buffer) {
 	console := &bytes.Buffer{}
-	return newLoggerTo(console, settings, func() time.Time { return now }), console
+	return newLoggerTo(console, settings, "", func() time.Time { return now }), console
 }
 
 // setupSaving builds a logger that saves to <the returned directory>/log.
@@ -81,6 +81,32 @@ func TestNewLogger(t *testing.T) {
 
 		if got, want := readFile(t, filepath.Join(dir, "log", "miner.log")), "[INFO] 15:04 25/11/26: hello\n"; got != want {
 			t.Errorf("log file holds %q, want %q", got, want)
+		}
+	})
+
+	t.Run("the username turned on", func(t *testing.T) {
+		logger, console, dir := setupSaving(t, LoggerSettings{Save: true, ShowUsername: true}, "tester")
+
+		logger.Printf("hello")
+
+		if got, want := readFile(t, filepath.Join(dir, "log", "tester.log")), "[INFO] 15:04 25/11/26: [tester] hello\n"; got != want {
+			t.Errorf("log file holds %q, want %q", got, want)
+		}
+		if got, want := console.String(), "[INFO] 15:04 25/11/26: [tester] hello\n"; got != want {
+			t.Errorf("console shows %q, want %q", got, want)
+		}
+	})
+
+	t.Run("the username turned on in anonymous logs", func(t *testing.T) {
+		logger, console, dir := setupSaving(t, LoggerSettings{Save: true, ShowUsername: true, AnonymizeLogs: true}, "tester")
+
+		logger.Printf("hello")
+
+		if got, want := readFile(t, filepath.Join(dir, "log", "miner.log")), "[INFO] 15:04 25/11/26: hello\n"; got != want {
+			t.Errorf("log file holds %q, want %q", got, want)
+		}
+		if got, want := console.String(), "[INFO] 15:04 25/11/26: hello\n"; got != want {
+			t.Errorf("console shows %q, want %q", got, want)
 		}
 	})
 
@@ -284,6 +310,39 @@ func TestLogger_Eventf(t *testing.T) {
 		logger, _ := setup(LoggerSettings{Discord: notify.DiscordSettings{WebhookAPI: discord.URL}})
 
 		logger.Eventf(events.EventStreamerOnline, "%sAlice%s (1.2k points) is Online!", ansi.ColorGreen, ansi.ColorReset)
+
+		want := []notifytest.DiscordMessage{{
+			ContentType: "application/json",
+			Username:    "Twitch Channel Points Miner",
+			AvatarURL:   "https://raw.githubusercontent.com/kWAYTV/twitch-points-miner/main/docs/assets/gopher.png",
+			Embeds:      []notifytest.DiscordEmbed{{Title: "🟢 Alice is online", Description: "Balance 1.2k points", Color: 0x0A7A2F}},
+		}}
+		if got := discord.Messages(); !reflect.DeepEqual(got, want) {
+			t.Errorf("discord received %+v, want %+v", got, want)
+		}
+	})
+
+	// The login is for telling console lines apart. A notification never carries it.
+	t.Run("the username turned on", func(t *testing.T) {
+		subscriber := subscribeFake(t)
+		logger, console, _ := setupSaving(t, LoggerSettings{ShowUsername: true}, "tester")
+
+		logger.Eventf(events.EventStreamerOnline, "Alice (1.2k points) is Online!")
+
+		if got, want := console.String(), "[INFO] 15:04 25/11/26: [tester] Alice (1.2k points) is Online!\n"; got != want {
+			t.Errorf("console shows %q, want %q", got, want)
+		}
+		want := []publication{{events.EventStreamerOnline, notify.Message{Headline: "Alice is online", Details: []string{"Balance 1.2k points"}}}}
+		if !reflect.DeepEqual(subscriber.Received, want) {
+			t.Errorf("subscriber received %+v, want %+v", subscriber.Received, want)
+		}
+	})
+
+	t.Run("the username turned on and a Discord webhook set", func(t *testing.T) {
+		discord := notifytest.NewFakeDiscord(t)
+		logger, _, _ := setupSaving(t, LoggerSettings{ShowUsername: true, Discord: notify.DiscordSettings{WebhookAPI: discord.URL}}, "tester")
+
+		logger.Eventf(events.EventStreamerOnline, "Alice (1.2k points) is Online!")
 
 		want := []notifytest.DiscordMessage{{
 			ContentType: "application/json",

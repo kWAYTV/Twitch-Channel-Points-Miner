@@ -1,6 +1,6 @@
 # Notifications
 
-The miner can send what happens to a Discord channel, a Telegram chat, or both. Each is set up on its own and has its own list of events.
+The miner can send what happens to a Discord channel, a Telegram chat, a Matrix room, or any of them together. Each is set up on its own and has its own list of events.
 
 ```json
 "discord": {
@@ -12,6 +12,12 @@ The miner can send what happens to a Discord channel, a Telegram chat, or both. 
   "chat_id": 123456789,
   "events": ["STREAMER_ONLINE", "BET_WIN", "BET_LOSE"],
   "silent": false
+},
+"matrix": {
+  "homeserver": "https://matrix.org",
+  "access_token": "syt_...",
+  "room_id": "!abcdefg:matrix.org",
+  "events": []
 }
 ```
 
@@ -30,7 +36,17 @@ An empty `webhook` turns Discord off.
 
 `"silent": true` delivers messages silently. An empty `token` or `chat_id` turns Telegram off.
 
-Treat the token and the webhook URL like passwords: anyone who has one can post as your bot or to your channel.
+## Matrix
+
+Messages are sent as a Matrix account, to one room that account is in. Your client does not notify you of your own messages, so use a second account for the miner and invite it to the room.
+
+1. Set `matrix.homeserver` to the address of that account's homeserver, starting with `https://` (or `http://`), for example `https://matrix.org`.
+2. Log in as that account and copy its access token into `matrix.access_token`. In Element it is under Settings, Help & About, Advanced. Logging that session out ends the token, so close the window instead.
+3. Set `matrix.room_id` to the room's internal id, which starts with `!`. In Element it is under the room's Settings, Advanced. The room's name or its `#alias` is not the id.
+
+If any of the three is empty, Matrix is off. Messages are sent unencrypted, so in an encrypted room clients mark them as such.
+
+Treat the tokens and the webhook URL like passwords: anyone who has one can post as your bot, your account or to your channel.
 
 ## Choosing events
 
@@ -69,10 +85,10 @@ A message is a headline and one line of details, written from your side:
 Watching Valorant · Balance 12.4k points
 ```
 
-Points are always your points on that channel. On Telegram the headline is bold; on Discord it is the title of the embed. The glyph in front shows whether the news is good, bad or neutral, and is sent even with console `emojis` off.
+Points are always your points on that channel. On Telegram and Matrix the headline is bold; on Discord it is the title of the embed. The glyph in front shows whether the news is good, bad or neutral, and is sent even with console `emojis` off. The account name that `show_username` adds to console lines is not part of a message.
 
 ## When a message does not arrive
 
-A delivery problem never stops the miner. The first failure is printed to the console once, with the reason the service gave; later failures are not logged. The token and the webhook URL are never printed.
+A delivery problem never stops the miner. The first failure is printed to the console once, with the reason the service gave; later failures are not logged. The tokens and the webhook URL are never printed.
 
 See [troubleshooting](troubleshooting.md#notifications-do-not-arrive) for the usual causes.

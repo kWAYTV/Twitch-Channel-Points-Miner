@@ -144,6 +144,12 @@ const olderConfigConverted = `{
     "events": [],
     "silent": true
   },
+  "matrix": {
+    "homeserver": "",
+    "access_token": "",
+    "room_id": "",
+    "events": []
+  },
 
   "dashboard": {
     "enabled": false,
@@ -153,6 +159,7 @@ const olderConfigConverted = `{
 
   "emojis": true,
   "show_seconds": false,
+  "show_username": false,
   "show_game": true,
   "show_drops_progress": false,
   "show_watch_queue": true,
@@ -206,6 +213,7 @@ func TestLoadOrCreateConfig_olderVersion(t *testing.T) {
 			Discord:       discordConfig{Webhook: "https://discord.com/api/webhooks/1/a", Events: []string{"BET_WIN"}},
 			Dashboard:     dashboardConfig{Enabled: false, Host: "0.0.0.0", Port: 8080},
 			Telegram:      telegramConfig{ChatID: "42", Token: "123:abc", Events: []string{}, Silent: true},
+			Matrix:        matrixConfig{Events: []string{}},
 			StreamerOverrides: map[string]streamerSettingsConfig{
 				"one": {MakePredictions: ptr(false), Bet: betConfig{MaxPoints: ptr(500)}},
 			},

@@ -119,6 +119,12 @@ func TestMigrateSettings(t *testing.T) {
 			wantChanged: true,
 		},
 		{
+			name:        "show_username_in_console, renamed",
+			settings:    map[string]interface{}{"show_username_in_console": true},
+			want:        map[string]interface{}{"show_username": true},
+			wantChanged: true,
+		},
+		{
 			name:        "debug and debug_deep both on, merged",
 			settings:    map[string]interface{}{"debug": true, "debug_deep": true},
 			want:        map[string]interface{}{"debug": "full"},

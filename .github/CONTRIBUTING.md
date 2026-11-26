@@ -47,17 +47,20 @@ Folders are named after what the code is about, and each file has one job.
 | `internal/domain` | Streamers, streams, bet and streamer settings, community goals. |
 | `internal/events` | The event types the miner reports, with their polarity and glyph. |
 | `internal/logging` | The console logger; notifiers and the dashboard subscribe to its events. |
-| `internal/notify` | Discord and Telegram messages. |
+| `internal/notify` | Discord, Telegram and Matrix messages. `notifytest` holds the fake services their tests share. |
 | `internal/dashboard` | The analytics store, its HTTP API and the web page. |
 | `internal/project` | The project's name, version and repository. |
 | `internal/privacy`, `internal/update` | Log anonymisation; the self-updater. |
-| `internal/ansi`, `internal/jsonfile`, `internal/jsonvalue`, `internal/random` | Console colours; writing JSON files; reading loose JSON values; nonces and jitter. |
+| `internal/ansi`, `internal/jsonfile`, `internal/jsonvalue`, `internal/random` | Console colours; writing files in one move; reading loose JSON values; nonces and jitter. |
+| `internal/points`, `internal/textcase`, `internal/stoppable`, `internal/devrun` | Short point amounts; capitalising a first letter; waits that stopping cuts short; telling a `go run` build from an installed one. |
 
 ## Conventions
 
 - Keep files small and single-purpose, and functions short.
 - Put new code in the package that owns its subject; add a package when a subject has none.
-- Write a test with a change in behaviour. Code that talks to Twitch is tested against a local stand-in, never the real service.
+- One implementation per concept: look for an existing function before writing one, and extend it where it lives.
+- Write a test with a change in behaviour: one example per subtest, with the input and the whole expected value written out. Code that talks to Twitch is tested against a local stand-in, never the real service.
+- Pass in what would make a function hard to test (the time, a sleep, an address) instead of reaching for it.
 - Document a new option in `docs/configuration.md`, and explain it on the topic page it belongs to.
 
 ## Licence

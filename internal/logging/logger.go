@@ -17,6 +17,7 @@ type LoggerSettings struct {
 	Save          bool                   `json:"save"`
 	Emoji         bool                   `json:"emoji"`
 	ShowSeconds   bool                   `json:"show_seconds"`
+	ShowUsername  bool                   `json:"show_username"`
 	Debug         bool                   `json:"debug"`
 	DebugDeep     bool                   `json:"debug_deep"`
 	AnonymizeLogs bool                   `json:"anonymize_logs"`
@@ -26,6 +27,7 @@ type LoggerSettings struct {
 type Logger struct {
 	base     *log.Logger
 	settings LoggerSettings
+	username string
 	discord  *notify.DiscordWebhook
 	now      func() time.Time
 }
@@ -38,8 +40,9 @@ func NewLogger(settings LoggerSettings, username string) *Logger {
 }
 
 // NewLoggerTo returns a logger that writes to output only, without a log file.
+// It is given no account, so its lines never carry a login.
 func NewLoggerTo(output io.Writer, settings LoggerSettings) *Logger {
-	return newLoggerTo(output, settings, time.Now)
+	return newLoggerTo(output, settings, "", time.Now)
 }
 
 // newLogger also returns the log file it opened, nil when there is none. The
@@ -60,13 +63,14 @@ func newLogger(console io.Writer, logDir string, settings LoggerSettings, userna
 			}
 		}
 	}
-	return newLoggerTo(output, settings, now), file
+	return newLoggerTo(output, settings, username, now), file
 }
 
-func newLoggerTo(output io.Writer, settings LoggerSettings, now func() time.Time) *Logger {
+func newLoggerTo(output io.Writer, settings LoggerSettings, username string, now func() time.Time) *Logger {
 	return &Logger{
 		base:     log.New(output, "", 0),
 		settings: settings,
+		username: username,
 		discord:  notify.NewDiscordWebhook(settings.Discord),
 		now:      now,
 	}
@@ -83,14 +87,15 @@ func (l *Logger) logEvent(level, emoji string, event events.Event, format string
 	message := fmt.Sprintf(format, args...)
 	if event != "" {
 		// The console keeps the full line. Discord and every subscriber get the
-		// event described from the account's side.
+		// event described from the account's side, taken before the line gets its
+		// time and login.
 		described := notify.Describe(message)
 		if l.discord != nil {
 			l.discord.Send(described, event)
 		}
 		publish(event, described)
 	}
-	l.base.Print(consoleLine(l.settings, level, emojiFor(emoji, event), message, l.now()))
+	l.base.Print(consoleLine(l.settings, l.username, level, emojiFor(emoji, event), message, l.now()))
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {

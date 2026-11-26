@@ -75,6 +75,10 @@ Explained in [notifications](notifications.md).
 | `telegram.chat_id` | `""` | Your numeric chat id, or `@channelname`. |
 | `telegram.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
 | `telegram.silent` | `false` | Deliver silently. |
+| `matrix.homeserver` | `""` | Address of the homeserver, such as `https://matrix.org`. |
+| `matrix.access_token` | `""` | Access token of the account that sends the messages. |
+| `matrix.room_id` | `""` | The room's internal id, which starts with `!`. Matrix is off unless all three are set. |
+| `matrix.events` | `[]` | Events to send. Empty sends all but the frequent ones. |
 
 ## Dashboard
 
@@ -92,12 +96,13 @@ Explained in [dashboard](dashboard.md).
 |---|---|---|
 | `emojis` | `true` | Prefix console lines with a glyph. Notifications always carry one. |
 | `show_seconds` | `false` | Include seconds in timestamps. |
+| `show_username` | `false` | Put the account's login in every console and log line, after the timestamp: `[INFO] 10:23 24/10/26: [my_username] ...`. Left out while `anonymize_logs` is on, and never part of a notification. |
 | `show_game` | `true` | Show what a streamer is playing. |
 | `show_drops_progress` | `false` | Log drop progress at each inventory check. |
 | `show_watch_queue` | `false` | Explain which streamers got the watch slots and why. |
 | `save_logs` | `false` | Also write the console output to `log/<username>.log`. |
 | `timezone` | `null` (detect) | IANA name such as `Europe/Madrid`, for systems that cannot detect it. |
-| `anonymize_logs` | `false` | Replace streamer names and balances in logs with stand-ins. |
+| `anonymize_logs` | `false` | Replace streamer names and balances in logs with stand-ins. Also leaves out the login `show_username` adds. |
 | `debug` | `false` | `true` logs a summary of each request. `"full"` also logs full payloads, which are left out while logs are anonymised. |
 
 ## Settings from older versions
@@ -115,6 +120,7 @@ Renamed:
 | `privacy.anonymize_logs` | `anonymize_logs` |
 | `disable_at_in_nickname` | `mention_without_at` |
 | `watch_queue_logging` | `show_watch_queue` |
+| `show_username_in_console` | `show_username`. It did nothing in older versions; it now does what it says. |
 | `debug` with `debug_deep` | `debug`: `false`, `true` or `"full"`. `"full"` is what `debug` and `debug_deep` both on used to be. |
 
 If a file has both the old and the new key, the new one is used.
@@ -129,7 +135,7 @@ Removed, because the behaviour is now fixed:
 | `bet.deduct_stake_on_place` | The stake always leaves the shown balance when the bet is placed. |
 | `disable_ssl_cert_verification` | Certificates are always verified. |
 
-`smart_logging`, `show_username_in_console` and `show_claimed_bonus_msg` did nothing and were removed earlier. They are not converted: a file that still has them keeps them at the end, and they are ignored.
+`smart_logging` and `show_claimed_bonus_msg` did nothing and were removed earlier. They are not converted: a file that still has them keeps them at the end, and they are ignored.
 
 ## Environment variables
 

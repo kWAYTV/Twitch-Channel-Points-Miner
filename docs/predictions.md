@@ -47,6 +47,8 @@ The stake is subtracted from the balance the miner shows as soon as the bet is p
 
 ## When the bet is placed
 
+A prediction that is already open when the miner starts is picked up from its next update and bet on in the time that is left. One you already bet on yourself, from the site or another session, is left alone.
+
 Later is better informed: the figures are read when the bet is placed, so waiting until the window is about to close sees almost all the votes.
 
 | `delay_mode` | `delay` means |
@@ -86,4 +88,4 @@ Later is better informed: the figures are read when the bet is placed, so waitin
 | `BET_FAILED` | Twitch rejected the bet. |
 | `BET_WIN`, `BET_LOSE`, `BET_REFUND` | The result. |
 
-These can be sent to Discord or Telegram: see [notifications](notifications.md).
+These can be sent to Discord, Telegram or Matrix: see [notifications](notifications.md).

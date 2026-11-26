@@ -18,10 +18,15 @@ func levelEnabled(level string, settings LoggerSettings) bool {
 }
 
 // consoleLine writes one log line: the level, the time, then the message with
-// its glyph in front when emojis are on.
-func consoleLine(settings LoggerSettings, level, glyph, message string, at time.Time) string {
+// its glyph in front when emojis are on. With ShowUsername on, the account's
+// login comes right after the time, except in anonymised logs: the login is
+// what anonymising hides.
+func consoleLine(settings LoggerSettings, username, level, glyph, message string, at time.Time) string {
 	if glyph != "" && settings.Emoji {
 		message = fmt.Sprintf("%s %s", glyph, message)
+	}
+	if settings.ShowUsername && !settings.AnonymizeLogs && username != "" {
+		message = fmt.Sprintf("[%s] %s", username, message)
 	}
 	timestampFormat := "15:04 02/01/06"
 	if settings.ShowSeconds {

@@ -11,11 +11,12 @@ Earns Twitch channel points for you by watching streams in the background. Writt
 ## What it does
 
 - Watches up to two live streams at a time and keeps watch streaks going.
+- Mines a list of streamers in the order you give, or everyone you follow.
 - Claims bonus chests, drops and moments, and follows raids.
+- Goes after drops only for the games you list, if you list any.
 - Places predictions with configurable strategies and filters.
-- Mines a list of streamers, or everyone you follow.
 - Shows balances and history on a built-in web dashboard.
-- Sends Discord and Telegram notifications in plain sentences.
+- Sends Discord, Telegram and Matrix notifications in plain sentences.
 
 ## Quick start
 
@@ -42,9 +43,9 @@ Without Docker, download the binary for your system from [Releases](https://gith
 | [Configuration](docs/configuration.md) | Every key in `config.json` with its default. |
 | [Streamers and watching](docs/streamers.md) | Who gets mined, the two watch slots, streaks, drops, raids, per-streamer overrides. |
 | [Predictions](docs/predictions.md) | Strategies, stake sizing, timing and filters. |
-| [Notifications](docs/notifications.md) | Discord and Telegram setup, and the events you can choose. |
+| [Notifications](docs/notifications.md) | Discord, Telegram and Matrix setup, and the events you can choose. |
 | [Dashboard](docs/dashboard.md) | The web page, remote access, stored history, the JSON API. |
-| [Troubleshooting](docs/troubleshooting.md) | Login, permissions, an unreachable dashboard, missing notifications. |
+| [Troubleshooting](docs/troubleshooting.md) | Login, permissions, no watch points, drops that are not received, missing notifications. |
 
 ## Development
 
@@ -57,7 +58,7 @@ The code is organised by domain under `internal/`. See [CONTRIBUTING.md](.github
 
 ## Credits
 
-- [0x8fv/Twitch-Channel-Points-Miner](https://github.com/0x8fv/Twitch-Channel-Points-Miner), the Go rewrite this project began as a fork of. This version reorganises the code and adds the dashboard, Telegram, notification sentences, the Docker image and CI.
+- [0x8fv/Twitch-Channel-Points-Miner](https://github.com/0x8fv/Twitch-Channel-Points-Miner), the Go rewrite this project began as a fork of. This version reorganises the code and adds the dashboard, Telegram and Matrix, notification sentences, drops by game, simpler settings, the Docker image and CI.
 - [rdavydov/Twitch-Channel-Points-Miner-v2](https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2), the Python miner that inspired the rewrite.
 
 ## Licence and disclaimer
