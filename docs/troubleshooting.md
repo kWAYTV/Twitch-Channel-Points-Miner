@@ -20,7 +20,7 @@ PUID=$(id -u) PGID=$(id -g) docker compose up -d
 
 ## No points for watching
 
-The log shows `minute watch <streamer>: ... lookup spade.twitch.tv ...`, or `failed 3 times, next try at ...`, and no `Reason: WATCH` gains arrive.
+The log says `Watching will earn no points: spade.twitch.tv, where watch time is reported, resolves to 0.0.0.0 ...` when the first stream is watched, then `minute watch <streamer>: ...` errors, and no `Reason: WATCH` gains arrive.
 
 Watch time is reported to `spade.twitch.tv`, which ad and tracker blocklists often block. Allow that host for the machine the miner runs on: in AdGuard Home or Pi-hole, add it to the allowlist, or as a rule for that one client:
 

@@ -1,9 +1,11 @@
 package twitch
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -67,6 +69,9 @@ type Client struct {
 	sleep func(time.Duration)
 	// now replaces time.Now when set.
 	now func() time.Time
+	// lookupHost resolves a host name; nil skips the check that needs it.
+	lookupHost       func(ctx context.Context, host string) ([]string, error)
+	watchReportCheck sync.Once
 }
 
 // clientParts is everything a Client is built from: who it is, and how it
@@ -82,6 +87,7 @@ type clientParts struct {
 	anonymizer    *privacy.Anonymizer
 	sleep         func(time.Duration)
 	now           func() time.Time
+	lookupHost    func(ctx context.Context, host string) ([]string, error)
 }
 
 func NewClient(username, userAgent string, logger debugLogger, anonymizer *privacy.Anonymizer) (*Client, error) {
@@ -100,6 +106,7 @@ func NewClient(username, userAgent string, logger debugLogger, anonymizer *priva
 		http:          login.Client(),
 		logger:        logger,
 		anonymizer:    anonymizer,
+		lookupHost:    net.DefaultResolver.LookupHost,
 	}), nil
 }
 
@@ -120,6 +127,7 @@ func newClient(parts clientParts) *Client {
 		anonymizer:     parts.anonymizer,
 		sleep:          parts.sleep,
 		now:            parts.now,
+		lookupHost:     parts.lookupHost,
 	}
 }
 

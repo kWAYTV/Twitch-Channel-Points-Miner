@@ -70,6 +70,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 		return errors.New("spade url not found")
 	}
 	streamer.Stream.SpadeURL = spade[1]
+	t.warnIfWatchReportsBlocked(streamer.Stream.SpadeURL)
 	if t.anonymizer.Enabled() {
 		t.debugf("Spade URL resolved")
 	} else {
