@@ -13,19 +13,17 @@ func (t *Client) MakePrediction(event *prediction.Event) error {
 	if event == nil || event.Streamer == nil {
 		return fmt.Errorf("nil prediction event")
 	}
-	if event.Decision.Amount < 10 || event.Decision.OutcomeID == "" || event.EventID == "" {
+	if event.Decision.Amount < prediction.MinimumStake || event.Decision.OutcomeID == "" || event.EventID == "" {
 		return fmt.Errorf("invalid prediction decision")
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.MakePrediction)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["input"] = map[string]interface{}{
-		"eventID":       event.EventID,
-		"outcomeID":     event.Decision.OutcomeID,
-		"points":        event.Decision.Amount,
-		"transactionID": random.Hex(16),
-	}
+	op := twitchapi.GQLOperations.MakePrediction.With(map[string]interface{}{
+		"input": map[string]interface{}{
+			"eventID":       event.EventID,
+			"outcomeID":     event.Decision.OutcomeID,
+			"points":        event.Decision.Amount,
+			"transactionID": random.Hex(16),
+		},
+	})
 	_, err := t.PostGQL(op)
 	return err
 }

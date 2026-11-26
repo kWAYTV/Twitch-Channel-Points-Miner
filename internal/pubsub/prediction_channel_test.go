@@ -31,7 +31,7 @@ func TestClient_processPredictionChannel(t *testing.T) {
 
 		want := effects{
 			Timers: []time.Duration{90 * time.Second},
-			Lines:  []string{":alarm_clock: BET_START: Place bet after 1m30s for tester"},
+			Lines:  []string{":alarm_clock: BET_START: Place bet after 1m30s for Tester"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -49,7 +49,7 @@ func TestClient_processPredictionChannel(t *testing.T) {
 
 		want := effects{
 			Timers: []time.Duration{114 * time.Second},
-			Lines:  []string{":alarm_clock: BET_START: Place bet after 1m54s for tester"},
+			Lines:  []string{":alarm_clock: BET_START: Place bet after 1m54s for Tester"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -224,6 +224,83 @@ func TestClient_processPredictionChannel(t *testing.T) {
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, effects{}) {
 			t.Errorf("effects = %+v, want none", got)
+		}
+	})
+
+	t.Run("an update for an open event it never saw created", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`)
+
+		want := effects{Timers: []time.Duration{2 * time.Minute}, Lines: []string{betStartLine}}
+		if got := h.effects(); !reflect.DeepEqual(got, want) {
+			t.Errorf("effects = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a second update for an open event it never saw created", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`)
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`)
+
+		want := effects{Timers: []time.Duration{2 * time.Minute}, Lines: []string{betStartLine}}
+		if got := h.effects(); !reflect.DeepEqual(got, want) {
+			t.Errorf("effects = %+v, want one bet scheduled: %+v", got, want)
+		}
+	})
+
+	t.Run("an update for an open event that does not say when it opened", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","prediction_window_seconds":120}}}`)
+
+		if got := h.effects(); !reflect.DeepEqual(got, effects{}) {
+			t.Errorf("effects = %+v, want none", got)
+		}
+	})
+
+	t.Run("an update for an open event that does not say how long it runs", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","created_at":"2026-10-30T12:00:00Z"}}}`)
+
+		if got := h.effects(); !reflect.DeepEqual(got, effects{}) {
+			t.Errorf("effects = %+v, want none", got)
+		}
+	})
+
+	t.Run("an update for a locked event it never saw created", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"LOCKED","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120}}}`)
+
+		if got := h.effects(); !reflect.DeepEqual(got, effects{}) {
+			t.Errorf("effects = %+v, want none", got)
+		}
+	})
+
+	t.Run("an update for an open event after its bet was skipped", func(t *testing.T) {
+		streamer := bettor()
+		streamer.Settings.Bet.FilterCondition = crowdedFilter()
+		h := betDue(t, world{streamers: []*domain.Streamer{streamer}})
+		h.timers[0].fire()
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`)
+
+		if got := len(h.timers); got != 1 {
+			t.Errorf("%d bets scheduled, want the first one only", got)
+		}
+	})
+
+	t.Run("an update for an open event the account bet on from elsewhere", func(t *testing.T) {
+		h := setup(world{streamers: []*domain.Streamer{bettor()}})
+		h.receive(t, "predictions-user-v1.999", `{"type":"prediction-made","data":{"prediction":{"event_id":"ev-1"}}}`)
+
+		h.receive(t, "predictions-channel-v1.123", `{"type":"event-updated","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`)
+
+		if got := h.effects(); !reflect.DeepEqual(got, effects{}) {
+			t.Errorf("effects = %+v, want none: the bet is already made", got)
 		}
 	})
 

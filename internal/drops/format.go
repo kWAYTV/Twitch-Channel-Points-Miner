@@ -8,14 +8,8 @@ import (
 )
 
 func formatClaimLine(drop twitch.ClaimedDrop) string {
-	reward := drop.RewardName
-	if reward == "" {
-		reward = "Drop"
-	}
-	campaign := drop.CampaignName
-	if campaign == "" {
-		campaign = "Unknown Campaign"
-	}
+	reward := rewardLabel(drop.RewardName)
+	campaign := campaignLabel(drop.CampaignName)
 	if drop.AccountNotConnected {
 		account := "the game's account"
 		if drop.GameName != "" {
@@ -28,6 +22,22 @@ func formatClaimLine(drop twitch.ClaimedDrop) string {
 	return fmt.Sprintf("Claim %s (%s) %s (%d%%)", reward, campaign, progress, percent)
 }
 
+// rewardLabel names a drop's reward, also when Twitch gave it no name.
+func rewardLabel(name string) string {
+	if name = strings.TrimSpace(name); name != "" {
+		return name
+	}
+	return "Drop"
+}
+
+// campaignLabel names a drop's campaign, also when Twitch gave it no name.
+func campaignLabel(name string) string {
+	if name = strings.TrimSpace(name); name != "" {
+		return name
+	}
+	return "Unknown Campaign"
+}
+
 func formatDropProgress(current, required int) string {
 	if required > 0 {
 		return fmt.Sprintf("%d/%d", current, required)
@@ -38,9 +48,6 @@ func formatDropProgress(current, required int) string {
 func formatDropProgressBar(current, required int) string {
 	const width = 20
 	percent := progressPercent(current, required)
-	if percent < 0 {
-		percent = 0
-	}
 	if percent > 100 {
 		percent = 100
 	}
@@ -49,19 +56,11 @@ func formatDropProgressBar(current, required int) string {
 }
 
 func formatDropStatusLine(status twitch.DropStatus) string {
-	reward := strings.TrimSpace(status.RewardName)
-	if reward == "" {
-		reward = "Drop"
-	}
-	campaign := strings.TrimSpace(status.CampaignName)
 	game := strings.TrimSpace(status.GameName)
 	if game == "" {
-		game = campaign
+		game = strings.TrimSpace(status.CampaignName)
 	}
-	if campaign == "" {
-		campaign = "Unknown Campaign"
-	}
-	title := formatDropStatusTitle(game, campaign, reward)
+	title := formatDropStatusTitle(game, campaignLabel(status.CampaignName), rewardLabel(status.RewardName))
 	channel := strings.TrimSpace(status.ChannelName)
 	if channel == "" {
 		channel = "unknown_streamer"

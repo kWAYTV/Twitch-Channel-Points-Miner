@@ -24,15 +24,8 @@ func (m *Miner) logPointsDelta(streamer *domain.Streamer, delta int, reason stri
 		return
 	}
 	m.analyticsRecordPoint(streamer, delta, reason)
-	name := m.styledStreamerName(streamer)
-	points := m.formattedStreamerPoints(streamer)
-	sign := "+"
-	valueColor := colorGreen
-	if delta < 0 {
-		sign = "-"
-		delta = -delta
-		valueColor = colorRed
-	}
+	who := m.nameWithPoints(streamer)
+	valueColor, sign, amount := signedChange(delta)
 	if reason == "" {
 		return
 	}
@@ -42,41 +35,16 @@ func (m *Miner) logPointsDelta(streamer *domain.Streamer, delta int, reason stri
 			reasonDisplay = fmt.Sprintf("%s %s", reason, ctx)
 		}
 	}
-	event := events.EventFromGainReason(reason)
-	if event != "" {
-		m.logger.EmojiEventf(
-			":rocket:",
-			event,
-			"%s%s%d%s → %s (%s%s%s points) - Reason: %s",
-			valueColor,
-			sign,
-			delta,
-			colorReset,
-			name,
-			colorCyan,
-			points,
-			colorReset,
-			reasonDisplay,
-		)
-	} else {
-		mark := "➕"
-		if sign == "-" {
-			mark = "➖"
-		}
-		m.logger.EmojiPrintf(
-			mark,
-			"%s%s%d%s → %s (%s%s%s points) - Reason: %s",
-			valueColor,
-			sign,
-			delta,
-			colorReset,
-			name,
-			colorCyan,
-			points,
-			colorReset,
-			reasonDisplay,
-		)
+	line := fmt.Sprintf("%s%s%d%s → %s - Reason: %s", valueColor, sign, amount, colorReset, who, reasonDisplay)
+	if event := events.EventFromGainReason(reason); event != "" {
+		m.logger.EmojiEventf(":rocket:", event, "%s", line)
+		return
 	}
+	mark := "➕"
+	if sign == "-" {
+		mark = "➖"
+	}
+	m.logger.EmojiPrintf(mark, "%s", line)
 }
 
 func (m *Miner) handlePubSubGain(streamer *domain.Streamer, earned int, reason string, balance int) {

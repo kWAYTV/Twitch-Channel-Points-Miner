@@ -280,6 +280,96 @@ func TestMiner_repairStreamerIdentity(t *testing.T) {
 	})
 }
 
+func TestWithIdentityRepair(t *testing.T) {
+	notFound := fmt.Errorf("channel missing: %w", twitch.ErrChannelNotFound)
+
+	t.Run("an answer the first time", func(t *testing.T) {
+		h := setup(t, Options{})
+		streamer := renamedStreamer(h)
+		calls := 0
+
+		got, err := withIdentityRepair(h.miner, streamer, func() (string, error) {
+			calls++
+			return "answer", nil
+		})
+
+		if got != "answer" || err != nil || calls != 1 {
+			t.Errorf("withIdentityRepair() = %q, %v after %d calls, want %q, nil after 1", got, err, calls, "answer")
+		}
+		if streamer.Username != "oldlogin" {
+			t.Errorf("Username = %q, want %q", streamer.Username, "oldlogin")
+		}
+	})
+
+	t.Run("a failure that is not about the channel", func(t *testing.T) {
+		h := setup(t, Options{})
+		streamer := renamedStreamer(h)
+		failure := errors.New("503")
+		calls := 0
+
+		got, err := withIdentityRepair(h.miner, streamer, func() (string, error) {
+			calls++
+			return "partial", failure
+		})
+
+		if got != "partial" || err != failure || calls != 1 {
+			t.Errorf("withIdentityRepair() = %q, %v after %d calls, want %q, %v after 1", got, err, calls, "partial", failure)
+		}
+	})
+
+	t.Run("a channel renamed on Twitch is asked about again", func(t *testing.T) {
+		h := setup(t, Options{})
+		streamer := renamedStreamer(h)
+		calls := 0
+
+		got, err := withIdentityRepair(h.miner, streamer, func() (string, error) {
+			calls++
+			if calls == 1 {
+				return "", notFound
+			}
+			return streamer.Username, nil
+		})
+
+		if got != "newlogin" || err != nil || calls != 2 {
+			t.Errorf("withIdentityRepair() = %q, %v after %d calls, want %q, nil after 2", got, err, calls, "newlogin")
+		}
+	})
+
+	t.Run("a channel Twitch no longer knows", func(t *testing.T) {
+		h := setup(t, Options{})
+		streamer := onlineStreamer("oldlogin", "123", "Poker")
+		calls := 0
+
+		got, err := withIdentityRepair(h.miner, streamer, func() (string, error) {
+			calls++
+			return "first", notFound
+		})
+
+		if got != "first" || err != notFound || calls != 1 {
+			t.Errorf("withIdentityRepair() = %q, %v after %d calls, want %q, %v after 1", got, err, calls, "first", notFound)
+		}
+	})
+
+	t.Run("a second failure after the repair", func(t *testing.T) {
+		h := setup(t, Options{})
+		streamer := renamedStreamer(h)
+		failure := errors.New("503")
+		calls := 0
+
+		got, err := withIdentityRepair(h.miner, streamer, func() (string, error) {
+			calls++
+			if calls == 1 {
+				return "first", notFound
+			}
+			return "second", failure
+		})
+
+		if got != "second" || err != failure || calls != 2 {
+			t.Errorf("withIdentityRepair() = %q, %v after %d calls, want %q, %v after 2", got, err, calls, "second", failure)
+		}
+	})
+}
+
 func TestMiner_loadChannelPointsContextWithIdentityRepair(t *testing.T) {
 	t.Run("Twitch answering", func(t *testing.T) {
 		h := setup(t, Options{})

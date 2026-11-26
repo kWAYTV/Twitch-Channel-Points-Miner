@@ -45,14 +45,14 @@ func (m *Miner) loadStreamer(name string) *domain.Streamer {
 		return nil
 	}
 	settings := m.StreamerSettings
-	if override, ok := m.StreamerOverrides[strings.ToLower(name)]; ok {
+	if override, ok := m.StreamerOverrides[domain.LoginKey(name)]; ok {
 		settings = override
 	}
 	s := &domain.Streamer{
 		Username:    name,
 		Settings:    settings,
 		Stream:      domain.NewStream(),
-		StreamerURL: fmt.Sprintf("%s/%s", twitchapi.URL, name),
+		StreamerURL: twitchapi.ChannelURL(name),
 	}
 	id, err := m.twitch.GetChannelID(name)
 	if err != nil {
@@ -66,14 +66,14 @@ func (m *Miner) loadStreamer(name string) *domain.Streamer {
 			}
 		}
 		if id == "" {
-			m.logger.Printf("skip %s: %v", m.rawStreamerName(name), err)
+			m.logger.Printf("skip %s: %v", m.anonymizer.Name(name), err)
 			return nil
 		}
 	}
 	s.ChannelID = id
 	prev := s.ChannelPoints
 	if _, err := m.loadChannelPointsContextWithIdentityRepair(s); err != nil {
-		m.logger.Printf("context for %s: %v", m.rawStreamerName(name), err)
+		m.logger.Printf("context for %s: %v", m.anonymizer.Name(name), err)
 	} else {
 		m.handlePointsUpdate(s, prev, "")
 	}

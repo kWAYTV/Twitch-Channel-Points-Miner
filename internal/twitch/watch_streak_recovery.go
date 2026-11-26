@@ -33,17 +33,8 @@ func (t *Client) RecoverStreak(streamer *domain.Streamer) (bool, error) {
 	if streamer == nil || streamer.ChannelID == "" {
 		return false, fmt.Errorf("missing streamer channel id")
 	}
-	name := displayName(streamer.Username)
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
-		// should ChannelID also be anonymized somehow?
-		name = t.anonymizer.StreamerName(streamer)
-	}
-	rewardList := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.RewardList)
-	if rewardList.Variables == nil {
-		rewardList.Variables = map[string]interface{}{}
-	}
-	rewardList.Variables["channelID"] = streamer.ChannelID
-	r := &streakRecovery{client: t, streamer: streamer, name: name, rewardList: rewardList}
+	rewardList := twitchapi.GQLOperations.RewardList.With(map[string]interface{}{"channelID": streamer.ChannelID})
+	r := &streakRecovery{client: t, streamer: streamer, name: t.anonymizer.Shown(streamer), rewardList: rewardList}
 
 	before, err := r.loadRewardList()
 	if err != nil {
@@ -53,7 +44,7 @@ func (t *Client) RecoverStreak(streamer *domain.Streamer) (bool, error) {
 		// streak not expiring ... or some missing data in getting expiresAt
 		return false, nil
 	}
-	milestone := before.Data.Channel.Self.WatchStreakMilestone
+	milestone := outerMilestone(before)
 	if milestone == nil || milestone.MissedStreams == nil {
 		return false, fmt.Errorf("RewardList response does not have missedStreams for channel %s", streamer.ChannelID)
 	}

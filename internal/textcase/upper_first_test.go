@@ -14,6 +14,7 @@ func TestUpperFirst(t *testing.T) {
 		{"empty", "", ""},
 		{"a first letter outside ASCII", "élan", "Élan"},
 		{"a digit first", "1up", "1up"},
+		{"an underscore first", "_alice", "_alice"},
 		{"a sentence", "the stake is too small", "The stake is too small"},
 		{"a leading space", " alice", " alice"},
 	}

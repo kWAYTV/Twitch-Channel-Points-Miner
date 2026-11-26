@@ -7,36 +7,6 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
-func TestStringValue(t *testing.T) {
-	for _, row := range []struct {
-		name  string
-		value interface{}
-		want  string
-	}{
-		{"an ID", "123", "123"},
-		{"an ID with spaces around it", " 123 ", "123"},
-		{"an ID outside ASCII", "ñandú", "ñandú"},
-		{"an empty string", "", ""},
-		{"only spaces", "   ", ""},
-		{"nothing", nil, ""},
-		{"the text <nil>", "<nil>", ""},
-		{"a whole number", 42, "42"},
-		{"a decoded JSON number", float64(42), "42"},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			if got := stringValue(row.value); got != row.want {
-				t.Errorf("stringValue(%#v) = %q, want %q", row.value, got, row.want)
-			}
-		})
-	}
-
-	t.Run("a nine-digit JSON number", func(t *testing.T) {
-		if got, want := stringValue(float64(123456789)), "123456789"; got != want {
-			t.Errorf("stringValue(123456789.0) = %q, want %q", got, want)
-		}
-	})
-}
-
 func TestChannelIDFromPayload(t *testing.T) {
 	object := func(pairs ...interface{}) map[string]interface{} {
 		made := map[string]interface{}{}
@@ -256,4 +226,23 @@ func errorText(err error) string {
 		return "<nil>"
 	}
 	return err.Error()
+}
+
+func TestPayloadType(t *testing.T) {
+	for _, row := range []struct {
+		name    string
+		payload map[string]interface{}
+		want    string
+	}{
+		{"a type in lower case", map[string]interface{}{"type": "stream-up"}, "stream-up"},
+		{"a type in upper case", map[string]interface{}{"type": "EVENT-CREATED"}, "event-created"},
+		{"no type", map[string]interface{}{}, "<nil>"},
+		{"no payload", nil, "<nil>"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			if got := payloadType(row.payload); got != row.want {
+				t.Errorf("payloadType(%v) = %q, want %q", row.payload, got, row.want)
+			}
+		})
+	}
 }

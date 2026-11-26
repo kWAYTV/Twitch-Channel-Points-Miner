@@ -23,12 +23,8 @@ func (p *Client) logPredictionResult(event *prediction.Event, result map[string]
 	}
 	color := resultColor(gained)
 	label := event.String()
-	if p.anonymizeLogs() {
-		name := ""
-		if event.Streamer != nil {
-			name = p.streamerName(event.Streamer)
-		}
-		label = anonymisedLabel(name, event.Title)
+	if p.anonymizer.Enabled() {
+		label = prediction.Label(p.anonymizer.Shown(event.Streamer), event.Title)
 		resultString = resultType
 	}
 	resultEvent := events.EventFromBetResult(resultType)
@@ -67,24 +63,10 @@ func resultColor(gained int) string {
 	return ansi.ColorGreen
 }
 
-// anonymisedLabel names a prediction by the streamer's alias and the event's
-// title, leaving out whichever is missing.
-func anonymisedLabel(name, title string) string {
-	if name != "" && title != "" {
-		return fmt.Sprintf("EventPrediction: %s - %s", name, title)
-	} else if name != "" {
-		return fmt.Sprintf("EventPrediction: %s", name)
-	} else if title != "" {
-		return fmt.Sprintf("EventPrediction: %s", title)
-	}
-	return "EventPrediction"
-}
-
-func (p *Client) resolvePredictionFromChannel(event *prediction.Event, eventMap map[string]interface{}) {
+func (p *Client) resolvePredictionFromChannel(event *prediction.Event, status string, eventMap map[string]interface{}) {
 	if event == nil || !event.BetPlaced || event.Decision.Amount == 0 || event.ResultType != "" {
 		return
 	}
-	status := strings.ToUpper(jsonvalue.String(eventMap["status"]))
 	resultType, pointsWon, settled := settledResult(status, winningOutcomeID(eventMap), event.Decision, event.Outcomes)
 	if !settled {
 		return
@@ -95,9 +77,7 @@ func (p *Client) resolvePredictionFromChannel(event *prediction.Event, eventMap 
 		"points_won": pointsWon,
 	})
 
-	p.predMu.Lock()
-	delete(p.predictions, event.EventID)
-	p.predMu.Unlock()
+	p.forget(event.EventID)
 }
 
 // settledResult is how a bet came out once its event has a final status: a

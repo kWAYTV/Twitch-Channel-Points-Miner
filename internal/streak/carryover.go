@@ -7,9 +7,7 @@ import (
 )
 
 func CarryoverExpiry(streamer *domain.Streamer, now time.Time) time.Time {
-	if now.IsZero() {
-		now = time.Now()
-	}
+	now = orNow(now)
 	base := now
 	if streamer != nil && !streamer.OfflineAt.IsZero() && !streamer.OfflineAt.After(now) && now.Sub(streamer.OfflineAt) <= CarryoverWindow {
 		base = streamer.OfflineAt
@@ -21,13 +19,15 @@ func RememberCarryover(streamer *domain.Streamer, now time.Time) {
 	if streamer == nil {
 		return
 	}
-	if now.IsZero() {
-		now = time.Now()
-	}
+	now = orNow(now)
 	if streamer.CompletedWatchStreak || CarryoverActive(streamer, now) {
 		ActivateCarryover(streamer, now)
 		return
 	}
+	clearCarryover(streamer)
+}
+
+func clearCarryover(streamer *domain.Streamer) {
 	streamer.ResolvedStreakCarryover = false
 	streamer.ResolvedStreakCarryoverUntil = time.Time{}
 }
@@ -37,8 +37,7 @@ func RestoreCarryover(streamer *domain.Streamer, now time.Time) {
 		return
 	}
 	if !CarryoverActive(streamer, now) {
-		streamer.ResolvedStreakCarryover = false
-		streamer.ResolvedStreakCarryoverUntil = time.Time{}
+		clearCarryover(streamer)
 		streamer.CompletedWatchStreak = false
 		return
 	}
@@ -51,8 +50,7 @@ func CarryoverActive(streamer *domain.Streamer, now time.Time) bool {
 		return false
 	}
 	if now.After(streamer.ResolvedStreakCarryoverUntil) {
-		streamer.ResolvedStreakCarryover = false
-		streamer.ResolvedStreakCarryoverUntil = time.Time{}
+		clearCarryover(streamer)
 		return false
 	}
 	return true

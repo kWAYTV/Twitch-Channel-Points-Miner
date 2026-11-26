@@ -28,7 +28,7 @@ func TestClient_processRaidMessage(t *testing.T) {
 		}
 		want := effects{
 			RaidsJoined: []claimed{{"tester", "raid-1"}},
-			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from tester to target"},
+			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from Tester to target"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -45,7 +45,7 @@ func TestClient_processRaidMessage(t *testing.T) {
 
 		want := effects{
 			RaidsJoined: []claimed{{"tester", "raid-1"}},
-			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from tester to raid target"},
+			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from Tester to raid target"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -70,7 +70,7 @@ func TestClient_processRaidMessage(t *testing.T) {
 
 		want := effects{
 			RaidsJoined: []claimed{{"tester", "raid-1"}},
-			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from tester to target"},
+			Lines:       []string{":performing_arts: JOIN_RAID: Joining raid from Tester to target"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -99,7 +99,7 @@ func TestClient_processRaidMessage(t *testing.T) {
 		}
 		want := effects{
 			RaidsJoined: []claimed{{"tester", "raid-1"}},
-			Lines:       []string{"error: join raid tester->target: 503"},
+			Lines:       []string{"error: join raid Tester->target: 503"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -115,8 +115,11 @@ func TestClient_processRaidMessage(t *testing.T) {
 		h.receive(t, "raid.123", `{"type":"raid_update_v2","raid":{"id":"raid-1","target_login":"target"}}`)
 
 		want := effects{
-			RaidsJoined: []claimed{{"tester", "raid-1"}},
-			Lines:       []string{"error: join raid tester->target: 503"},
+			RaidsJoined: []claimed{{"tester", "raid-1"}, {"tester", "raid-1"}},
+			Lines: []string{
+				"error: join raid Tester->target: 503",
+				":performing_arts: JOIN_RAID: Joining raid from Tester to target",
+			},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -35,8 +34,7 @@ type TelegramNotifier struct {
 	events              map[events.Event]struct{}
 	disableNotification bool
 	client              *http.Client
-	logf                func(format string, args ...any)
-	warnOnce            sync.Once
+	delivery            deliveryWarning
 }
 
 // NewTelegramNotifier returns nil unless both chat_id and token are set.
@@ -56,7 +54,7 @@ func newTelegramNotifier(settings TelegramSettings, apiBase string, logf func(fo
 		events:              selectedEvents(settings.Events),
 		disableNotification: settings.DisableNotification,
 		client:              &http.Client{Timeout: 5 * time.Second},
-		logf:                logf,
+		delivery:            deliveryWarning{service: "telegram", logf: logf},
 	}
 }
 
@@ -80,8 +78,7 @@ func (t *TelegramNotifier) Send(message Message, event events.Event) {
 	}
 	resp, err := t.client.PostForm(t.endpoint, payload)
 	if err != nil {
-		// The error text contains the request URL and therefore the bot token: do not print it.
-		t.warn("request failed (network error or timeout)")
+		t.delivery.warn(requestFailed)
 		return
 	}
 	defer resp.Body.Close()
@@ -89,7 +86,7 @@ func (t *TelegramNotifier) Send(message Message, event events.Event) {
 		return
 	}
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	t.warn(telegramFailure(resp.Status, body))
+	t.delivery.warn(telegramFailure(resp.Status, body))
 }
 
 // telegramFailure words why Telegram refused a message: the description in its
@@ -105,23 +102,11 @@ func telegramFailure(status string, body []byte) string {
 	return apiErr.Description
 }
 
-// warn reports the first delivery problem only, so a bad token or chat id is
-// visible without flooding the log.
-func (t *TelegramNotifier) warn(reason string) {
-	t.warnOnce.Do(func() {
-		t.logf("telegram: notification not delivered: %s (further failures are not logged)", reason)
-	})
-}
-
 // formatTelegram renders a message for parse_mode HTML: the polarity glyph and the
 // headline in bold, then the details on one line. The glyph is the one the
 // console uses, and it is sent even when console emojis are turned off.
 func formatTelegram(event events.Event, message Message) string {
-	headline := message.Headline
-	if headline == "" {
-		headline = eventTitle(event)
-	}
-	text := eventGlyphPrefix(event) + "<b>" + htmlEscape(limitRunes(headline, headlineLimit)) + "</b>"
+	text := eventGlyphPrefix(event) + "<b>" + htmlEscape(limitRunes(headlineOf(event, message), headlineLimit)) + "</b>"
 	details := htmlEscape(strings.Join(message.Details, detailSeparator))
 	budget := telegramTextLimit - len([]rune(text)) - 1
 	if details == "" || budget < 1 {

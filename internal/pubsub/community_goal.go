@@ -1,20 +1,17 @@
 package pubsub
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 func (p *Client) processCommunityPointChannel(topic string, payload map[string]interface{}) error {
-	channelID := strings.TrimPrefix(topic, "community-points-channel-v1.")
+	channelID := topicChannelID(topic, communityPointsChannelTopic)
 	streamer := p.streamerMap[channelID]
 	if streamer == nil || !streamer.Settings.CommunityGoals {
 		return nil
 	}
-	msgType := strings.ToLower(fmt.Sprint(payload["type"]))
+	msgType := payloadType(payload)
 	if streamer.CommunityGoals == nil {
 		streamer.CommunityGoals = make(map[string]*domain.CommunityGoal)
 	}

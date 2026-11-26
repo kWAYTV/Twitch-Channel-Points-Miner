@@ -26,9 +26,9 @@ func NewCommunityGoalFromGQL(goal map[string]interface{}) *CommunityGoal {
 		ID:                               jsonvalue.String(goal["id"]),
 		Title:                            jsonvalue.String(goal["title"]),
 		IsInStock:                        jsonvalue.Bool(goal["isInStock"]),
-		PointsContributed:                intFromAny(goal["pointsContributed"]),
-		AmountNeeded:                     intFromAny(goal["amountNeeded"]),
-		PerStreamUserMaximumContribution: intFromAny(goal["perStreamUserMaximumContribution"]),
+		PointsContributed:                jsonvalue.Int(goal["pointsContributed"]),
+		AmountNeeded:                     jsonvalue.Int(goal["amountNeeded"]),
+		PerStreamUserMaximumContribution: jsonvalue.Int(goal["perStreamUserMaximumContribution"]),
 		Status:                           jsonvalue.String(goal["status"]),
 	}
 }
@@ -41,22 +41,9 @@ func NewCommunityGoalFromPubSub(goal map[string]interface{}) *CommunityGoal {
 		ID:                               jsonvalue.String(goal["id"]),
 		Title:                            jsonvalue.String(goal["title"]),
 		IsInStock:                        jsonvalue.Bool(goal["is_in_stock"]),
-		PointsContributed:                intFromAny(goal["points_contributed"]),
-		AmountNeeded:                     intFromAny(goal["goal_amount"]),
-		PerStreamUserMaximumContribution: intFromAny(goal["per_stream_maximum_user_contribution"]),
+		PointsContributed:                jsonvalue.Int(goal["points_contributed"]),
+		AmountNeeded:                     jsonvalue.Int(goal["goal_amount"]),
+		PerStreamUserMaximumContribution: jsonvalue.Int(goal["per_stream_maximum_user_contribution"]),
 		Status:                           jsonvalue.String(goal["status"]),
-	}
-}
-
-func intFromAny(v interface{}) int {
-	switch n := v.(type) {
-	case int:
-		return n
-	case int64:
-		return int(n)
-	case float64:
-		return int(n)
-	default:
-		return 0
 	}
 }

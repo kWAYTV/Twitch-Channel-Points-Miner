@@ -1,13 +1,12 @@
 package privacy
 
 import (
-	"crypto/rand"
-	"math/big"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
 
 type Anonymizer struct {
@@ -29,7 +28,7 @@ type pointsState struct {
 }
 
 func New(enabled bool) *Anonymizer {
-	return newAnonymizer(enabled, func() int { return randInt(100, 1000) })
+	return newAnonymizer(enabled, func() int { return random.Int(100, 1000) })
 }
 
 // newAnonymizer takes initialPoints, the made-up balance a streamer starts from.
@@ -76,7 +75,7 @@ func (a *Anonymizer) Name(raw string) string {
 	if !a.Enabled() {
 		return raw
 	}
-	key := normalizeKey(raw)
+	key := domain.LoginKey(raw)
 	if key == "" {
 		return ""
 	}
@@ -103,9 +102,6 @@ func (a *Anonymizer) PseudoChannelPoints(streamer *domain.Streamer) int {
 
 	key := streamerKey(streamer)
 	if key == "" {
-		key = normalizeKey(streamer.Username)
-	}
-	if key == "" {
 		return streamer.ChannelPoints
 	}
 
@@ -129,15 +125,4 @@ func (a *Anonymizer) PseudoChannelPoints(streamer *domain.Streamer) int {
 	state.pseudo += delta
 	state.lastReal = streamer.ChannelPoints
 	return state.pseudo
-}
-
-func randInt(min, max int) int {
-	if max <= min {
-		return min
-	}
-	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
-	if err != nil {
-		return min
-	}
-	return min + int(nBig.Int64())
 }

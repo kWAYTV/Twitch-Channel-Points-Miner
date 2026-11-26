@@ -18,50 +18,48 @@ type appPaths struct {
 	ConfigPath string
 }
 
+// pathsInFolder keeps the config in dir, under its usual name.
+func pathsInFolder(dir string) appPaths {
+	return appPaths{
+		WorkDir:    dir,
+		ConfigPath: filepath.Join(dir, "config.json"),
+	}
+}
+
+func pathsForDataDir(dir string) (appPaths, error) {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return appPaths{}, err
+	}
+	return pathsInFolder(abs), nil
+}
+
+// pathsForConfigFile works in the folder the config file is in.
+func pathsForConfigFile(path string) (appPaths, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return appPaths{}, err
+	}
+	return appPaths{
+		WorkDir:    filepath.Dir(abs),
+		ConfigPath: abs,
+	}, nil
+}
+
 func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 	if dataDirFlag != "" {
-		abs, err := filepath.Abs(dataDirFlag)
-		if err != nil {
-			return appPaths{}, err
-		}
-		return appPaths{
-			WorkDir:    abs,
-			ConfigPath: filepath.Join(abs, "config.json"),
-		}, nil
+		return pathsForDataDir(dataDirFlag)
 	}
-
 	if configFlag != "" {
-		abs, err := filepath.Abs(configFlag)
-		if err != nil {
-			return appPaths{}, err
-		}
-		return appPaths{
-			WorkDir:    filepath.Dir(abs),
-			ConfigPath: abs,
-		}, nil
+		return pathsForConfigFile(configFlag)
 	}
 
 	// Environment overrides (useful for non-interactive launches).
 	if raw := strings.TrimSpace(os.Getenv("TCPM_DATA_DIR")); raw != "" {
-		abs, err := filepath.Abs(raw)
-		if err != nil {
-			return appPaths{}, err
-		}
-		return appPaths{
-			WorkDir:    abs,
-			ConfigPath: filepath.Join(abs, "config.json"),
-		}, nil
+		return pathsForDataDir(raw)
 	}
-
 	if raw := strings.TrimSpace(os.Getenv("TCPM_CONFIG")); raw != "" {
-		abs, err := filepath.Abs(raw)
-		if err != nil {
-			return appPaths{}, err
-		}
-		return appPaths{
-			WorkDir:    filepath.Dir(abs),
-			ConfigPath: abs,
-		}, nil
+		return pathsForConfigFile(raw)
 	}
 
 	cwd, err := os.Getwd()
@@ -81,26 +79,16 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 func defaultAppPaths(cwd string, cwdHasConfig bool, exePath, tempDir string) appPaths {
 	// Preserve the historical behavior when the user runs from a folder that already has config.json.
 	if cwd != "" && cwdHasConfig {
-		return appPaths{
-			WorkDir:    cwd,
-			ConfigPath: filepath.Join(cwd, "config.json"),
-		}
+		return pathsInFolder(cwd)
 	}
 
 	if exePath != "" && !devrun.IsGoRunExecutable(exePath, tempDir) {
-		exeDir := filepath.Dir(exePath)
-		return appPaths{
-			WorkDir:    exeDir,
-			ConfigPath: filepath.Join(exeDir, "config.json"),
-		}
+		return pathsInFolder(filepath.Dir(exePath))
 	}
 
 	// Fallback (dev runs, restricted environments).
 	if cwd == "" {
 		cwd = "."
 	}
-	return appPaths{
-		WorkDir:    cwd,
-		ConfigPath: filepath.Join(cwd, "config.json"),
-	}
+	return pathsInFolder(cwd)
 }

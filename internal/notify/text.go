@@ -125,15 +125,6 @@ func replaceFold(s, old, new string) string {
 	}
 }
 
-// capitalise upper-cases the first letter of s.
-func capitalise(s string) string {
-	first, size := utf8.DecodeRuneInString(s)
-	if size == 0 {
-		return s
-	}
-	return string(unicode.ToUpper(first)) + s[size:]
-}
-
 func limitRunes(s string, n int) string {
 	r := []rune(s)
 	if n < 1 || len(r) <= n {

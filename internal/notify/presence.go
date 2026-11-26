@@ -17,13 +17,5 @@ func describePresence(head, game, streak, verb string) (Message, bool) {
 	if name == "" {
 		name = "The channel"
 	}
-	var details []string
-	if game != "" {
-		details = append(details, "Playing "+game)
-	}
-	details = append(details, balance(points))
-	if streak != "" {
-		details = append(details, "Watch streak "+streak)
-	}
-	return newMessage(name+" is "+verb, details...), true
+	return newMessage(name+" is "+verb, playing(game), balance(points), watchStreak(streak)), true
 }

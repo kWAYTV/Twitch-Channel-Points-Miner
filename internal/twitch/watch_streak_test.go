@@ -45,6 +45,33 @@ func TestCurrentStreamHasCompletedWatchStreak(t *testing.T) {
 	}
 }
 
+func TestOuterMilestone(t *testing.T) {
+	tests := []struct {
+		name        string
+		answer      string
+		wantFound   bool
+		wantExpires string
+	}{
+		{"an expiring streak", `{"data":{"channel":{"self":{"watchStreakMilestone":{"expiresAt":"2026-03-02T00:00:00Z"}}}}}`, true, "2026-03-02T00:00:00Z"},
+		{"a streak reached", `{"data":{"channel":{"self":{"watchStreakMilestone":{"watchStreakMilestone":{"value":"3"}}}}}}`, true, ""},
+		{"no streak", `{"data":{"channel":{"self":{"watchStreakMilestone":null}}}}`, false, ""},
+		{"no viewer", `{"data":{"channel":{"self":null}}}`, false, ""},
+		{"no channel", `{"data":{"channel":null}}`, false, ""},
+		{"no answer", ``, false, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := outerMilestone(rewardList(t, tt.answer))
+			if found := got != nil; found != tt.wantFound {
+				t.Fatalf("outerMilestone(%s) found = %t, want %t", tt.answer, found, tt.wantFound)
+			}
+			if got != nil && got.ExpiresAt != tt.wantExpires {
+				t.Errorf("outerMilestone(%s) expires at %q, want %q", tt.answer, got.ExpiresAt, tt.wantExpires)
+			}
+		})
+	}
+}
+
 func TestExtractWatchStreakAchievementAt(t *testing.T) {
 	tests := []struct {
 		name   string

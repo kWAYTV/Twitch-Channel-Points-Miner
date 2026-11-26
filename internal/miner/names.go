@@ -2,39 +2,16 @@ package miner
 
 import (
 	"fmt"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/points"
 )
-
-func displayName(name string) string {
-	if name == "" {
-		return ""
-	}
-	first, size := utf8.DecodeRuneInString(name)
-	return string(unicode.ToUpper(first)) + name[size:]
-}
-
-func (m *Miner) anonymizeLogs() bool {
-	return m != nil && m.anonymizer != nil && m.anonymizer.Enabled()
-}
-
-func (m *Miner) rawStreamerName(raw string) string {
-	if m.anonymizeLogs() {
-		return m.anonymizer.Name(raw)
-	}
-	return raw
-}
 
 func (m *Miner) styledStreamerName(streamer *domain.Streamer) string {
 	if streamer == nil {
 		return ""
 	}
-	name := displayName(streamer.Username)
-	if m.anonymizeLogs() {
-		name = m.anonymizer.StreamerName(streamer)
-	}
+	name := m.anonymizer.Shown(streamer)
 	if streamer.HasActiveMultipliers() {
 		return fmt.Sprintf("%s%s%s", colorDropsAccent, name, colorReset)
 	}
@@ -45,9 +22,14 @@ func (m *Miner) formattedStreamerPoints(streamer *domain.Streamer) string {
 	if streamer == nil {
 		return ""
 	}
-	points := streamer.ChannelPoints
-	if m.anonymizeLogs() {
-		points = m.anonymizer.PseudoChannelPoints(streamer)
+	balance := m.anonymizer.PseudoChannelPoints(streamer)
+	if balance < 0 {
+		balance = -balance
 	}
-	return formatChannelPoints(points)
+	return points.Format(balance)
+}
+
+// nameWithPoints is the streamer's name followed by the balance held there.
+func (m *Miner) nameWithPoints(streamer *domain.Streamer) string {
+	return fmt.Sprintf("%s (%s%s%s points)", m.styledStreamerName(streamer), colorCyan, m.formattedStreamerPoints(streamer), colorReset)
 }

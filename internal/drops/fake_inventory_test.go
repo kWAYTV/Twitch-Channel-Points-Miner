@@ -11,16 +11,8 @@ type fakeInventory struct {
 	Calls    []string
 }
 
-func (i *fakeInventory) ClaimAllDropsFromInventory() ([]twitch.ClaimedDrop, error) {
-	i.Calls = append(i.Calls, "claim")
-	if i.Err != nil {
-		return nil, i.Err
-	}
-	return i.Claimed, nil
-}
-
 func (i *fakeInventory) ClaimAllDropsFromInventoryWithStatuses() ([]twitch.ClaimedDrop, []twitch.DropStatus, error) {
-	i.Calls = append(i.Calls, "claim with statuses")
+	i.Calls = append(i.Calls, "claim")
 	if i.Err != nil {
 		return nil, nil, i.Err
 	}

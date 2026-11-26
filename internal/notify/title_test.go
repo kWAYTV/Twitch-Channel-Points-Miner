@@ -6,6 +6,26 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
+func TestHeadlineOf(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		event   events.Event
+		message Message
+		want    string
+	}{
+		{"a message with a headline", events.EventStreamerOnline, Message{Headline: "Alice is online"}, "Alice is online"},
+		{"a message without one", events.EventStreamerOnline, Message{}, "Online"},
+		{"only details", events.EventDropClaim, Message{Details: []string{"Summer"}}, "Drop claimed"},
+		{"no headline and no event", "", Message{}, "Miner"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := headlineOf(tc.event, tc.message); got != tc.want {
+				t.Errorf("headlineOf(%q, %+v) = %q, want %q", tc.event, tc.message, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestEventTitle(t *testing.T) {
 	for _, tc := range []struct {
 		name  string

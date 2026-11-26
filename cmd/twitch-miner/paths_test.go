@@ -311,3 +311,78 @@ func TestResolveAppPaths(t *testing.T) {
 		}
 	})
 }
+
+func TestPathsInFolder(t *testing.T) {
+	p := filepath.FromSlash
+	tests := []struct {
+		name string
+		dir  string
+		want appPaths
+	}{
+		{"a folder", p("/home/me/miner"), appPaths{WorkDir: p("/home/me/miner"), ConfigPath: p("/home/me/miner/config.json")}},
+		{"the current folder", ".", appPaths{WorkDir: ".", ConfigPath: "config.json"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := pathsInFolder(tt.dir); got != tt.want {
+				t.Errorf("pathsInFolder(%q) = %+v, want %+v", tt.dir, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPathsForDataDir(t *testing.T) {
+	t.Run("a full path", func(t *testing.T) {
+		data := t.TempDir()
+
+		got, err := pathsForDataDir(data)
+
+		if err != nil {
+			t.Fatalf("pathsForDataDir() error = %v, want none", err)
+		}
+		if want := (appPaths{WorkDir: data, ConfigPath: filepath.Join(data, "config.json")}); got != want {
+			t.Errorf("pathsForDataDir() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a path relative to the current folder", func(t *testing.T) {
+		cwd := enterTempFolder(t)
+
+		got, err := pathsForDataDir("data")
+
+		if err != nil {
+			t.Fatalf("pathsForDataDir() error = %v, want none", err)
+		}
+		if want := (appPaths{WorkDir: filepath.Join(cwd, "data"), ConfigPath: filepath.Join(cwd, "data", "config.json")}); got != want {
+			t.Errorf("pathsForDataDir() = %+v, want %+v", got, want)
+		}
+	})
+}
+
+func TestPathsForConfigFile(t *testing.T) {
+	t.Run("a full path", func(t *testing.T) {
+		folder := t.TempDir()
+
+		got, err := pathsForConfigFile(filepath.Join(folder, "custom.json"))
+
+		if err != nil {
+			t.Fatalf("pathsForConfigFile() error = %v, want none", err)
+		}
+		if want := (appPaths{WorkDir: folder, ConfigPath: filepath.Join(folder, "custom.json")}); got != want {
+			t.Errorf("pathsForConfigFile() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a path relative to the current folder", func(t *testing.T) {
+		cwd := enterTempFolder(t)
+
+		got, err := pathsForConfigFile(filepath.Join("conf", "custom.json"))
+
+		if err != nil {
+			t.Fatalf("pathsForConfigFile() error = %v, want none", err)
+		}
+		if want := (appPaths{WorkDir: filepath.Join(cwd, "conf"), ConfigPath: filepath.Join(cwd, "conf", "custom.json")}); got != want {
+			t.Errorf("pathsForConfigFile() = %+v, want %+v", got, want)
+		}
+	})
+}

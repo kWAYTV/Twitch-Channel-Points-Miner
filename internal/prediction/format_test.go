@@ -2,43 +2,6 @@ package prediction
 
 import "testing"
 
-func TestFormatNumber(t *testing.T) {
-	for _, row := range []struct {
-		name  string
-		value int
-		want  string
-	}{
-		{"zero", 0, "0"},
-		{"a small number", 5, "5"},
-		{"a small negative number", -5, "-5"},
-		{"one below a thousand", 999, "999"},
-		{"a thousand and a half", 1_500, "1.5k"},
-		{"a thousand with cents", 1_234, "1.23k"},
-		{"negative thousands", -1_500, "-1.5k"},
-		{"one below a million", 999_999, "1M"},
-		{"millions", 2_340_000, "2.34M"},
-		{"negative millions", -2_500_000, "-2.5M"},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			if got := FormatNumber(row.value); got != row.want {
-				t.Errorf("FormatNumber(%d) = %q, want %q", row.value, got, row.want)
-			}
-		})
-	}
-
-	t.Run("exactly a thousand", func(t *testing.T) {
-		if got := FormatNumber(1_000); got != "1k" {
-			t.Errorf("FormatNumber(1000) = %q, want %q", got, "1k")
-		}
-	})
-
-	t.Run("exactly a million", func(t *testing.T) {
-		if got := FormatNumber(1_000_000); got != "1M" {
-			t.Errorf("FormatNumber(1000000) = %q, want %q", got, "1M")
-		}
-	})
-}
-
 func TestFormatFloat(t *testing.T) {
 	for _, row := range []struct {
 		name  string

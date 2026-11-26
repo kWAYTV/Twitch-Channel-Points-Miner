@@ -1,9 +1,8 @@
 package twitch
 
 import (
-	"strings"
-
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/streak"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
@@ -15,7 +14,7 @@ func (t *Client) UpdateStream(streamer *domain.Streamer) error {
 	if !streamer.Stream.UpdateRequired() {
 		return nil
 	}
-	prevGame := strings.TrimSpace(streamer.Stream.GameName())
+	prevGame := streamer.Stream.GameName()
 	info, err := t.streamInfo(streamer)
 	if err != nil {
 		return err
@@ -31,8 +30,7 @@ func (t *Client) UpdateStream(streamer *domain.Streamer) error {
 		twitchapi.DropID,
 	)
 	if info.WatchStreakComplete {
-		streamer.CompletedWatchStreak = true
-		streamer.Stream.WatchStreakMissing = false
+		streak.MarkCompleted(streamer)
 	}
 
 	eventProps := minuteWatchedProperties(streamer.ChannelID, streamer.Stream.BroadcastID, t.twitchLogin.UserID(), streamer.Username, game)
@@ -53,7 +51,7 @@ func (t *Client) UpdateStream(streamer *domain.Streamer) error {
 		},
 	}
 	if t.onGameChange != nil {
-		if gameName := strings.TrimSpace(streamer.Stream.GameName()); gameName != "" && gameName != prevGame {
+		if gameName := streamer.Stream.GameName(); gameName != "" && gameName != prevGame {
 			t.onGameChange(streamer, prevGame, gameName)
 		}
 	}

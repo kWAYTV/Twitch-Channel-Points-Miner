@@ -1,9 +1,6 @@
 package pubsub
 
-import (
-	"fmt"
-	"strings"
-)
+import "github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 
 func (p *Client) processPredictionUser(payload map[string]interface{}) error {
 	data, _ := payload["data"].(map[string]interface{})
@@ -14,15 +11,20 @@ func (p *Client) processPredictionUser(payload map[string]interface{}) error {
 	if predictionData == nil {
 		return nil
 	}
-	eventID := fmt.Sprint(predictionData["event_id"])
+	eventID := jsonvalue.Text(predictionData["event_id"])
 	p.predMu.Lock()
 	event, ok := p.predictions[eventID]
+	if eventID != "" {
+		// A bet on an event the miner isn't following was made from another
+		// session of the account: the event is not to be bet on again.
+		p.seenPredictions[eventID] = struct{}{}
+	}
 	p.predMu.Unlock()
 	if !ok || event == nil {
 		return nil
 	}
 
-	switch strings.ToLower(fmt.Sprint(payload["type"])) {
+	switch payloadType(payload) {
 	case "prediction-made":
 		event.BetConfirmed = true
 	case "prediction-result":
@@ -35,9 +37,7 @@ func (p *Client) processPredictionUser(payload map[string]interface{}) error {
 			event.BetConfirmed = true
 		}
 		p.logPredictionResult(event, result)
-		p.predMu.Lock()
-		delete(p.predictions, eventID)
-		p.predMu.Unlock()
+		p.forget(eventID)
 	}
 	return nil
 }

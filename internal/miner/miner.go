@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -141,7 +140,7 @@ func (m *Miner) filterExcludedTargets(targets []string) ([]string, int) {
 	filtered := make([]string, 0, len(targets))
 	excluded := 0
 	for _, name := range targets {
-		key := strings.ToLower(strings.TrimSpace(name))
+		key := domain.LoginKey(name)
 		if key == "" {
 			continue
 		}

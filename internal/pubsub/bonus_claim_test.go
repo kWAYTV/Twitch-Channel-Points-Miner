@@ -44,7 +44,7 @@ func TestClient_processClaimAvailable(t *testing.T) {
 		}
 		want := effects{
 			BonusClaims: []claimed{{"tester", "claim-1"}},
-			Lines:       []string{"error: claim bonus tester (channel 123): 503"},
+			Lines:       []string{"error: claim bonus Tester (channel 123): 503"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -219,7 +219,7 @@ func TestClient_checkPendingClaims(t *testing.T) {
 
 		want := effects{
 			ContextLoads: []string{"tester", "other"},
-			Lines:        []string{"error: pending bonus check tester: 503", "error: pending bonus check other: 503"},
+			Lines:        []string{"error: pending bonus check Tester: 503", "error: pending bonus check Other: 503"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -232,7 +232,7 @@ func TestClient_checkPendingClaims(t *testing.T) {
 
 		h.client.checkPendingClaims()
 
-		if got, want := h.logger.Debug, []string{"Checking pending bonus for tester (123)"}; !reflect.DeepEqual(got, want) {
+		if got, want := h.logger.Debug, []string{"Checking pending bonus for Tester (123)"}; !reflect.DeepEqual(got, want) {
 			t.Errorf("debug lines = %q, want %q", got, want)
 		}
 	})

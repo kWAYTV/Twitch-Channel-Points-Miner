@@ -4,6 +4,14 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
+// headlineOf is the headline of a message, or the event's title when it has none.
+func headlineOf(event events.Event, message Message) string {
+	if message.Headline == "" {
+		return eventTitle(event)
+	}
+	return message.Headline
+}
+
 // eventTitle names an event for a message that has no headline of its own.
 func eventTitle(event events.Event) string {
 	switch event {

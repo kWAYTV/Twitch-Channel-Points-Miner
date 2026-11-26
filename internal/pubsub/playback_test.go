@@ -116,7 +116,7 @@ func TestClient_processPlaybackMessage(t *testing.T) {
 		if err != nil {
 			t.Errorf("handleMessage = %v, want nil", err)
 		}
-		if got, want := h.effects(), (effects{Lines: []string{"error: live check tester: 503"}}); !reflect.DeepEqual(got, want) {
+		if got, want := h.effects(), (effects{Lines: []string{"error: live check Tester: 503"}}); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
 		}
 	})

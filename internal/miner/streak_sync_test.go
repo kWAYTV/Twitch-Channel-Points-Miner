@@ -130,3 +130,92 @@ func TestMiner_syncResolvedStreakState(t *testing.T) {
 		})
 	}
 }
+
+func TestMarkStream(t *testing.T) {
+	startedAt := testNow.Add(-5 * time.Minute)
+
+	t.Run("a streamer on a stream", func(t *testing.T) {
+		alice := &domain.Streamer{Username: "alice", Stream: &domain.Stream{BroadcastID: "a", CreatedAt: startedAt}}
+
+		want := streamMark{broadcastID: "a", createdAt: startedAt, watchStreakMissing: false}
+		if got := markStream(alice); got != want {
+			t.Errorf("markStream() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a stream with a streak to collect", func(t *testing.T) {
+		alice := &domain.Streamer{Username: "alice", Stream: &domain.Stream{BroadcastID: "a", CreatedAt: startedAt, WatchStreakMissing: true}}
+
+		want := streamMark{broadcastID: "a", createdAt: startedAt, watchStreakMissing: true}
+		if got := markStream(alice); got != want {
+			t.Errorf("markStream() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a streamer with no stream", func(t *testing.T) {
+		alice := &domain.Streamer{Username: "alice"}
+
+		want := streamMark{watchStreakMissing: true}
+		if got := markStream(alice); got != want {
+			t.Errorf("markStream() = %+v, want %+v", got, want)
+		}
+	})
+}
+
+func TestMiner_syncStreakSince(t *testing.T) {
+	startedAt := testNow.Add(-5 * time.Minute)
+	cached := Options{Username: "account", WatchStreakWarmStartCache: true}
+	tests := []struct {
+		name       string
+		before     streamMark
+		missing    bool
+		wantCached bool
+	}{
+		{"nothing changed", streamMark{broadcastID: "a", createdAt: startedAt, watchStreakMissing: true}, true, false},
+		{"another broadcast", streamMark{broadcastID: "b", createdAt: startedAt, watchStreakMissing: true}, true, true},
+		{"another start time", streamMark{broadcastID: "a", createdAt: startedAt.Add(-time.Hour), watchStreakMissing: true}, true, true},
+		{"the same start time in another zone", streamMark{broadcastID: "a", createdAt: startedAt.In(time.FixedZone("CEST", 2*60*60)), watchStreakMissing: true}, true, false},
+		{"a streak collected since", streamMark{broadcastID: "a", createdAt: startedAt, watchStreakMissing: true}, false, true},
+		{"no stream before", streamMark{watchStreakMissing: true}, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := setup(t, cached)
+			alice := &domain.Streamer{
+				Username: "alice",
+				Stream:   &domain.Stream{BroadcastID: "a", CreatedAt: startedAt, WatchStreakMissing: tt.missing},
+			}
+
+			h.miner.syncStreakSince(alice, tt.before)
+
+			if _, ok := h.cache.Get("alice"); ok != tt.wantCached {
+				t.Errorf("cached = %t, want %t", ok, tt.wantCached)
+			}
+		})
+	}
+
+	t.Run("a streak collected since is marked complete", func(t *testing.T) {
+		h := setup(t, cached)
+		alice := &domain.Streamer{
+			Username: "alice",
+			Stream:   &domain.Stream{BroadcastID: "a", CreatedAt: startedAt},
+		}
+
+		h.miner.syncStreakSince(alice, streamMark{broadcastID: "a", createdAt: startedAt, watchStreakMissing: true})
+
+		if !alice.CompletedWatchStreak {
+			t.Errorf("CompletedWatchStreak = false, want true")
+		}
+	})
+
+	t.Run("a streamer with no stream", func(t *testing.T) {
+		h := setup(t, cached)
+		alice := &domain.Streamer{Username: "alice"}
+
+		h.miner.syncStreakSince(alice, streamMark{watchStreakMissing: true})
+
+		if entry, ok := h.cache.Get("alice"); ok {
+			t.Errorf("cached entry = %+v, want none", entry)
+		}
+	})
+}

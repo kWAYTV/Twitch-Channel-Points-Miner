@@ -199,3 +199,25 @@ func TestStakeTooSmall(t *testing.T) {
 		})
 	}
 }
+
+func TestBelowMinimumPoints(t *testing.T) {
+	for _, row := range []struct {
+		name    string
+		points  int
+		minimum *int
+		want    bool
+	}{
+		{"no minimum set", 0, nil, false},
+		{"a balance under the minimum", 499, pointer(500), true},
+		{"a balance at the minimum", 500, pointer(500), true},
+		{"a balance one over the minimum", 501, pointer(500), false},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			streamer := &domain.Streamer{ChannelPoints: row.points}
+			streamer.Settings.Bet.MinimumPoints = row.minimum
+			if got := belowMinimumPoints(streamer); got != row.want {
+				t.Errorf("belowMinimumPoints(balance %d) = %t, want %t", row.points, got, row.want)
+			}
+		})
+	}
+}

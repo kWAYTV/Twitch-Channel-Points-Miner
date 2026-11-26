@@ -83,18 +83,22 @@ type gqlMissedStream struct {
 	BroadcastIdentifiers []gqlID `json:"broadcastIdentifiers"`
 }
 
+// gqlWatchStreakMilestone is the state of a watch streak: when it expires and
+// which streams were missed, around the milestone reached last.
+type gqlWatchStreakMilestone struct {
+	WatchStreakMilestone *struct {
+		Value                string `json:"value"`
+		AchievementTimestamp string `json:"achievementTimestamp"`
+	} `json:"watchStreakMilestone"`
+	MissedStreams []gqlMissedStream `json:"missedStreams"`
+	ExpiresAt     string            `json:"expiresAt"`
+}
+
 type gqlRewardListResponse struct {
 	Data struct {
 		Channel *struct {
 			Self *struct {
-				WatchStreakMilestone *struct {
-					WatchStreakMilestone *struct {
-						Value                string `json:"value"`
-						AchievementTimestamp string `json:"achievementTimestamp"`
-					} `json:"watchStreakMilestone"`
-					MissedStreams []gqlMissedStream `json:"missedStreams"`
-					ExpiresAt     string            `json:"expiresAt"`
-				} `json:"watchStreakMilestone"`
+				WatchStreakMilestone *gqlWatchStreakMilestone `json:"watchStreakMilestone"`
 			} `json:"self"`
 		} `json:"channel"`
 	} `json:"data"`

@@ -3,8 +3,9 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 func (p *Client) handleMessage(raw []byte, onPong func()) error {
@@ -42,8 +43,9 @@ func (p *Client) handleTopicMessage(envelope map[string]interface{}) error {
 	if err := json.Unmarshal([]byte(messageStr), &payload); err != nil {
 		return err
 	}
-	msgType := strings.ToLower(fmt.Sprint(payload["type"]))
-	p.debugf("PubSub topic %s type=%s", topicFamily(topic), msgType)
+	msgType := payloadType(payload)
+	family := topicFamily(topic)
+	p.debugf("PubSub topic %s type=%s", family, msgType)
 	p.deepDebugf("PubSub topic %s payload %s", topic, strings.TrimSpace(messageStr))
 	channelID := channelIDFromPayload(payload, topic)
 
@@ -52,37 +54,26 @@ func (p *Client) handleTopicMessage(envelope map[string]interface{}) error {
 		return p.processPointsEarned(payload, channelID)
 	case msgType == "claim-available":
 		return p.processClaimAvailable(payload, channelID)
-	case strings.HasPrefix(topic, "video-playback-by-id."):
+	case family == playbackTopic:
 		return p.processPlaybackMessage(topic, payload)
-	case strings.HasPrefix(topic, "raid."):
+	case family == raidTopic:
 		return p.processRaidMessage(topic, payload)
-	case strings.HasPrefix(topic, "community-moments-channel-v1."):
+	case family == momentsChannelTopic:
 		return p.processMomentMessage(topic, payload)
-	case strings.HasPrefix(topic, "predictions-channel-v1."):
+	case family == predictionsChannelTopic:
 		return p.processPredictionChannel(topic, payload)
-	case strings.HasPrefix(topic, "predictions-user-v1."):
+	case family == predictionsUserTopic:
 		return p.processPredictionUser(payload)
-	case strings.HasPrefix(topic, "community-points-channel-v1."):
+	case family == communityPointsChannelTopic:
 		return p.processCommunityPointChannel(topic, payload)
 	default:
 		return nil
 	}
 }
 
-func stringValue(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	// A number decoded from JSON is a float64, which fmt would write as
-	// 1.23456789e+08 from seven digits up.
-	if number, ok := v.(float64); ok {
-		return strconv.FormatFloat(number, 'f', -1, 64)
-	}
-	val := strings.TrimSpace(fmt.Sprint(v))
-	if val == "" || val == "<nil>" {
-		return ""
-	}
-	return val
+// payloadType is the kind of message a topic delivered, in lower case.
+func payloadType(payload map[string]interface{}) string {
+	return strings.ToLower(fmt.Sprint(payload["type"]))
 }
 
 // claim/watch events are routed even when Twitch omits certain fields.
@@ -90,20 +81,20 @@ func channelIDFromPayload(payload map[string]interface{}, topic string) string {
 	data, _ := payload["data"].(map[string]interface{})
 	if data != nil {
 		if prediction, ok := data["prediction"].(map[string]interface{}); ok {
-			if id := stringValue(prediction["channel_id"]); id != "" {
+			if id := jsonvalue.Text(prediction["channel_id"]); id != "" {
 				return id
 			}
 		}
 		if claim, ok := data["claim"].(map[string]interface{}); ok {
-			if id := stringValue(claim["channel_id"]); id != "" {
+			if id := jsonvalue.Text(claim["channel_id"]); id != "" {
 				return id
 			}
 		}
-		if id := stringValue(data["channel_id"]); id != "" {
+		if id := jsonvalue.Text(data["channel_id"]); id != "" {
 			return id
 		}
 		if balance, ok := data["balance"].(map[string]interface{}); ok {
-			if id := stringValue(balance["channel_id"]); id != "" {
+			if id := jsonvalue.Text(balance["channel_id"]); id != "" {
 				return id
 			}
 		}

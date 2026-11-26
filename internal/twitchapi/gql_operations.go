@@ -15,8 +15,6 @@ type GQLPersistedQuery struct {
 	Sha256Hash string `json:"sha256Hash"`
 }
 
-// ClonePersistedOperation returns a copy of the operation with a deep-copied Variables map
-// This prevents callers from accidentally mutating shared global state when customizing variables per request
 // With returns a copy of the operation with these variables set on top of its
 // own. The operation itself, which is shared, is left as it is.
 func (op GQLPersistedOperation) With(variables map[string]interface{}) GQLPersistedOperation {
@@ -30,6 +28,8 @@ func (op GQLPersistedOperation) With(variables map[string]interface{}) GQLPersis
 	return cloned
 }
 
+// ClonePersistedOperation returns a copy of the operation with a deep-copied Variables map
+// This prevents callers from accidentally mutating shared global state when customizing variables per request
 func ClonePersistedOperation(op GQLPersistedOperation) GQLPersistedOperation {
 	cloned := op
 	if op.Variables != nil {

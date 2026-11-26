@@ -122,41 +122,6 @@ func TestWatchInterval(t *testing.T) {
 	}
 }
 
-func TestSleepWithStop(t *testing.T) {
-	stopped := make(chan struct{})
-	close(stopped)
-	tests := []struct {
-		name     string
-		duration time.Duration
-		stop     chan struct{}
-		want     bool
-	}{
-		{"no time to wait", 0, make(chan struct{}), false},
-		{"a negative time to wait", -time.Second, make(chan struct{}), false},
-		{"stopped before the wait", time.Hour, stopped, true},
-		{"a wait that runs out", 300 * time.Microsecond, make(chan struct{}), false},
-		{"a wait too short to split", 2 * time.Nanosecond, make(chan struct{}), false},
-		{"a wait that does not split evenly", 7 * time.Nanosecond, make(chan struct{}), false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := sleepWithStop(tt.duration, tt.stop); got != tt.want {
-				t.Errorf("sleepWithStop(%s) = %t, want %t", tt.duration, got, tt.want)
-			}
-		})
-	}
-
-	t.Run("a wait that runs out lasts its whole time", func(t *testing.T) {
-		started := time.Now()
-
-		sleepWithStop(2*time.Millisecond, make(chan struct{}))
-
-		if elapsed := time.Since(started); elapsed < 2*time.Millisecond {
-			t.Errorf("sleepWithStop(2ms) returned after %s, want at least 2ms", elapsed)
-		}
-	})
-}
-
 func TestMiner_watchMinute(t *testing.T) {
 	options := Options{Username: "account", WatchStreakWarmStartCache: true}
 

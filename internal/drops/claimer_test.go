@@ -111,7 +111,7 @@ func TestClaimer_Claim(t *testing.T) {
 		claimer.Claim("startup claim failed")
 
 		checkEntries(t, logger, []logEntry{{Event: "DROP_STATUS", Text: tokenStatusLine}})
-		checkCalls(t, inventory, []string{"claim with statuses"})
+		checkCalls(t, inventory, []string{"claim"})
 	})
 
 	t.Run("a drop in progress and a finished one, with progress shown", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestClaimer_Claim(t *testing.T) {
 			{Event: "DROP_STATUS", Text: tokenStatusLine},
 			{Emoji: ":package:", Event: "DROP_CLAIM", Text: crateClaimLine},
 		})
-		checkCalls(t, inventory, []string{"claim with statuses"})
+		checkCalls(t, inventory, []string{"claim"})
 	})
 
 	t.Run("nothing to claim, with progress shown", func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestClaimer_Claim(t *testing.T) {
 		claimer.Claim("startup claim failed")
 
 		checkEntries(t, logger, nil)
-		checkCalls(t, inventory, []string{"claim with statuses"})
+		checkCalls(t, inventory, []string{"claim"})
 	})
 
 	t.Run("inventory down, with progress shown", func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestClaimer_Claim(t *testing.T) {
 		claimer.Claim("startup claim failed")
 
 		checkEntries(t, logger, []logEntry{{Text: "startup claim failed: 503"}})
-		checkCalls(t, inventory, []string{"claim with statuses"})
+		checkCalls(t, inventory, []string{"claim"})
 	})
 
 	t.Run("the same claim twice", func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestClaimer_Claim(t *testing.T) {
 
 		claimer.Claim("startup claim failed")
 
-		checkCalls(t, inventory, []string{"claim with statuses"})
+		checkCalls(t, inventory, []string{"claim"})
 	})
 
 	t.Run("no logger, the inventory unreadable", func(t *testing.T) {

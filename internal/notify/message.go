@@ -101,10 +101,10 @@ func describeOther(head, game, streak string, other []string) Message {
 	lower := strings.ToLower(headline)
 	var details []string
 	if game != "" && !strings.Contains(lower, strings.ToLower(game)) {
-		details = append(details, "Playing "+game)
+		details = append(details, playing(game))
 	}
 	if streak != "" && !strings.Contains(lower, "watch streak") {
-		details = append(details, "Watch streak "+streak)
+		details = append(details, watchStreak(streak))
 	}
 	return newMessage(headline, append(details, other...)...)
 }
@@ -159,4 +159,20 @@ func balance(points string) string {
 		return ""
 	}
 	return "Balance " + points
+}
+
+// playing words the game a channel is on.
+func playing(game string) string {
+	if game == "" {
+		return ""
+	}
+	return "Playing " + game
+}
+
+// watchStreak words how long the account's watch streak on a channel is.
+func watchStreak(length string) string {
+	if length == "" {
+		return ""
+	}
+	return "Watch streak " + length
 }

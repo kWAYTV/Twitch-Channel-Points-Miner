@@ -3,13 +3,40 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
+
+// The topic families. A topic is a family, a dot, and the ID of the account
+// or of a channel.
+const (
+	communityPointsUserTopic    = "community-points-user-v1"
+	predictionsUserTopic        = "predictions-user-v1"
+	playbackTopic               = "video-playback-by-id"
+	raidTopic                   = "raid"
+	predictionsChannelTopic     = "predictions-channel-v1"
+	momentsChannelTopic         = "community-moments-channel-v1"
+	communityPointsChannelTopic = "community-points-channel-v1"
+)
+
+func topicOf(family, id string) string {
+	return family + "." + id
+}
+
+// topicChannelID is the channel ID a topic of the family ends in, or "" for a
+// topic of another family.
+func topicChannelID(topic, family string) string {
+	id, ok := strings.CutPrefix(topic, family+".")
+	if !ok {
+		return ""
+	}
+	return id
+}
 
 func (p *Client) buildTopics() ([]string, error) {
 	userID := p.account.UserID()
@@ -36,7 +63,7 @@ func topicsFor(userID string, streamers []*domain.Streamer) []string {
 		topics = append(topics, topic)
 	}
 
-	addTopic(fmt.Sprintf("community-points-user-v1.%s", userID))
+	addTopic(topicOf(communityPointsUserTopic, userID))
 
 	shouldListenPredictionUser := false
 	for _, s := range streamers {
@@ -46,25 +73,25 @@ func topicsFor(userID string, streamers []*domain.Streamer) []string {
 		}
 	}
 	if shouldListenPredictionUser {
-		addTopic(fmt.Sprintf("predictions-user-v1.%s", userID))
+		addTopic(topicOf(predictionsUserTopic, userID))
 	}
 
 	for _, s := range streamers {
 		if s.ChannelID == "" {
 			continue
 		}
-		addTopic(fmt.Sprintf("video-playback-by-id.%s", s.ChannelID))
+		addTopic(topicOf(playbackTopic, s.ChannelID))
 		if s.Settings.FollowRaid {
-			addTopic(fmt.Sprintf("raid.%s", s.ChannelID))
+			addTopic(topicOf(raidTopic, s.ChannelID))
 		}
 		if s.Settings.MakePredictions {
-			addTopic(fmt.Sprintf("predictions-channel-v1.%s", s.ChannelID))
+			addTopic(topicOf(predictionsChannelTopic, s.ChannelID))
 		}
 		if s.Settings.ClaimMoments {
-			addTopic(fmt.Sprintf("community-moments-channel-v1.%s", s.ChannelID))
+			addTopic(topicOf(momentsChannelTopic, s.ChannelID))
 		}
 		if s.Settings.CommunityGoals {
-			addTopic(fmt.Sprintf("community-points-channel-v1.%s", s.ChannelID))
+			addTopic(topicOf(communityPointsChannelTopic, s.ChannelID))
 		}
 	}
 
@@ -74,7 +101,8 @@ func topicsFor(userID string, streamers []*domain.Streamer) []string {
 // topicNeedsAuth says whether a topic is the account's own, which Twitch only
 // serves with the account's token.
 func topicNeedsAuth(topic string) bool {
-	return strings.HasPrefix(topic, "community-points-user-v1.") || strings.HasPrefix(topic, "predictions-user-v1.")
+	family := topicFamily(topic)
+	return family == communityPointsUserTopic || family == predictionsUserTopic
 }
 
 // topicFamily is a topic without the ID it ends in.
@@ -93,7 +121,7 @@ func (p *Client) listenTopics(ctx context.Context, conn *websocket.Conn, topics 
 			"nonce": random.String(16),
 			"data":  data,
 		}
-		if p.anonymizeLogs() {
+		if p.anonymizer.Enabled() {
 			p.debugf("PubSub LISTEN %s", topicFamily(t))
 		} else {
 			p.debugf("PubSub LISTEN %s", t)

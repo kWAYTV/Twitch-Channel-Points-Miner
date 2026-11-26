@@ -3,7 +3,6 @@ package miner
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
@@ -13,41 +12,23 @@ func (m *Miner) resolveGameName(streamer *domain.Streamer) string {
 		return ""
 	}
 	if streamer.Stream != nil {
-		if name := strings.TrimSpace(streamer.Stream.GameName()); name != "" {
+		if name := streamer.Stream.GameName(); name != "" {
 			return name
 		}
 	}
 	if !m.showGameInfo || m.twitch == nil || !streamer.IsOnline {
 		return ""
 	}
-	prevBroadcastID := ""
-	prevCreatedAt := time.Time{}
-	prevWatchStreakMissing := true
-	if streamer.Stream != nil {
-		prevBroadcastID = streamer.Stream.BroadcastID
-		prevCreatedAt = streamer.Stream.CreatedAt
-		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
-	}
+	before := markStream(streamer)
 	if err := m.updateStreamWithIdentityRepair(streamer); err != nil {
 		if m.logger != nil && m.logger.DebugEnabled() {
 			m.logger.Debugf("update stream %s for game: %v", m.styledStreamerName(streamer), err)
 		}
 		return ""
 	}
-	m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
-	if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
-		m.syncWarmStartCacheFromStreamer(streamer)
-	}
+	m.syncStreakSince(streamer, before)
 	if streamer.Stream != nil {
-		return strings.TrimSpace(streamer.Stream.GameName())
-	}
-	return ""
-}
-
-func (m *Miner) gameSuffix(streamer *domain.Streamer) string {
-	name := m.gameInfo(streamer)
-	if name != "" {
-		return name
+		return streamer.Stream.GameName()
 	}
 	return ""
 }

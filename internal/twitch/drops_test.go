@@ -103,10 +103,10 @@ func TestClient_ClaimAllDropsFromInventory(t *testing.T) {
 		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
 		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
 
-		claimed, err := client.ClaimAllDropsFromInventory()
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
 
 		if err != nil {
-			t.Fatalf("ClaimAllDropsFromInventory error = %v, want none", err)
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
 		}
 		if want := []ClaimedDrop{tokenDrop}; !equal(claimed, want) {
 			t.Errorf("claimed = %+v, want %+v", claimed, want)
@@ -118,10 +118,10 @@ func TestClient_ClaimAllDropsFromInventory(t *testing.T) {
 		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
 		fake.twitch.answer("DropsPage_ClaimDropRewards", "", down("connection refused"))
 
-		claimed, err := client.ClaimAllDropsFromInventory()
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
 
 		if want := `Post "https://gql.twitch.tv/gql": connection refused`; errorText(err) != want {
-			t.Errorf("ClaimAllDropsFromInventory error = %v, want %s", err, want)
+			t.Errorf("ClaimAllDropsFromInventoryWithStatuses error = %v, want %s", err, want)
 		}
 		if claimed != nil {
 			t.Errorf("claimed = %+v, want none", claimed)
@@ -461,10 +461,10 @@ func TestClient_ClaimAllDropsFromInventory_malformed(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.answer("Inventory", inventoryVariables, ok(`{"data":{"currentUser":{"inventory":"none"}}}`))
 
-		claimed, err := client.ClaimAllDropsFromInventory()
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
 
 		if err != nil {
-			t.Fatalf("ClaimAllDropsFromInventory error = %v, want none", err)
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
 		}
 		if claimed != nil {
 			t.Errorf("claimed = %+v, want none", claimed)

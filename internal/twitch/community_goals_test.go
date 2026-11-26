@@ -327,26 +327,3 @@ func TestHasActiveCommunityGoal(t *testing.T) {
 		})
 	}
 }
-
-func TestMinInt(t *testing.T) {
-	tests := []struct {
-		name   string
-		values []int
-		want   int
-	}{
-		{"the smallest first", []int{1, 2, 3}, 1},
-		{"the smallest in the middle", []int{2, 1, 3}, 1},
-		{"the smallest last", []int{3, 2, 1}, 1},
-		{"the smallest twice", []int{2, 1, 1}, 1},
-		{"a negative value", []int{0, -5, 5}, -5},
-		{"one value", []int{7}, 7},
-		{"no values", nil, 0},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := minInt(tt.values...); got != tt.want {
-				t.Errorf("minInt(%v) = %d, want %d", tt.values, got, tt.want)
-			}
-		})
-	}
-}

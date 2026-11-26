@@ -12,8 +12,8 @@ import (
 const whoWinsCreated = `{"type":"event-created","data":{"event":{"id":"ev-1","status":"ACTIVE","title":"who wins","created_at":"2026-10-30T12:00:00Z","prediction_window_seconds":120,"outcomes":[{"id":"yes","title":"Yes","color":"BLUE","total_users":10,"total_points":100},{"id":"no","title":"No","color":"PINK","total_users":5,"total_points":50}]}}}`
 
 const (
-	betStartLine  = ":alarm_clock: BET_START: Place bet after 2m0s for tester"
-	betPlacedLine = ":four_leaf_clover: BET_GENERAL: Place 50 points on: Yes (BLUE), Points: 100, Users: 10 (66.67%), Odds: 1.5 (66.67%) for tester"
+	betStartLine  = ":alarm_clock: BET_START: Place bet after 2m0s for Tester"
+	betPlacedLine = ":four_leaf_clover: BET_GENERAL: Place 50 points on: Yes (BLUE), Points: 100, Users: 10 (66.67%), Odds: 1.5 (66.67%) for Tester"
 	betWonLine    = ":bar_chart: BET_WIN: EventPrediction: tester - who wins - Decision: A: Yes (BLUE) - Result: " + ansi.ColorGreen + "WIN, Gained: +25" + ansi.ColorReset
 )
 

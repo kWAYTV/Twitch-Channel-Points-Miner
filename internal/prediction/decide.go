@@ -36,7 +36,7 @@ const MinimumStake = 10
 // stake is how many points to bet from balance. topPoints is the largest bet
 // already placed on the chosen outcome, which stealth mode stays below.
 func stake(balance int, settings domain.BetSettings, topPoints int) int {
-	percentage := 5
+	percentage := domain.DefaultBetPercentage
 	if settings.Percentage != nil {
 		percentage = *settings.Percentage
 	}
@@ -53,11 +53,11 @@ func stake(balance int, settings domain.BetSettings, topPoints int) int {
 			amount = 1
 		}
 	}
-	if amount < 10 {
-		if settings.MaxPoints != nil && *settings.MaxPoints < 10 {
+	if amount < MinimumStake {
+		if settings.MaxPoints != nil && *settings.MaxPoints < MinimumStake {
 			amount = min(*settings.MaxPoints, balance)
-		} else if balance >= 10 {
-			amount = 10
+		} else if balance >= MinimumStake {
+			amount = MinimumStake
 		}
 	}
 	return amount
@@ -69,7 +69,7 @@ func selectOutcome(outcomes []Outcome, settings domain.BetSettings) int {
 	}
 	strategy := settings.Strategy
 	if strategy == "" {
-		strategy = domain.StrategySmart
+		strategy = domain.DefaultBetStrategy
 	}
 
 	switch strategy {
@@ -114,7 +114,7 @@ func selectOutcome(outcomes []Outcome, settings domain.BetSettings) int {
 			return 7
 		}
 	case domain.StrategySmart:
-		gap := 20
+		gap := domain.DefaultBetPercentageGap
 		if settings.PercentageGap != nil {
 			gap = *settings.PercentageGap
 		}

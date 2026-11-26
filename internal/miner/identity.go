@@ -2,7 +2,6 @@ package miner
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -17,30 +16,30 @@ func streamerKey(streamer *domain.Streamer) string {
 	if id := strings.TrimSpace(streamer.ChannelID); id != "" {
 		return id
 	}
-	return strings.ToLower(strings.TrimSpace(streamer.Username))
+	return domain.LoginKey(streamer.Username)
 }
 
 func (m *Miner) applyStreamerLoginChange(streamer *domain.Streamer, login string) bool {
 	if streamer == nil {
 		return false
 	}
-	login = strings.ToLower(strings.TrimSpace(login))
+	login = domain.LoginKey(login)
 	if login == "" || strings.EqualFold(streamer.Username, login) {
 		return false
 	}
 
-	oldLogin := strings.ToLower(strings.TrimSpace(streamer.Username))
+	oldLogin := domain.LoginKey(streamer.Username)
 	if m != nil && m.chat != nil {
 		m.chat.Leave(streamer)
 	}
 
 	streamer.Username = login
-	streamer.StreamerURL = fmt.Sprintf("%s/%s", twitchapi.URL, login)
+	streamer.StreamerURL = twitchapi.ChannelURL(login)
 	if streamer.Stream != nil {
 		streamer.Stream.SpadeURL = ""
 	}
 	if m != nil && m.logger != nil {
-		if m.anonymizeLogs() {
+		if m.anonymizer.Enabled() {
 			m.logger.Printf("identity refresh %s", m.styledStreamerName(streamer))
 		} else {
 			m.logger.Printf("identity refresh %s -> %s for channel %s", oldLogin, streamer.Username, streamer.ChannelID)
@@ -87,46 +86,39 @@ func (m *Miner) repairStreamerIdentity(streamer *domain.Streamer, err error) boo
 	return m.applyStreamerLoginChange(streamer, user.Login)
 }
 
+// withIdentityRepair asks Twitch something about a streamer. When Twitch no
+// longer knows the channel by its login, the login is looked up again and the
+// question asked once more.
+func withIdentityRepair[T any](m *Miner, streamer *domain.Streamer, call func() (T, error)) (T, error) {
+	result, err := call()
+	if err == nil || !m.repairStreamerIdentity(streamer, err) {
+		return result, err
+	}
+	return call()
+}
+
 func (m *Miner) loadChannelPointsContextWithIdentityRepair(streamer *domain.Streamer) (int, error) {
-	points, err := m.twitch.LoadChannelPointsContext(streamer)
-	if err == nil {
-		return points, nil
-	}
-	if !m.repairStreamerIdentity(streamer, err) {
-		return points, err
-	}
-	return m.twitch.LoadChannelPointsContext(streamer)
+	return withIdentityRepair(m, streamer, func() (int, error) {
+		return m.twitch.LoadChannelPointsContext(streamer)
+	})
 }
 
 func (m *Miner) checkStreamerOnlineWithIdentityRepair(streamer *domain.Streamer) (bool, error) {
-	online, err := m.twitch.CheckStreamerOnline(streamer)
-	if err == nil {
-		return online, nil
-	}
-	if !m.repairStreamerIdentity(streamer, err) {
-		return online, err
-	}
-	return m.twitch.CheckStreamerOnline(streamer)
+	return withIdentityRepair(m, streamer, func() (bool, error) {
+		return m.twitch.CheckStreamerOnline(streamer)
+	})
 }
 
 func (m *Miner) updateStreamWithIdentityRepair(streamer *domain.Streamer) error {
-	err := m.twitch.UpdateStream(streamer)
-	if err == nil {
-		return nil
-	}
-	if !m.repairStreamerIdentity(streamer, err) {
-		return err
-	}
-	return m.twitch.UpdateStream(streamer)
+	_, err := withIdentityRepair(m, streamer, func() (struct{}, error) {
+		return struct{}{}, m.twitch.UpdateStream(streamer)
+	})
+	return err
 }
 
 func (m *Miner) sendMinuteWatchedWithIdentityRepair(streamer *domain.Streamer) error {
-	err := m.twitch.SendMinuteWatched(streamer)
-	if err == nil {
-		return nil
-	}
-	if !m.repairStreamerIdentity(streamer, err) {
-		return err
-	}
-	return m.twitch.SendMinuteWatched(streamer)
+	_, err := withIdentityRepair(m, streamer, func() (struct{}, error) {
+		return struct{}{}, m.twitch.SendMinuteWatched(streamer)
+	})
+	return err
 }

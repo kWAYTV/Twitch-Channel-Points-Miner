@@ -3,7 +3,6 @@ package miner
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
@@ -36,7 +35,7 @@ func (m *Miner) syncWarmStartCacheFromStreamer(streamer *domain.Streamer) {
 	}
 	m.warmStartCache.UpdateFromStreamer(streamer, m.now())
 	if err := m.warmStartCache.SaveIfDirty(); err != nil && m.logger != nil {
-		m.logger.Debugf("warm-start cache save failed for %s: %v", m.rawStreamerName(streamer.Username), err)
+		m.logger.Debugf("warm-start cache save failed for %s: %v", m.anonymizer.Name(streamer.Username), err)
 	}
 }
 
@@ -54,7 +53,7 @@ func (m *Miner) applyWarmStartCache(streamer *domain.Streamer) bool {
 
 // warmStartCachePathFor is where an account's watch-streak state is kept between runs.
 func warmStartCachePathFor(username string) string {
-	safeUsername := logging.SanitizeFilename(strings.ToLower(strings.TrimSpace(username)))
+	safeUsername := logging.SanitizeFilename(domain.LoginKey(username))
 	if safeUsername == "" {
 		return ""
 	}

@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -61,7 +60,7 @@ func (p *Presence) join(streamer *domain.Streamer) {
 	if token == "" {
 		return
 	}
-	key := strings.ToLower(streamer.Username)
+	key := domain.LoginKey(streamer.Username)
 	p.mu.Lock()
 	if _, exists := p.clients[key]; exists {
 		p.mu.Unlock()
@@ -81,7 +80,7 @@ func (p *Presence) Leave(streamer *domain.Streamer) {
 	if p == nil || streamer == nil {
 		return
 	}
-	key := strings.ToLower(streamer.Username)
+	key := domain.LoginKey(streamer.Username)
 	p.mu.Lock()
 	client, ok := p.clients[key]
 	if ok {

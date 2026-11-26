@@ -173,26 +173,6 @@ func TestMiner_gameInfo(t *testing.T) {
 	})
 }
 
-func TestMiner_gameSuffix(t *testing.T) {
-	t.Run("a streamer with a game", func(t *testing.T) {
-		h := setup(t, Options{ShowGame: true})
-		alice := freshStreamer("alice", "1", "Poker")
-
-		if got := h.miner.gameSuffix(alice); got != "Poker" {
-			t.Errorf("gameSuffix() = %q, want %q", got, "Poker")
-		}
-	})
-
-	t.Run("showing games off", func(t *testing.T) {
-		h := setup(t, Options{})
-		alice := freshStreamer("alice", "1", "Poker")
-
-		if got := h.miner.gameSuffix(alice); got != "" {
-			t.Errorf("gameSuffix() = %q, want none", got)
-		}
-	})
-}
-
 func TestMiner_watchContext(t *testing.T) {
 	t.Run("a streamer with a game", func(t *testing.T) {
 		h := setup(t, Options{ShowGame: true})

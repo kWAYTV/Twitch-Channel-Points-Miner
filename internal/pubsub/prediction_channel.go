@@ -1,17 +1,17 @@
 package pubsub
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 func (p *Client) processPredictionChannel(topic string, payload map[string]interface{}) error {
-	channelID := strings.TrimPrefix(topic, "predictions-channel-v1.")
+	channelID := topicChannelID(topic, predictionsChannelTopic)
 	streamer := p.streamerMap[channelID]
 	if streamer == nil || !streamer.Settings.MakePredictions {
 		return nil
@@ -24,37 +24,11 @@ func (p *Client) processPredictionChannel(topic string, payload map[string]inter
 	eventID, _ := eventMap["id"].(string)
 	status := strings.ToUpper(jsonvalue.String(eventMap["status"]))
 
-	msgType := strings.ToLower(fmt.Sprint(payload["type"]))
+	msgType := payloadType(payload)
 
 	switch msgType {
 	case "event-created":
-		if status != "ACTIVE" || eventID == "" {
-			return nil
-		}
-		window := eventMap["prediction_window_seconds"]
-		eventMap["prediction_window_seconds"] = streamer.PredictionWindowSeconds(jsonvalue.Float(window))
-		event := prediction.NewEvent(streamer, eventMap)
-		if event == nil {
-			return nil
-		}
-		if streamer.Settings.Bet.MinimumPoints != nil && streamer.ChannelPoints <= *streamer.Settings.Bet.MinimumPoints {
-			return nil
-		}
-		wait := event.ClosingAfter(p.env.now())
-		p.predMu.Lock()
-		_, alreadyScheduled := p.predictions[event.EventID]
-		if !alreadyScheduled {
-			p.predictions[event.EventID] = event
-		}
-		p.predMu.Unlock()
-		// Twitch can announce an event more than once; it gets one bet.
-		if alreadyScheduled {
-			return nil
-		}
-		p.env.after(wait, func() {
-			p.placePrediction(event.EventID)
-		})
-		p.logger.EmojiEventf(":alarm_clock:", events.EventBetStart, "Place bet after %s for %s", wait.Truncate(time.Second), p.streamerName(streamer))
+		p.scheduleBet(streamer, eventID, status, eventMap)
 	case "event-updated":
 		var existing *prediction.Event
 		p.predMu.Lock()
@@ -67,8 +41,61 @@ func (p *Client) processPredictionChannel(topic string, payload map[string]inter
 		}
 		p.predMu.Unlock()
 		if existing != nil {
-			p.resolvePredictionFromChannel(existing, eventMap)
+			p.resolvePredictionFromChannel(existing, status, eventMap)
+			return nil
+		}
+		// An event that was already open when the miner started, or whose
+		// creation was missed, is first heard of here. The update carries the
+		// whole event, so it is picked up as if it had just been created.
+		if describesWholeEvent(eventMap) {
+			p.scheduleBet(streamer, eventID, status, eventMap)
 		}
 	}
 	return nil
+}
+
+// describesWholeEvent reports whether a message says when the event opened
+// and for how long, which is what scheduling a bet needs.
+func describesWholeEvent(event map[string]interface{}) bool {
+	return jsonvalue.String(event["created_at"]) != "" && jsonvalue.Float(event["prediction_window_seconds"]) > 0
+}
+
+// scheduleBet starts following an open event and sets the bet for the end of
+// its window. An event is scheduled once: Twitch can announce one more than
+// once, and updates keep arriving after a bet was placed, skipped or made
+// from another session of the account.
+func (p *Client) scheduleBet(streamer *domain.Streamer, eventID, status string, eventMap map[string]interface{}) {
+	if status != "ACTIVE" || eventID == "" {
+		return
+	}
+	p.predMu.Lock()
+	_, seen := p.seenPredictions[eventID]
+	p.predMu.Unlock()
+	if seen {
+		return
+	}
+	window := eventMap["prediction_window_seconds"]
+	eventMap["prediction_window_seconds"] = streamer.PredictionWindowSeconds(jsonvalue.Float(window))
+	event := prediction.NewEvent(streamer, eventMap)
+	if event == nil {
+		return
+	}
+	if belowMinimumPoints(streamer) {
+		return
+	}
+	wait := event.ClosingAfter(p.env.now())
+	p.predMu.Lock()
+	_, seen = p.seenPredictions[event.EventID]
+	if !seen {
+		p.seenPredictions[event.EventID] = struct{}{}
+		p.predictions[event.EventID] = event
+	}
+	p.predMu.Unlock()
+	if seen {
+		return
+	}
+	p.env.after(wait, func() {
+		p.placePrediction(event.EventID)
+	})
+	p.logger.EmojiEventf(":alarm_clock:", events.EventBetStart, "Place bet after %s for %s", wait.Truncate(time.Second), p.anonymizer.Shown(streamer))
 }

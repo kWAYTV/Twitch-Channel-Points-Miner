@@ -49,7 +49,7 @@ func loadConfigUnder(base string) (config, bool) {
 	if err := os.Chdir(dir); err != nil {
 		return config{}, false
 	}
-	cfg, err := loadOrCreateConfig(filepath.Join(dir, "config.json"))
+	cfg, err := loadOrCreateConfig(pathsInFolder(dir).ConfigPath)
 	if err != nil {
 		return config{}, false
 	}

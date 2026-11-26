@@ -376,3 +376,34 @@ func TestMarkCompleted(t *testing.T) {
 		MarkCompleted(nil)
 	})
 }
+
+func TestClearCarryover(t *testing.T) {
+	until := time.Date(2026, time.May, 17, 12, 0, 0, 0, time.UTC)
+
+	t.Run("a carryover", func(t *testing.T) {
+		streamer := &domain.Streamer{
+			CompletedWatchStreak:         true,
+			ResolvedStreakCarryover:      true,
+			ResolvedStreakCarryoverUntil: until,
+		}
+
+		clearCarryover(streamer)
+
+		if streamer.ResolvedStreakCarryover || !streamer.ResolvedStreakCarryoverUntil.IsZero() {
+			t.Errorf("carryover = %t until %s, want none", streamer.ResolvedStreakCarryover, streamer.ResolvedStreakCarryoverUntil)
+		}
+		if !streamer.CompletedWatchStreak {
+			t.Errorf("CompletedWatchStreak = false, want it left as it was")
+		}
+	})
+
+	t.Run("an end time with no carryover", func(t *testing.T) {
+		streamer := &domain.Streamer{ResolvedStreakCarryoverUntil: until}
+
+		clearCarryover(streamer)
+
+		if !streamer.ResolvedStreakCarryoverUntil.IsZero() {
+			t.Errorf("ResolvedStreakCarryoverUntil = %s, want none", streamer.ResolvedStreakCarryoverUntil)
+		}
+	})
+}

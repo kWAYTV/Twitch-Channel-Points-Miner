@@ -1,8 +1,9 @@
 package twitch
 
 import (
-	"strings"
 	"sync"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 // dropClaims is what the client remembers about drops between inventory
@@ -32,7 +33,7 @@ func (c *dropClaims) skips(status DropStatus) bool {
 	if _, settled := c.settled[status.DropInstanceID]; settled {
 		return true
 	}
-	_, excluded := c.excludedGames[strings.ToLower(strings.TrimSpace(status.GameName))]
+	_, excluded := c.excludedGames[domain.GameKey(status.GameName)]
 	return excluded
 }
 

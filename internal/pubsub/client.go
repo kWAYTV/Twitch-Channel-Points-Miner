@@ -47,30 +47,12 @@ type Client struct {
 	streamers   []*domain.Streamer
 	streamerMap map[string]*domain.Streamer
 	predictions map[string]*prediction.Event
-	predMu      sync.Mutex
-	onGain      func(streamer *domain.Streamer, earned int, reason string, balance int)
-	onPresence  func(streamer *domain.Streamer, online bool, reason string)
-}
-
-func (p *Client) anonymizeLogs() bool {
-	return p != nil && p.anonymizer != nil && p.anonymizer.Enabled()
-}
-
-func (p *Client) streamerName(streamer *domain.Streamer) string {
-	if streamer == nil {
-		return ""
-	}
-	if p.anonymizeLogs() {
-		return p.anonymizer.StreamerName(streamer)
-	}
-	return streamer.Username
-}
-
-func (p *Client) name(raw string) string {
-	if p.anonymizeLogs() {
-		return p.anonymizer.Name(raw)
-	}
-	return raw
+	// seenPredictions holds every event that was scheduled, or that the
+	// account bet on from elsewhere, so none is scheduled a second time.
+	seenPredictions map[string]struct{}
+	predMu          sync.Mutex
+	onGain          func(streamer *domain.Streamer, earned int, reason string, balance int)
+	onPresence      func(streamer *domain.Streamer, online bool, reason string)
 }
 
 func (p *Client) debugf(format string, args ...interface{}) {
@@ -86,7 +68,7 @@ type deepDebugLogger interface {
 }
 
 func (p *Client) deepDebugf(format string, args ...interface{}) {
-	if p == nil || p.anonymizeLogs() {
+	if p == nil || p.anonymizer.Enabled() {
 		return
 	}
 	if p.logger == nil {
@@ -128,16 +110,17 @@ func newClient(
 		}
 	}
 	return &Client{
-		account:     account,
-		logger:      logger,
-		anonymizer:  anonymizer,
-		disableSSL:  disableSSL,
-		env:         env,
-		streamers:   streamers,
-		streamerMap: streamerMap,
-		predictions: make(map[string]*prediction.Event),
-		onGain:      onGain,
-		onPresence:  onPresence,
+		account:         account,
+		logger:          logger,
+		anonymizer:      anonymizer,
+		disableSSL:      disableSSL,
+		env:             env,
+		streamers:       streamers,
+		streamerMap:     streamerMap,
+		predictions:     make(map[string]*prediction.Event),
+		seenPredictions: make(map[string]struct{}),
+		onGain:          onGain,
+		onPresence:      onPresence,
 	}
 }
 

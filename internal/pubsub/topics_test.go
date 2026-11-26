@@ -235,3 +235,34 @@ func TestClient_listenTopics(t *testing.T) {
 		}
 	})
 }
+
+func TestTopicOf(t *testing.T) {
+	if got, want := topicOf(raidTopic, "123"), "raid.123"; got != want {
+		t.Errorf("topicOf(raidTopic, 123) = %q, want %q", got, want)
+	}
+}
+
+func TestTopicChannelID(t *testing.T) {
+	for _, row := range []struct {
+		name   string
+		topic  string
+		family string
+		want   string
+	}{
+		{"a channel's playback", "video-playback-by-id.123", playbackTopic, "123"},
+		{"a channel's raids", "raid.123", raidTopic, "123"},
+		{"a channel's predictions", "predictions-channel-v1.123", predictionsChannelTopic, "123"},
+		{"a channel's moments", "community-moments-channel-v1.123", momentsChannelTopic, "123"},
+		{"a channel's points", "community-points-channel-v1.123", communityPointsChannelTopic, "123"},
+		{"a topic with no ID", "video-playback-by-id.", playbackTopic, ""},
+		{"a topic of another family", "raid.123", playbackTopic, ""},
+		{"a family without its dot", "raid", raidTopic, ""},
+		{"no topic", "", playbackTopic, ""},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			if got := topicChannelID(row.topic, row.family); got != row.want {
+				t.Errorf("topicChannelID(%q, %q) = %q, want %q", row.topic, row.family, got, row.want)
+			}
+		})
+	}
+}

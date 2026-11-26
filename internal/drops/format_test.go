@@ -52,11 +52,61 @@ func TestFormatClaimLine(t *testing.T) {
 			twitch.ClaimedDrop{RewardName: "Żeton", CampaignName: "夏", CurrentValue: 180, RequiredValue: 180},
 			"Claim Żeton (夏) 180/180 (100%)",
 		},
+		{
+			"names with spaces around them",
+			twitch.ClaimedDrop{RewardName: " Token ", CampaignName: " Summer\n", CurrentValue: 180, RequiredValue: 180},
+			"Claim Token (Summer) 180/180 (100%)",
+		},
+		{
+			"names of spaces only",
+			twitch.ClaimedDrop{RewardName: " ", CampaignName: "  ", CurrentValue: 180, RequiredValue: 180},
+			"Claim Drop (Unknown Campaign) 180/180 (100%)",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := formatClaimLine(tt.drop); got != tt.want {
 				t.Errorf("formatClaimLine(%+v) = %q, want %q", tt.drop, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRewardLabel(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"a name", "Token", "Token"},
+		{"a name with spaces around it", "  Token ", "Token"},
+		{"no name", "", "Drop"},
+		{"only spaces", "   ", "Drop"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := rewardLabel(tt.in); got != tt.want {
+				t.Errorf("rewardLabel(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCampaignLabel(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"a name", "Summer", "Summer"},
+		{"a name with spaces around it", " Summer\n", "Summer"},
+		{"no name", "", "Unknown Campaign"},
+		{"only spaces", "   ", "Unknown Campaign"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := campaignLabel(tt.in); got != tt.want {
+				t.Errorf("campaignLabel(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
 	}

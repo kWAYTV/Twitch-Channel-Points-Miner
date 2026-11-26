@@ -123,41 +123,28 @@ func (m *Miner) logSessionEnd(sessionID string, streamers []*domain.Streamer, ra
 	for _, s := range streamers {
 		totalPointsChange += s.ChannelPoints - m.initialPoints[streamerKey(s)]
 	}
-	if m.anonymizeLogs() {
+	if m.anonymizer.Enabled() {
 		m.logger.EmojiPrintf(":chart_with_upwards_trend:", "Total Points gained: [hidden]")
 	} else {
-		totalSign := "+"
-		totalColor := colorGreen
-		if totalPointsChange < 0 {
-			totalPointsChange = -totalPointsChange
-			totalSign = "-"
-			totalColor = colorRed
-		}
-		m.logger.EmojiPrintf(":chart_with_upwards_trend:", "Total Points gained: %s%s%d%s", totalColor, totalSign, totalPointsChange, colorReset)
+		totalColor, totalSign, total := signedChange(totalPointsChange)
+		m.logger.EmojiPrintf(":chart_with_upwards_trend:", "Total Points gained: %s%s%d%s", totalColor, totalSign, total, colorReset)
 	}
 	for _, s := range streamers {
-		initial := m.initialPoints[streamerKey(s)]
-		total := s.ChannelPoints - initial
-		if total == 0 && len(s.History) == 0 {
+		change := s.ChannelPoints - m.initialPoints[streamerKey(s)]
+		if change == 0 && len(s.History) == 0 {
 			continue
 		}
-		signColor := colorGreen
-		sign := "+"
-		if total < 0 {
-			signColor = colorRed
-			sign = "-"
-			total = -total
-		}
-		points := m.formattedStreamerPoints(s)
-		if m.anonymizeLogs() {
-			m.logger.EmojiPrintf(":moneybag:", "%s (%s%s%s points), Total Points [hidden]", m.styledStreamerName(s), colorCyan, points, colorReset)
+		signColor, sign, total := signedChange(change)
+		who := m.nameWithPoints(s)
+		if m.anonymizer.Enabled() {
+			m.logger.EmojiPrintf(":moneybag:", "%s, Total Points [hidden]", who)
 			if s.History != nil {
 				for reason, entry := range s.History {
 					m.logger.Printf("                         %s (%d times, [hidden])", reason, entry.Count)
 				}
 			}
 		} else {
-			m.logger.EmojiPrintf(":moneybag:", "%s (%s%s%s points), Total Points %s%s%d%s", m.styledStreamerName(s), colorCyan, points, colorReset, signColor, sign, total, colorReset)
+			m.logger.EmojiPrintf(":moneybag:", "%s, Total Points %s%s%d%s", who, signColor, sign, total, colorReset)
 			if s.History != nil {
 				for reason, entry := range s.History {
 					m.logger.Printf("                         %s (%d times, %d gained)", reason, entry.Count, entry.Amount)

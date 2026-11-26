@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/points"
 )
 
 type Outcome struct {
@@ -34,12 +35,12 @@ func parseOutcomes(outcomes []interface{}) []Outcome {
 			ID:          jsonvalue.String(oc["id"]),
 			Title:       jsonvalue.String(oc["title"]),
 			Color:       jsonvalue.String(oc["color"]),
-			TotalUsers:  int(jsonvalue.Float(oc["total_users"])),
-			TotalPoints: int(jsonvalue.Float(oc["total_points"])),
+			TotalUsers:  jsonvalue.Int(oc["total_users"]),
+			TotalPoints: jsonvalue.Int(oc["total_points"]),
 		}
 		if topPredictors, ok := oc["top_predictors"].([]interface{}); ok && len(topPredictors) > 0 {
 			if first, ok := topPredictors[0].(map[string]interface{}); ok {
-				outcome.TopPoints = int(jsonvalue.Float(first["points"]))
+				outcome.TopPoints = jsonvalue.Int(first["points"])
 			}
 		}
 		parsed = append(parsed, outcome)
@@ -65,8 +66,8 @@ func (o Outcome) String() string {
 		"%s (%s), Points: %s, Users: %s (%.2f%%), Odds: %s (%s%%)",
 		strings.TrimSpace(o.Title),
 		strings.ToUpper(o.Color),
-		FormatNumber(o.TotalPoints),
-		FormatNumber(o.TotalUsers),
+		points.Format(o.TotalPoints),
+		points.Format(o.TotalUsers),
 		o.PercentageUsers,
 		FormatFloat(o.Odds),
 		FormatFloat(o.OddsPercentage),

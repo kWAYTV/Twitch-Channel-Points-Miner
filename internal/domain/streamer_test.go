@@ -48,16 +48,16 @@ func TestStreamer_PredictionWindowSeconds(t *testing.T) {
 		{"from the start, a delay under the window", DelayModeFromStart, floatPtr(2), 5, 2},
 		{"from the start, a delay of exactly the window", DelayModeFromStart, floatPtr(5), 5, 5},
 		{"from the start, a delay over the window", DelayModeFromStart, floatPtr(6), 5, 5},
-		{"from the start, no delay", DelayModeFromStart, nil, 5, 0},
+		{"from the start, no delay", DelayModeFromStart, nil, 5, 5},
 
 		{"from the end, a delay under the window", DelayModeFromEnd, floatPtr(2), 5, 3},
 		{"from the end, a delay of exactly the window", DelayModeFromEnd, floatPtr(5), 5, 0},
 		{"from the end, a delay half a second over the window", DelayModeFromEnd, floatPtr(5.5), 5, 0},
 		{"from the end, a delay over the window", DelayModeFromEnd, floatPtr(6), 5, 0},
-		{"from the end, no delay", DelayModeFromEnd, nil, 5, 5},
+		{"from the end, no delay", DelayModeFromEnd, nil, 5, 0},
 
 		{"a share of the window", DelayModePercentage, floatPtr(0.5), 10, 5},
-		{"a share of the window, no delay", DelayModePercentage, nil, 10, 0},
+		{"a share of the window, no delay", DelayModePercentage, nil, 10, 60},
 
 		{"no mode", "", floatPtr(2), 5, 5},
 		{"an unknown mode", "SOMETIME", floatPtr(2), 5, 5},

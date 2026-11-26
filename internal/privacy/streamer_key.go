@@ -13,12 +13,8 @@ func streamerKey(streamer *domain.Streamer) string {
 	if id := strings.TrimSpace(streamer.ChannelID); id != "" {
 		return "id:" + id
 	}
-	if name := normalizeKey(streamer.Username); name != "" {
+	if name := domain.LoginKey(streamer.Username); name != "" {
 		return "name:" + name
 	}
 	return ""
-}
-
-func normalizeKey(raw string) string {
-	return strings.ToLower(strings.TrimSpace(raw))
 }

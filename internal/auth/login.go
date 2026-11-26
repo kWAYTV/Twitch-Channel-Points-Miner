@@ -107,11 +107,7 @@ func (t *Login) UserID() string {
 }
 
 func (t *Login) checkLogin() bool {
-	payload := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.GetIDFromLogin)
-	if payload.Variables == nil {
-		payload.Variables = map[string]interface{}{}
-	}
-	payload.Variables["login"] = t.Username
+	payload := twitchapi.GQLOperations.GetIDFromLogin.With(map[string]interface{}{"login": t.Username})
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, t.twitch.gqlURL, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

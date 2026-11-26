@@ -67,7 +67,7 @@ func (s *Streamer) TotalMultiplier() float64 {
 }
 
 func (s *Streamer) PredictionWindowSeconds(predictionWindow float64) float64 {
-	delay := 0.0
+	delay := DefaultBetDelay
 	if s.Settings.Bet.Delay != nil {
 		delay = *s.Settings.Bet.Delay
 	}

@@ -335,26 +335,6 @@ func TestAnonymizer_PseudoChannelPoints(t *testing.T) {
 	})
 }
 
-func TestRandInt(t *testing.T) {
-	t.Run("a range of one number", func(t *testing.T) {
-		if got := randInt(7, 7); got != 7 {
-			t.Errorf("randInt(7, 7) = %d, want 7", got)
-		}
-	})
-
-	t.Run("max below min", func(t *testing.T) {
-		if got := randInt(7, 6); got != 7 {
-			t.Errorf("randInt(7, 6) = %d, want 7", got)
-		}
-	})
-
-	t.Run("a range of two numbers", func(t *testing.T) {
-		if got := randInt(7, 8); got != 7 && got != 8 {
-			t.Errorf("randInt(7, 8) = %d, want 7 or 8", got)
-		}
-	})
-}
-
 func TestAnonymizer_Shown(t *testing.T) {
 	t.Run("logs as they are", func(t *testing.T) {
 		anonymizer := New(false)

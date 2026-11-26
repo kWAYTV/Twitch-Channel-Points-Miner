@@ -61,11 +61,7 @@ func (a dropClaimAnswer) settled() bool {
 
 // claimDrop asks Twitch for the drop and returns its answer.
 func (t *Client) claimDrop(dropInstanceID string) (dropClaimAnswer, error) {
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsPageClaimDropRewards)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["input"] = map[string]interface{}{"dropInstanceID": dropInstanceID}
+	op := twitchapi.GQLOperations.DropsPageClaimDropRewards.With(map[string]interface{}{"input": map[string]interface{}{"dropInstanceID": dropInstanceID}})
 	resp, err := t.PostGQL(op)
 	if err != nil {
 		return dropClaimAnswer{}, err
@@ -74,11 +70,6 @@ func (t *Client) claimDrop(dropInstanceID string) (dropClaimAnswer, error) {
 	connected, said := jsonvalue.At(resp, "data.claimDropRewards.isUserAccountConnected").(bool)
 	t.debugf("drop claim: Twitch answered %s, account connected: %v", status, connected || !said)
 	return dropClaimAnswer{status: status, accountConnected: connected || !said}, nil
-}
-
-func (t *Client) ClaimAllDropsFromInventory() ([]ClaimedDrop, error) {
-	claimedDrops, _, err := t.ClaimAllDropsFromInventoryWithStatuses()
-	return claimedDrops, err
 }
 
 func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []DropStatus, error) {
@@ -122,11 +113,7 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 
 // Fetch campaign IDs for a streamer if drops enabled.
 func (t *Client) CampaignIDsForStreamer(streamer *domain.Streamer) ([]string, error) {
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsHighlightServiceAvailable)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channelID"] = streamer.ChannelID
+	op := twitchapi.GQLOperations.DropsHighlightServiceAvailable.With(map[string]interface{}{"channelID": streamer.ChannelID})
 	resp, err := t.PostGQL(op)
 	if err != nil {
 		return nil, err

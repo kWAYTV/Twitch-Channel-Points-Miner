@@ -9,8 +9,6 @@ import (
 	"regexp"
 	"sync"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/auth"
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -151,21 +149,20 @@ func (t *Client) debugf(format string, args ...interface{}) {
 	}
 }
 
-func (t *Client) deepDebugf(format string, args ...interface{}) {
-	if t == nil {
-		return
-	}
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
-		return
-	}
-	if t.logger == nil {
-		return
+// deepDebugEnabled reports whether whole requests and answers are logged,
+// which they never are while logs are anonymised.
+func (t *Client) deepDebugEnabled() bool {
+	if t == nil || t.anonymizer.Enabled() {
+		return false
 	}
 	deep, ok := t.logger.(deepDebugLogger)
-	if !ok || !deep.DeepDebugEnabled() {
-		return
+	return ok && deep.DeepDebugEnabled()
+}
+
+func (t *Client) deepDebugf(format string, args ...interface{}) {
+	if t.deepDebugEnabled() {
+		t.logger.(deepDebugLogger).DeepDebugf(format, args...)
 	}
-	deep.DeepDebugf(format, args...)
 }
 
 // UpdateClientVersion refreshes the Twitch build id used for GQL calls.
@@ -231,14 +228,6 @@ func (t *Client) UpdateClientVersion() string {
 	version = t.clientVersion
 	t.versionMu.Unlock()
 	return version
-}
-
-func displayName(name string) string {
-	if name == "" {
-		return ""
-	}
-	first, size := utf8.DecodeRuneInString(name)
-	return string(unicode.ToUpper(first)) + name[size:]
 }
 
 // AuthToken is the OAuth token of the logged-in account.

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
 const (
@@ -88,7 +90,7 @@ func newStore(dir string, now func() time.Time) (*Store, error) {
 
 // cleanName lowercases a Twitch login and rejects anything that is not a safe file name.
 func cleanName(raw string) string {
-	name := strings.ToLower(strings.TrimSpace(raw))
+	name := domain.LoginKey(raw)
 	if name == "" || len(name) > 64 {
 		return ""
 	}

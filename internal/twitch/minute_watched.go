@@ -31,9 +31,5 @@ func (t *Client) reportPlaylistCheck(streamer *domain.Streamer, err error) {
 	if _, reported := t.playlistFailures.LoadOrStore(streamer.Username, struct{}{}); reported || t.logger == nil {
 		return
 	}
-	name := displayName(streamer.Username)
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
-		name = t.anonymizer.StreamerName(streamer)
-	}
-	t.logger.Errorf("minute watch %s: %v", name, err)
+	t.logger.Errorf("minute watch %s: %v", t.anonymizer.Shown(streamer), err)
 }

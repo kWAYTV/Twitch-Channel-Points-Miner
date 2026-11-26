@@ -32,14 +32,12 @@ func (t *Client) claimBonusTV(streamer *domain.Streamer, claimID string) error {
 		return fmt.Errorf("missing claim id")
 	}
 
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ClaimCommunityPoints)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["input"] = map[string]interface{}{
-		"channelID": streamer.ChannelID,
-		"claimID":   claimID,
-	}
+	op := twitchapi.GQLOperations.ClaimCommunityPoints.With(map[string]interface{}{
+		"input": map[string]interface{}{
+			"channelID": streamer.ChannelID,
+			"claimID":   claimID,
+		},
+	})
 
 	reqBody, _ := json.Marshal(op)
 	req, _ := http.NewRequest(http.MethodPost, twitchapi.GQLOperations.URL, bytes.NewReader(reqBody))
@@ -65,17 +63,11 @@ func (t *Client) claimBonusTV(streamer *domain.Streamer, claimID string) error {
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
 
-	if t.logger != nil && t.logger.DebugEnabled() {
-		if t.anonymizer != nil && t.anonymizer.Enabled() {
-			t.logger.Debugf("ClaimCommunityPoints status=%d", resp.StatusCode)
-		} else {
-			t.logger.Debugf("ClaimCommunityPoints status=%d", resp.StatusCode)
-			t.deepDebugf("ClaimCommunityPoints status=%d headers=%v req=%s resp=%s", resp.StatusCode, req.Header, strings.TrimSpace(string(reqBody)), strings.TrimSpace(string(respBody)))
-		}
-	}
+	t.debugf("ClaimCommunityPoints status=%d", resp.StatusCode)
+	t.deepDebugf("ClaimCommunityPoints status=%d headers=%v req=%s resp=%s", resp.StatusCode, req.Header, strings.TrimSpace(string(reqBody)), strings.TrimSpace(string(respBody)))
 
 	if resp.StatusCode != http.StatusOK {
-		if t.anonymizer != nil && t.anonymizer.Enabled() {
+		if t.anonymizer.Enabled() {
 			return fmt.Errorf("claim bonus status %d", resp.StatusCode)
 		}
 		return fmt.Errorf("claim bonus status %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
@@ -86,7 +78,7 @@ func (t *Client) claimBonusTV(streamer *domain.Streamer, claimID string) error {
 		return fmt.Errorf("claim bonus decode: %w", err)
 	}
 
-	return claimBonusFailure(result, t.anonymizer != nil && t.anonymizer.Enabled())
+	return claimBonusFailure(result, t.anonymizer.Enabled())
 }
 
 // claimBonusFailure reads Twitch's answer to a bonus claim and returns what went

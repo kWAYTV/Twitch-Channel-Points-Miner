@@ -35,13 +35,8 @@ func (t *Client) fallbackStreamCreatedAt(channelID string) time.Time {
 	if channelID == "" {
 		return time.Time{}
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.WithIsStreamLiveQuery)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["id"] = channelID
-	var resp gqlIsStreamLiveResponse
-	if err := t.PostGQLDecode(op, &resp); err != nil {
+	resp, err := t.liveStream(channelID)
+	if err != nil {
 		t.debugf("fallback createdAt lookup failed for channel %s: %v", channelID, err)
 		return time.Time{}
 	}
@@ -52,12 +47,8 @@ func (t *Client) fallbackStreamCreatedAt(channelID string) time.Time {
 }
 
 func (t *Client) streamInfoOverlay(username, channelID string) (*streamInfoResult, error) {
-	username = strings.ToLower(strings.TrimSpace(username))
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.VideoPlayerStreamInfoOverlay)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channel"] = username
+	username = domain.LoginKey(username)
+	op := twitchapi.GQLOperations.VideoPlayerStreamInfoOverlay.With(map[string]interface{}{"channel": username})
 	var resp gqlStreamInfoOverlayResponse
 	if err := t.PostGQLDecode(op, &resp); err != nil {
 		return nil, err

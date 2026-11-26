@@ -101,10 +101,8 @@ func channelNameFromInventory(campaign map[string]interface{}) string {
 	if name := jsonvalue.FirstString(campaign, "channelLogin", "channelName", "channelDisplayName"); name != "" {
 		return name
 	}
-	for _, path := range []string{"channel.login", "channel.name", "channel.displayName"} {
-		if name, _ := jsonvalue.At(campaign, path).(string); strings.TrimSpace(name) != "" {
-			return strings.TrimSpace(name)
-		}
+	if name := nestedChannelName(campaign); name != "" {
+		return name
 	}
 	for _, key := range []string{"channels", "eligibleChannels", "allowChannels", "allowedChannels"} {
 		if name := channelNameFromList(campaign[key]); name != "" {
@@ -127,10 +125,18 @@ func channelNameFromList(raw interface{}) string {
 		if name := jsonvalue.FirstString(channel, "login", "name", "displayName"); name != "" {
 			return name
 		}
-		for _, path := range []string{"channel.login", "channel.name", "channel.displayName"} {
-			if name, _ := jsonvalue.At(channel, path).(string); strings.TrimSpace(name) != "" {
-				return strings.TrimSpace(name)
-			}
+		if name := nestedChannelName(channel); name != "" {
+			return name
+		}
+	}
+	return ""
+}
+
+// nestedChannelName is the name of the channel described under "channel".
+func nestedChannelName(node map[string]interface{}) string {
+	for _, path := range []string{"channel.login", "channel.name", "channel.displayName"} {
+		if name, _ := jsonvalue.At(node, path).(string); strings.TrimSpace(name) != "" {
+			return strings.TrimSpace(name)
 		}
 	}
 	return ""

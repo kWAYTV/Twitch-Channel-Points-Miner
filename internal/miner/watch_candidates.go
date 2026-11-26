@@ -3,7 +3,6 @@ package miner
 import (
 	"errors"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -47,7 +46,7 @@ func (m *Miner) watchCandidates(streamers []*domain.Streamer, now time.Time) []w
 		}
 		game := ""
 		if s.Stream != nil {
-			game = strings.ToLower(strings.TrimSpace(s.Stream.GameName()))
+			game = domain.GameKey(s.Stream.GameName())
 		}
 		_, priorityGame := m.gamePriorityIndex[game]
 		candidates = append(candidates, watchCandidate{
@@ -110,18 +109,11 @@ func (m *Miner) refreshStreamForPreference(streamer *domain.Streamer) {
 		return
 	}
 	if streamer.Stream != nil {
-		if strings.TrimSpace(streamer.Stream.GameName()) != "" && !streamer.Stream.UpdateRequired() {
+		if streamer.Stream.GameName() != "" && !streamer.Stream.UpdateRequired() {
 			return
 		}
 	}
-	prevBroadcastID := ""
-	prevCreatedAt := time.Time{}
-	prevWatchStreakMissing := true
-	if streamer.Stream != nil {
-		prevBroadcastID = streamer.Stream.BroadcastID
-		prevCreatedAt = streamer.Stream.CreatedAt
-		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
-	}
+	before := markStream(streamer)
 	if err := m.updateStreamWithIdentityRepair(streamer); err != nil {
 		if errors.Is(err, twitch.ErrStreamerOffline) {
 			m.setPresence(streamer, false, "stream-info")
@@ -130,8 +122,5 @@ func (m *Miner) refreshStreamForPreference(streamer *domain.Streamer) {
 		}
 		return
 	}
-	m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
-	if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
-		m.syncWarmStartCacheFromStreamer(streamer)
-	}
+	m.syncStreakSince(streamer, before)
 }

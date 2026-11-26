@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -134,16 +132,6 @@ func (s *Stream) streamUpElapsedAt(now time.Time) bool {
 		return true
 	}
 	return now.Sub(s.StreamUpAt) > 2*time.Minute
-}
-
-func (s *Stream) EncodePayload() (map[string]string, error) {
-	raw, err := json.Marshal(s.Payload)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]string{
-		"data": base64.StdEncoding.EncodeToString(raw),
-	}, nil
 }
 
 func (s *Stream) String() string {

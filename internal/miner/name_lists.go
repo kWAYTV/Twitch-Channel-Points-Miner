@@ -1,15 +1,13 @@
 package miner
 
-import (
-	"strings"
-)
+import "github.com/kWAYTV/twitch-points-miner/internal/domain"
 
 // normalizeNames trims and lower-cases each name, and drops blanks and repeats.
 func normalizeNames(values []string) []string {
 	normalized := make([]string, 0, len(values))
 	seen := make(map[string]struct{})
 	for _, raw := range values {
-		name := strings.ToLower(strings.TrimSpace(raw))
+		name := domain.LoginKey(raw)
 		if name == "" {
 			continue
 		}

@@ -102,7 +102,7 @@ func TestClient_LoadChannelPointsContext(t *testing.T) {
 		if !errors.Is(err, ErrChannelNotFound) {
 			t.Errorf("LoadChannelPointsContext error = %v, want it to wrap ErrChannelNotFound", err)
 		}
-		if want := "channel missing for streamer: channel not found"; errorText(err) != want {
+		if want := "channel missing for Streamer: channel not found"; errorText(err) != want {
 			t.Errorf("LoadChannelPointsContext error = %v, want %s", err, want)
 		}
 		if balance != 0 {
@@ -157,8 +157,8 @@ func TestClient_LoadChannelPointsContext(t *testing.T) {
 			t.Errorf("claims sent = %v, want %v", fake.twitch.sent("ClaimCommunityPoints"), want)
 		}
 		wantLines := []string{
-			"emoji :gift: Pending bonus detected for streamer (claim claim-1, channel 123456)",
-			"print: Claim bonus success for streamer (claim claim-1)",
+			"emoji :gift: Pending bonus detected for Streamer (claim claim-1, channel 123456)",
+			"print: Claim bonus success for Streamer (claim claim-1)",
 		}
 		if !equal(fake.logger.Lines, wantLines) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, wantLines)
@@ -198,8 +198,8 @@ func TestClient_LoadChannelPointsContext(t *testing.T) {
 			t.Errorf("balance = %d, want 1500", balance)
 		}
 		wantLines := []string{
-			"emoji :gift: Pending bonus detected for streamer (claim claim-1, channel 123456)",
-			"error: claim bonus on context load for streamer failed: claim bonus status 500: oops",
+			"emoji :gift: Pending bonus detected for Streamer (claim claim-1, channel 123456)",
+			"error: claim bonus on context load for Streamer failed: claim bonus status 500: oops",
 		}
 		if !equal(fake.logger.Lines, wantLines) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, wantLines)
@@ -256,7 +256,7 @@ func TestClient_LoadChannelPointsContext(t *testing.T) {
 		wantLines := []string{
 			"debug: Client version updated to " + buildID,
 			"debug: GQL ChannelPointsContext (points/bonus) | Status 200",
-			"debug: availableClaim present but missing id for streamer",
+			"debug: availableClaim present but missing id for Streamer",
 		}
 		if !equal(fake.logger.Lines, wantLines) {
 			t.Errorf("logged %q, want %q", fake.logger.Lines, wantLines)

@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -144,7 +143,7 @@ func (m *Miner) gamePreference(streamer *domain.Streamer) (int, bool) {
 	if streamer == nil || streamer.Stream == nil {
 		return baseRank, false
 	}
-	name := strings.ToLower(strings.TrimSpace(streamer.Stream.GameName()))
+	name := domain.GameKey(streamer.Stream.GameName())
 	if name == "" {
 		return baseRank, false
 	}

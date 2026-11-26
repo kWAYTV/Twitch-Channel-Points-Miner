@@ -42,11 +42,11 @@ func pointGainOf(data map[string]interface{}, known int) (gain pointGain, ok boo
 	if pointGain == nil {
 		return gain, false
 	}
-	gain.reason = strings.ToUpper(stringValue(pointGain["reason_code"]))
-	gain.earned = int(jsonvalue.Float(pointGain["total_points"]))
+	gain.reason = strings.ToUpper(jsonvalue.Text(pointGain["reason_code"]))
+	gain.earned = jsonvalue.Int(pointGain["total_points"])
 	gain.balance = known
 	if balanceValue := jsonvalue.At(data, "balance.balance"); balanceValue != nil {
-		gain.balance = int(jsonvalue.Float(balanceValue))
+		gain.balance = jsonvalue.Int(balanceValue)
 	}
 	return gain, true
 }

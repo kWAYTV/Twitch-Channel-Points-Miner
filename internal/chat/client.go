@@ -11,8 +11,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
+	"github.com/kWAYTV/twitch-points-miner/internal/stoppable"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
@@ -46,15 +48,9 @@ type link struct {
 }
 
 func twitchLink() link {
-	return link{dial: dialTwitch, wait: waitOrStop}
-}
-
-func waitOrStop(d time.Duration, stop <-chan struct{}) {
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	select {
-	case <-timer.C:
-	case <-stop:
+	return link{
+		dial: dialTwitch,
+		wait: func(d time.Duration, stop <-chan struct{}) { stoppable.Wait(d, stop) },
 	}
 }
 
@@ -69,8 +65,8 @@ func NewClient(username, token, channel string, logger Logger, disableAtInNickna
 
 func newClient(username, token, channel string, logger Logger, disableAtInNickname bool, anonymizer *privacy.Anonymizer, link link) *Client {
 	return &Client{
-		username:            strings.ToLower(strings.TrimSpace(username)),
-		channel:             strings.ToLower(strings.TrimSpace(channel)),
+		username:            domain.LoginKey(username),
+		channel:             domain.LoginKey(channel),
 		token:               strings.TrimSpace(token),
 		logger:              logger,
 		anonymizer:          anonymizer,
@@ -99,7 +95,7 @@ func (c *Client) logError(err error) {
 	if c.logger == nil {
 		return
 	}
-	if c.anonymizer != nil && c.anonymizer.Enabled() {
+	if c.anonymizer.Enabled() {
 		c.logger.Errorf("chat error: %v", err)
 	} else {
 		c.logger.Errorf("chat #%s error: %v", c.channel, err)
@@ -187,7 +183,7 @@ func (c *Client) connectAndListen() error {
 func (c *Client) handleLine(line string) {
 	if isAuthFailure(line) {
 		if c.logger != nil {
-			if c.anonymizer != nil && c.anonymizer.Enabled() {
+			if c.anonymizer.Enabled() {
 				c.logger.Printf("chat authentication failed")
 			} else {
 				c.logger.Printf("chat #%s authentication failed", c.channel)
@@ -204,12 +200,8 @@ func (c *Client) handleLine(line string) {
 		return
 	}
 	if c.logger != nil {
-		if c.anonymizer != nil && c.anonymizer.Enabled() {
-			channel := c.channel
-			if channel != "" {
-				channel = c.anonymizer.Name(channel)
-			}
-			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "Chat mention in %s", channel)
+		if c.anonymizer.Enabled() {
+			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "Chat mention in %s", c.anonymizer.Name(c.channel))
 		} else {
 			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "%s", mentionLine(nick, c.channel, msg))
 		}

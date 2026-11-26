@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
 // logResponseError reports the error of a RESPONSE message, if it carries one.
@@ -12,7 +14,7 @@ func (p *Client) logResponseError(connIndex int, envelope map[string]interface{}
 	if !ok || strings.TrimSpace(respErr) == "" {
 		return
 	}
-	nonce := stringValue(envelope["nonce"])
+	nonce := jsonvalue.Text(envelope["nonce"])
 	if nonce != "" {
 		p.logger.Errorf("PubSub[%d] RESPONSE error nonce=%s: %s", connIndex, nonce, respErr)
 	} else {

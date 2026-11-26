@@ -3,6 +3,7 @@ package pubsub
 import (
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/points"
 	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
@@ -20,7 +21,7 @@ func (p *Client) placePrediction(eventID string) {
 		return
 	}
 	if err := p.account.MakePrediction(event); err != nil {
-		p.logger.ErrorEventf(events.EventBetFailed, "prediction %s: %v", p.streamerName(event.Streamer), err)
+		p.logger.ErrorEventf(events.EventBetFailed, "prediction %s: %v", p.anonymizer.Shown(event.Streamer), err)
 		p.stopTracking(event, "ERROR")
 		return
 	}
@@ -43,25 +44,30 @@ func (p *Client) trackedPrediction(eventID string) *prediction.Event {
 
 func (p *Client) stopTracking(event *prediction.Event, result string) {
 	event.ResultType = result
+	p.forget(event.EventID)
+}
+
+// forget stops tracking a prediction.
+func (p *Client) forget(eventID string) {
 	p.predMu.Lock()
-	delete(p.predictions, event.EventID)
+	delete(p.predictions, eventID)
 	p.predMu.Unlock()
 }
 
 // logSkippedBet logs the skip. The two "general" reasons always use the display
 // name; the filter reasons show the real name and figures unless logs are anonymised.
 func (p *Client) logSkippedBet(streamer *domain.Streamer, skipped skippedBet) {
-	if p.anonymizeLogs() || skipped.event == events.EventBetGeneral {
-		p.logger.Eventf(skipped.event, "Skip bet for %s: %s", p.streamerName(streamer), skipped.public)
+	if p.anonymizer.Enabled() || skipped.event == events.EventBetGeneral {
+		p.logger.Eventf(skipped.event, "Skip bet for %s: %s", p.anonymizer.Shown(streamer), skipped.public)
 		return
 	}
-	p.logger.Eventf(skipped.event, "Skip bet for %s: %s", streamer.Username, skipped.detail)
+	p.logger.Eventf(skipped.event, "Skip bet for %s: %s", p.anonymizer.Shown(streamer), skipped.detail)
 }
 
 // deductStake takes the stake off the balance right away when the streamer's
 // settings ask for it. The payout or refund arrives later as a points event.
 func (p *Client) deductStake(streamer *domain.Streamer, stake int) {
-	deduct := true
+	deduct := domain.DefaultBetDeductStakeOnPlace
 	if setting := streamer.Settings.Bet.DeductStakeOnPlace; setting != nil {
 		deduct = *setting
 	}
@@ -72,10 +78,7 @@ func (p *Client) deductStake(streamer *domain.Streamer, stake int) {
 		p.onGain(streamer, -stake, "PREDICTION", 0)
 		return
 	}
-	streamer.ChannelPoints -= stake
-	if streamer.ChannelPoints < 0 {
-		streamer.ChannelPoints = 0
-	}
+	streamer.Spend(stake)
 }
 
 func (p *Client) logPlacedBet(event *prediction.Event, decision prediction.Decision) {
@@ -83,9 +86,9 @@ func (p *Client) logPlacedBet(event *prediction.Event, decision prediction.Decis
 	if outcome == "" {
 		outcome = decision.OutcomeID
 	}
-	if p.anonymizeLogs() {
-		p.logger.EmojiEventf(":four_leaf_clover:", events.EventBetGeneral, "Place bet on: %s for %s", outcome, p.streamerName(event.Streamer))
+	if p.anonymizer.Enabled() {
+		p.logger.EmojiEventf(":four_leaf_clover:", events.EventBetGeneral, "Place bet on: %s for %s", outcome, p.anonymizer.Shown(event.Streamer))
 		return
 	}
-	p.logger.EmojiEventf(":four_leaf_clover:", events.EventBetGeneral, "Place %s points on: %s for %s", prediction.FormatNumber(decision.Amount), outcome, event.Streamer.Username)
+	p.logger.EmojiEventf(":four_leaf_clover:", events.EventBetGeneral, "Place %s points on: %s for %s", points.Format(decision.Amount), outcome, p.anonymizer.Shown(event.Streamer))
 }

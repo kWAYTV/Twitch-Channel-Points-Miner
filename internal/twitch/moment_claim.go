@@ -10,11 +10,7 @@ func (t *Client) ClaimMoment(streamer *domain.Streamer, momentID string) error {
 	if momentID == "" {
 		return nil
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.CommunityMomentCalloutClaim)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["input"] = map[string]interface{}{"momentID": momentID}
+	op := twitchapi.GQLOperations.CommunityMomentCalloutClaim.With(map[string]interface{}{"input": map[string]interface{}{"momentID": momentID}})
 	_, err := t.PostGQL(op)
 	return err
 }

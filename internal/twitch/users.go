@@ -51,17 +51,13 @@ func (t *Client) GetUserByID(channelID string) (*TwitchUserIdentity, error) {
 	user := out.Data[0]
 	return &TwitchUserIdentity{
 		ID:          user.ID,
-		Login:       strings.ToLower(strings.TrimSpace(user.Login)),
+		Login:       domain.LoginKey(user.Login),
 		DisplayName: strings.TrimSpace(user.DisplayName),
 	}, nil
 }
 
 func (t *Client) GetChannelID(login string) (string, error) {
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.GetIDFromLogin)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["login"] = strings.ToLower(login)
+	op := twitchapi.GQLOperations.GetIDFromLogin.With(map[string]interface{}{"login": domain.LoginKey(login)})
 	resp, err := t.PostGQL(op)
 	if err != nil {
 		return "", err
@@ -74,47 +70,20 @@ func (t *Client) GetChannelID(login string) (string, error) {
 }
 
 func (t *Client) GetFollowers(limit int, order domain.FollowersOrder) ([]string, error) {
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ChannelFollows)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["limit"] = limit
-	op.Variables["order"] = string(order)
-	hasNext := true
-	cursor := ""
+	op := twitchapi.GQLOperations.ChannelFollows.With(map[string]interface{}{
+		"limit": limit,
+		"order": string(order),
+	})
 	var follows []string
-
-	for hasNext {
-		op.Variables["cursor"] = cursor
-		resp, err := t.PostGQL(op)
-		if err != nil {
-			return nil, err
+	_, err := t.eachEdge(op, "data.user.follows", func(edge map[string]interface{}) (bool, error) {
+		node, _ := edge["node"].(map[string]interface{})
+		if login, _ := node["login"].(string); login != "" {
+			follows = append(follows, domain.LoginKey(login))
 		}
-		data, _ := jsonvalue.At(resp, "data.user.follows").(map[string]interface{})
-		if data == nil {
-			break
-		}
-		edges, _ := data["edges"].([]interface{})
-		pageInfo, _ := data["pageInfo"].(map[string]interface{})
-		cursor = ""
-		for _, edge := range edges {
-			e, _ := edge.(map[string]interface{})
-			node, _ := e["node"].(map[string]interface{})
-			login, _ := node["login"].(string)
-			if login == "" {
-				continue
-			}
-			follows = append(follows, strings.ToLower(login))
-			if c, ok := e["cursor"].(string); ok {
-				cursor = c
-			}
-		}
-		hasNext, _ = pageInfo["hasNextPage"].(bool)
-		// A page without a cursor can't be followed: asking again would
-		// return the same page forever.
-		if cursor == "" {
-			break
-		}
+		return false, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return follows, nil
 }

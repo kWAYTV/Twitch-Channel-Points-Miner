@@ -276,3 +276,38 @@ func TestBalance(t *testing.T) {
 		})
 	}
 }
+
+func TestPlaying(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		game string
+		want string
+	}{
+		{"a game", "Tanks", "Playing Tanks"},
+		{"a game of several words", "Just Chatting", "Playing Just Chatting"},
+		{"no game", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := playing(tc.game); got != tc.want {
+				t.Errorf("playing(%q) = %q, want %q", tc.game, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWatchStreak(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		length string
+		want   string
+	}{
+		{"a streak", "3", "Watch streak 3"},
+		{"no streak", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := watchStreak(tc.length); got != tc.want {
+				t.Errorf("watchStreak(%q) = %q, want %q", tc.length, got, tc.want)
+			}
+		})
+	}
+}

@@ -27,20 +27,20 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 		return nil
 	}
 	if claimID == "" {
-		if p.anonymizeLogs() {
+		if p.anonymizer.Enabled() {
 			p.logger.Errorf("claim-available ignored: [redacted]")
 		} else {
-			p.logger.Errorf("claim-available ignored: channel=%s claim=%s streamer=%v", channelID, claimID, streamer != nil)
+			p.logger.Errorf("claim-available ignored: channel=%s claim=%s streamer=true", channelID, claimID)
 			p.deepDebugf("claim-available payload: %v", payload)
 		}
 		return nil
 	}
 	// p.logger.EmojiPrintf(":gift:", "Claim bonus for %s (claim %s, channel %s)", streamer.Username, claimID, channelID)
 	if err := p.account.ClaimBonus(streamer, claimID); err != nil {
-		if p.anonymizeLogs() {
-			p.logger.Errorf("claim bonus %s: %v", p.streamerName(streamer), err)
+		if p.anonymizer.Enabled() {
+			p.logger.Errorf("claim bonus %s: %v", p.anonymizer.Shown(streamer), err)
 		} else {
-			p.logger.Errorf("claim bonus %s (channel %s): %v", streamer.Username, channelID, err)
+			p.logger.Errorf("claim bonus %s (channel %s): %v", p.anonymizer.Shown(streamer), channelID, err)
 		}
 		return nil
 	}
@@ -68,13 +68,13 @@ func (p *Client) checkPendingClaims() {
 		if streamer == nil || streamer.Username == "" || streamer.ChannelID == "" {
 			continue
 		}
-		if p.anonymizeLogs() {
-			p.debugf("Checking pending bonus for %s", p.streamerName(streamer))
+		if p.anonymizer.Enabled() {
+			p.debugf("Checking pending bonus for %s", p.anonymizer.Shown(streamer))
 		} else {
-			p.debugf("Checking pending bonus for %s (%s)", streamer.Username, streamer.ChannelID)
+			p.debugf("Checking pending bonus for %s (%s)", p.anonymizer.Shown(streamer), streamer.ChannelID)
 		}
 		if _, err := p.account.LoadChannelPointsContext(streamer); err != nil {
-			p.logger.Errorf("pending bonus check %s: %v", p.streamerName(streamer), err)
+			p.logger.Errorf("pending bonus check %s: %v", p.anonymizer.Shown(streamer), err)
 		}
 	}
 }

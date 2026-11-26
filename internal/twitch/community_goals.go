@@ -18,11 +18,7 @@ func (t *Client) ContributeToCommunityGoals(streamer *domain.Streamer) {
 		return
 	}
 
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.UserPointsContribution)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channelLogin"] = streamer.Username
+	op := twitchapi.GQLOperations.UserPointsContribution.With(map[string]interface{}{"channelLogin": streamer.Username})
 	resp, err := t.PostGQL(op)
 	if err != nil {
 		return
@@ -46,9 +42,9 @@ func (t *Client) ContributeToCommunityGoals(streamer *domain.Streamer) {
 		if goal == nil {
 			continue
 		}
-		userPoints := int(jsonvalue.Float(goalContribution["userPointsContributedThisStream"]))
+		userPoints := jsonvalue.Int(goalContribution["userPointsContributedThisStream"])
 		userLeft := goal.PerStreamUserMaximumContribution - userPoints
-		amount := minInt(goal.AmountLeft(), userLeft, streamer.ChannelPoints)
+		amount := min(goal.AmountLeft(), userLeft, streamer.ChannelPoints)
 		if amount > 0 {
 			_ = t.ContributeToCommunityGoal(streamer, goalID, goal.Title, amount)
 		}
@@ -60,16 +56,14 @@ func (t *Client) ContributeToCommunityGoal(streamer *domain.Streamer, goalID, ti
 	if amount <= 0 || goalID == "" {
 		return nil
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ContributeCommunityPointsCommunityGoal)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["input"] = map[string]interface{}{
-		"amount":        amount,
-		"channelID":     streamer.ChannelID,
-		"goalID":        goalID,
-		"transactionID": random.Hex(16),
-	}
+	op := twitchapi.GQLOperations.ContributeCommunityPointsCommunityGoal.With(map[string]interface{}{
+		"input": map[string]interface{}{
+			"amount":        amount,
+			"channelID":     streamer.ChannelID,
+			"goalID":        goalID,
+			"transactionID": random.Hex(16),
+		},
+	})
 	resp, err := t.PostGQL(op)
 	if err != nil {
 		return err
@@ -89,10 +83,7 @@ func (t *Client) ContributeToCommunityGoal(streamer *domain.Streamer, goalID, ti
 	default:
 		return fmt.Errorf("unable to contribute to %s: %v", title, refusal)
 	}
-	streamer.ChannelPoints -= amount
-	if streamer.ChannelPoints < 0 {
-		streamer.ChannelPoints = 0
-	}
+	streamer.Spend(amount)
 	return nil
 }
 
@@ -104,17 +95,4 @@ func hasActiveCommunityGoal(goals map[string]*domain.CommunityGoal) bool {
 		}
 	}
 	return false
-}
-
-func minInt(values ...int) int {
-	if len(values) == 0 {
-		return 0
-	}
-	min := values[0]
-	for _, v := range values[1:] {
-		if v < min {
-			min = v
-		}
-	}
-	return min
 }

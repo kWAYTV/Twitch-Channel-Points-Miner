@@ -9,21 +9,14 @@ import (
 
 // LoadChannelPointsContext fetches points and claims any bonuses.
 func (t *Client) LoadChannelPointsContext(streamer *domain.Streamer) (int, error) {
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ChannelPointsContext)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channelLogin"] = streamer.Username
+	op := twitchapi.GQLOperations.ChannelPointsContext.With(map[string]interface{}{"channelLogin": streamer.Username})
 	var resp gqlChannelPointsContextResponse
 	if err := t.PostGQLDecode(op, &resp); err != nil {
 		return 0, err
 	}
+	name := t.anonymizer.Shown(streamer)
 	channel := resp.Data.Community.Channel
 	if channel == nil {
-		name := streamer.Username
-		if t.anonymizer != nil && t.anonymizer.Enabled() {
-			name = t.anonymizer.StreamerName(streamer)
-		}
 		return 0, fmt.Errorf("channel missing for %s: %w", name, ErrChannelNotFound)
 	}
 	pointsData := channel.Self.CommunityPoints
@@ -41,21 +34,11 @@ func (t *Client) LoadChannelPointsContext(streamer *domain.Streamer) (int, error
 	if pointsData.AvailableClaim != nil {
 		claimID := pointsData.AvailableClaim.ID
 		if claimID == "" {
-			if t.logger != nil && t.logger.DebugEnabled() {
-				name := streamer.Username
-				if t.anonymizer != nil && t.anonymizer.Enabled() {
-					name = t.anonymizer.StreamerName(streamer)
-					t.logger.Debugf("availableClaim present but missing id for %s", name)
-				} else {
-					t.logger.Debugf("availableClaim present but missing id for %s", name)
-				}
-			}
+			t.debugf("availableClaim present but missing id for %s", name)
 			return balance, nil
 		}
 		if t.logger != nil {
-			name := streamer.Username
-			if t.anonymizer != nil && t.anonymizer.Enabled() {
-				name = t.anonymizer.StreamerName(streamer)
+			if t.anonymizer.Enabled() {
 				t.logger.EmojiPrintf(":gift:", "Pending bonus detected for %s", name)
 			} else {
 				t.logger.EmojiPrintf(":gift:", "Pending bonus detected for %s (claim %s, channel %s)", name, claimID, streamer.ChannelID)
@@ -63,16 +46,10 @@ func (t *Client) LoadChannelPointsContext(streamer *domain.Streamer) (int, error
 		}
 		if err := t.ClaimBonus(streamer, claimID); err != nil {
 			if t.logger != nil {
-				name := streamer.Username
-				if t.anonymizer != nil && t.anonymizer.Enabled() {
-					name = t.anonymizer.StreamerName(streamer)
-				}
 				t.logger.Errorf("claim bonus on context load for %s failed: %v", name, err)
 			}
 		} else if t.logger != nil {
-			name := streamer.Username
-			if t.anonymizer != nil && t.anonymizer.Enabled() {
-				name = t.anonymizer.StreamerName(streamer)
+			if t.anonymizer.Enabled() {
 				t.logger.Printf("Claim bonus success for %s", name)
 			} else {
 				t.logger.Printf("Claim bonus success for %s (claim %s)", name, claimID)

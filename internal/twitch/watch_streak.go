@@ -15,11 +15,17 @@ func currentStreamHasCompletedWatchStreak(createdAt, achievementAt time.Time) bo
 	return achievementAt.After(createdAt)
 }
 
-func extractWatchStreakAchievementAt(resp *gqlRewardListResponse) time.Time {
+// outerMilestone is the watch streak's state in a reward list, or nil when the
+// answer has none.
+func outerMilestone(resp *gqlRewardListResponse) *gqlWatchStreakMilestone {
 	if resp == nil || resp.Data.Channel == nil || resp.Data.Channel.Self == nil {
-		return time.Time{}
+		return nil
 	}
-	milestone := resp.Data.Channel.Self.WatchStreakMilestone
+	return resp.Data.Channel.Self.WatchStreakMilestone
+}
+
+func extractWatchStreakAchievementAt(resp *gqlRewardListResponse) time.Time {
+	milestone := outerMilestone(resp)
 	if milestone == nil || milestone.WatchStreakMilestone == nil {
 		return time.Time{}
 	}
@@ -27,10 +33,7 @@ func extractWatchStreakAchievementAt(resp *gqlRewardListResponse) time.Time {
 }
 
 func extractWatchStreakExpiresAt(resp *gqlRewardListResponse) time.Time {
-	if resp == nil || resp.Data.Channel == nil || resp.Data.Channel.Self == nil {
-		return time.Time{}
-	}
-	milestone := resp.Data.Channel.Self.WatchStreakMilestone
+	milestone := outerMilestone(resp)
 	if milestone == nil {
 		return time.Time{}
 	}
@@ -38,10 +41,7 @@ func extractWatchStreakExpiresAt(resp *gqlRewardListResponse) time.Time {
 }
 
 func extractWatchStreakLength(resp *gqlRewardListResponse) int {
-	if resp == nil || resp.Data.Channel == nil || resp.Data.Channel.Self == nil {
-		return -1
-	}
-	milestone := resp.Data.Channel.Self.WatchStreakMilestone
+	milestone := outerMilestone(resp)
 	if milestone == nil || milestone.WatchStreakMilestone == nil {
 		return -1
 	}
@@ -52,46 +52,44 @@ func extractWatchStreakLength(resp *gqlRewardListResponse) int {
 	return out
 }
 
-func (t *Client) rewardListAchievementAt(channelID string) time.Time {
+// rewardList fetches a channel's reward list, which carries the streak state.
+// It reports false when there is no channel to ask about or Twitch did not
+// answer.
+func (t *Client) rewardList(channelID string) (*gqlRewardListResponse, bool) {
 	if channelID == "" {
-		return time.Time{}
+		return nil, false
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.RewardList)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channelID"] = channelID
+	op := twitchapi.GQLOperations.RewardList.With(map[string]interface{}{"channelID": channelID})
 	var resp gqlRewardListResponse
 	if err := t.PostGQLDecode(op, &resp); err != nil {
 		t.debugf("RewardList lookup failed for channel %s: %v", channelID, err)
+		return nil, false
+	}
+	return &resp, true
+}
+
+func (t *Client) rewardListAchievementAt(channelID string) time.Time {
+	resp, ok := t.rewardList(channelID)
+	if !ok {
 		return time.Time{}
 	}
-	return extractWatchStreakAchievementAt(&resp)
+	return extractWatchStreakAchievementAt(resp)
 }
 
 func (t *Client) LogExtraInfo(channelID string, online bool) string {
-	if channelID == "" {
+	resp, ok := t.rewardList(channelID)
+	if !ok {
 		return ""
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.RewardList)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["channelID"] = channelID
-	var resp gqlRewardListResponse
-	if err := t.PostGQLDecode(op, &resp); err != nil {
-		t.debugf("RewardList lookup failed for channel %s: %v", channelID, err)
-		return ""
-	}
-	extrainfoSuffix := fmt.Sprintf(" | streak length %d", extractWatchStreakLength(&resp))
-	if expiresAt := extractWatchStreakExpiresAt(&resp); !expiresAt.IsZero() {
+	extrainfoSuffix := fmt.Sprintf(" | streak length %d", extractWatchStreakLength(resp))
+	if expiresAt := extractWatchStreakExpiresAt(resp); !expiresAt.IsZero() {
 		extrainfoSuffix += fmt.Sprintf(" | expires at %s", expiresAt.Local())
 	}
 	if online {
 		if createdAt := t.fallbackStreamCreatedAt(channelID); !createdAt.IsZero() {
 			extrainfoSuffix += fmt.Sprintf(" | started at %s", createdAt.Local())
 		}
-		if achievementAt := extractWatchStreakAchievementAt(&resp); !achievementAt.IsZero() {
+		if achievementAt := extractWatchStreakAchievementAt(resp); !achievementAt.IsZero() {
 			extrainfoSuffix += fmt.Sprintf(" | streak achievement timestamp %s", achievementAt.Local())
 		}
 	}

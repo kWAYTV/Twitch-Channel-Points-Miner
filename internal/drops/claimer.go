@@ -13,7 +13,6 @@ const claimInterval = 30 * time.Minute
 
 // Inventory is the part of the Twitch client that lists and claims drops.
 type Inventory interface {
-	ClaimAllDropsFromInventory() ([]twitch.ClaimedDrop, error)
 	ClaimAllDropsFromInventoryWithStatuses() ([]twitch.ClaimedDrop, []twitch.DropStatus, error)
 }
 
@@ -69,21 +68,12 @@ func (c *Claimer) Claim(errorPrefix string) {
 	if c == nil || c.inventory == nil {
 		return
 	}
-	if c.showProgress {
-		drops, statuses, err := c.inventory.ClaimAllDropsFromInventoryWithStatuses()
-		if err != nil {
-			c.logger.Printf("%s: %v", errorPrefix, err)
-			return
-		}
-		c.logStatuses(statuses)
-		c.logClaimed(drops)
-		return
-	}
-	drops, err := c.inventory.ClaimAllDropsFromInventory()
+	drops, statuses, err := c.inventory.ClaimAllDropsFromInventoryWithStatuses()
 	if err != nil {
 		c.logger.Printf("%s: %v", errorPrefix, err)
 		return
 	}
+	c.logStatuses(statuses)
 	c.logClaimed(drops)
 }
 

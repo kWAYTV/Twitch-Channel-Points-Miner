@@ -24,8 +24,8 @@ type WarmStartEntry struct {
 // checkedAt.
 func entryFromStreamer(accountName string, streamer *domain.Streamer, checkedAt time.Time) WarmStartEntry {
 	entry := WarmStartEntry{
-		AccountName:        strings.ToLower(strings.TrimSpace(accountName)),
-		StreamerLogin:      strings.ToLower(strings.TrimSpace(streamer.Username)),
+		AccountName:        domain.LoginKey(accountName),
+		StreamerLogin:      domain.LoginKey(streamer.Username),
 		ChannelID:          strings.TrimSpace(streamer.ChannelID),
 		CheckedAt:          checkedAt,
 		IsOnline:           streamer.IsOnline,
@@ -43,13 +43,13 @@ func entryFromStreamer(accountName string, streamer *domain.Streamer, checkedAt 
 // of accountName. An empty accountName keeps every account's entries.
 func entriesForAccount(stored []WarmStartEntry, accountName string) map[string]WarmStartEntry {
 	entries := make(map[string]WarmStartEntry)
-	accountKey := strings.ToLower(strings.TrimSpace(accountName))
+	accountKey := domain.LoginKey(accountName)
 	for _, entry := range stored {
-		loginKey := strings.ToLower(strings.TrimSpace(entry.StreamerLogin))
+		loginKey := domain.LoginKey(entry.StreamerLogin)
 		if loginKey == "" {
 			continue
 		}
-		if accountKey != "" && strings.ToLower(strings.TrimSpace(entry.AccountName)) != accountKey {
+		if accountKey != "" && domain.LoginKey(entry.AccountName) != accountKey {
 			continue
 		}
 		entries[loginKey] = entry

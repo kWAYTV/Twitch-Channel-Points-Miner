@@ -25,26 +25,6 @@ func TestResultColor(t *testing.T) {
 	}
 }
 
-func TestAnonymisedLabel(t *testing.T) {
-	for _, row := range []struct {
-		name     string
-		streamer string
-		title    string
-		want     string
-	}{
-		{"an alias and a title", "Streamer1", "who wins", "EventPrediction: Streamer1 - who wins"},
-		{"only an alias", "Streamer1", "", "EventPrediction: Streamer1"},
-		{"only a title", "", "who wins", "EventPrediction: who wins"},
-		{"neither", "", "", "EventPrediction"},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			if got := anonymisedLabel(row.streamer, row.title); got != row.want {
-				t.Errorf("anonymisedLabel(%q, %q) = %q, want %q", row.streamer, row.title, got, row.want)
-			}
-		})
-	}
-}
-
 func TestSettledResult(t *testing.T) {
 	stake := prediction.Decision{Choice: 0, OutcomeID: "yes", Amount: 50}
 	outcomes := []prediction.Outcome{{ID: "yes", TotalPoints: 100}, {ID: "no", TotalPoints: 50}}

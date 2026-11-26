@@ -3,6 +3,8 @@ package notify
 import (
 	"regexp"
 	"strings"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/textcase"
 )
 
 var reChoiceLead = regexp.MustCompile(`^(?:[A-Z]|#\d+):\s*(.+)$`)
@@ -156,7 +158,7 @@ func skipReason(reason string) string {
 	case strings.Contains(reason, "status"):
 		return "The prediction is no longer active"
 	default:
-		return capitalise(reason)
+		return textcase.UpperFirst(reason)
 	}
 }
 

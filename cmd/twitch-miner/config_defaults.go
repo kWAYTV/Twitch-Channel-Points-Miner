@@ -1,5 +1,7 @@
 package main
 
+import "github.com/kWAYTV/twitch-points-miner/internal/domain"
+
 func defaultConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"username":                      "your-twitch-username",
@@ -44,15 +46,15 @@ func defaultConfig() map[string]interface{} {
 		},
 		"streamer_overrides": map[string]interface{}{},
 		"bet": map[string]interface{}{
-			"strategy":              "SMART",
-			"percentage":            5,
-			"percentage_gap":        20,
-			"max_points":            50000,
-			"stealth_mode":          false,
-			"deduct_stake_on_place": true,
-			"delay_mode":            "FROM_END",
-			"delay":                 6,
-			"minimum_points":        0,
+			"strategy":              string(domain.DefaultBetStrategy),
+			"percentage":            domain.DefaultBetPercentage,
+			"percentage_gap":        domain.DefaultBetPercentageGap,
+			"max_points":            domain.DefaultBetMaxPoints,
+			"stealth_mode":          domain.DefaultBetStealthMode,
+			"deduct_stake_on_place": domain.DefaultBetDeductStakeOnPlace,
+			"delay_mode":            string(domain.DefaultBetDelayMode),
+			"delay":                 domain.DefaultBetDelay,
+			"minimum_points":        domain.DefaultBetMinimumPoints,
 			"filter_condition": map[string]interface{}{
 				"by":    nil,
 				"where": nil,

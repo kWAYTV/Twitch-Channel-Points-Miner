@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -35,8 +34,7 @@ type DiscordWebhook struct {
 	webhookAPI string
 	events     map[events.Event]struct{}
 	client     *http.Client
-	logf       func(format string, args ...any)
-	warnOnce   sync.Once
+	delivery   deliveryWarning
 }
 
 // NewDiscordWebhook returns nil unless the webhook URL is set.
@@ -53,7 +51,7 @@ func newDiscordWebhook(settings DiscordSettings, logf func(format string, args .
 		webhookAPI: webhookAPI,
 		events:     selectedEvents(settings.Events),
 		client:     &http.Client{Timeout: 5 * time.Second},
-		logf:       logf,
+		delivery:   deliveryWarning{service: "discord", logf: logf},
 	}
 }
 
@@ -93,7 +91,7 @@ func (d *DiscordWebhook) Send(message Message, event events.Event) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := d.client.Do(req)
 	if err != nil {
-		d.warn("request failed (network error or timeout)")
+		d.delivery.warn(requestFailed)
 		return
 	}
 	defer resp.Body.Close()
@@ -101,24 +99,14 @@ func (d *DiscordWebhook) Send(message Message, event events.Event) {
 		return
 	}
 	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 180))
-	d.warn(discordFailure(resp.Status, snippet))
-}
-
-func (d *DiscordWebhook) warn(reason string) {
-	d.warnOnce.Do(func() {
-		d.logf("discord: notification not delivered: %s (further failures are not logged)", reason)
-	})
+	d.delivery.warn(discordFailure(resp.Status, snippet))
 }
 
 // discordEmbedFor renders a message as an embed: the polarity glyph and the
 // headline as the title, the details on one line as the description.
 func discordEmbedFor(event events.Event, message Message) discordEmbed {
-	headline := message.Headline
-	if headline == "" {
-		headline = eventTitle(event)
-	}
 	return discordEmbed{
-		Title:       limitRunes(eventGlyphPrefix(event)+escapeMarkdown(headline), headlineLimit),
+		Title:       limitRunes(eventGlyphPrefix(event)+escapeMarkdown(headlineOf(event, message)), headlineLimit),
 		Description: limitRunes(escapeMarkdown(strings.Join(message.Details, detailSeparator)), 4096),
 		Color:       eventColor(event),
 	}

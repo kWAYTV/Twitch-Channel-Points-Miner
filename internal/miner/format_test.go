@@ -5,56 +5,24 @@ import (
 	"time"
 )
 
-func TestFormatChannelPoints(t *testing.T) {
+func TestSignedChange(t *testing.T) {
 	tests := []struct {
-		name   string
-		points int
-		want   string
+		name          string
+		delta         int
+		wantColor     string
+		wantSign      string
+		wantMagnitude int
 	}{
-		{"zero", 0, "0"},
-		{"just under a thousand", 999, "999"},
-		{"exactly a thousand", 1_000, "1k"},
-		{"thousands with a fraction", 1_500, "1.5k"},
-		{"thousands rounded to two decimals", 1_234, "1.23k"},
-		{"the last value that reads in thousands", 999_994, "999.99k"},
-		{"exactly a million", 1_000_000, "1M"},
-		{"millions with a fraction", 1_500_000, "1.5M"},
-		{"a negative balance", -1_500, "1.5k"},
+		{"a gain", 50, colorGreen, "+", 50},
+		{"a loss", -50, colorRed, "-", 50},
+		{"no change", 0, colorGreen, "+", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := formatChannelPoints(tt.points); got != tt.want {
-				t.Errorf("formatChannelPoints(%d) = %q, want %q", tt.points, got, tt.want)
-			}
-		})
-	}
+			color, sign, magnitude := signedChange(tt.delta)
 
-	t.Run("just under a million", func(t *testing.T) {
-		if got := formatChannelPoints(999_999); got != "1M" {
-			t.Errorf("formatChannelPoints(%d) = %q, want %q", 999_999, got, "1M")
-		}
-	})
-}
-
-func TestFormatPointsWithSuffix(t *testing.T) {
-	tests := []struct {
-		name    string
-		points  int
-		divisor float64
-		suffix  string
-		want    string
-	}{
-		{"a whole number", 2_000_000, 1_000_000, "M", "2M"},
-		{"one decimal", 1_500_000, 1_000_000, "M", "1.5M"},
-		{"two decimals", 1_250_000, 1_000_000, "M", "1.25M"},
-		{"a third decimal rounded away", 1_001, 1_000, "k", "1k"},
-		{"a trailing zero inside the number", 10_000, 1_000, "k", "10k"},
-		{"zero", 0, 1_000, "k", "0k"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := formatPointsWithSuffix(tt.points, tt.divisor, tt.suffix); got != tt.want {
-				t.Errorf("formatPointsWithSuffix(%d, %v, %q) = %q, want %q", tt.points, tt.divisor, tt.suffix, got, tt.want)
+			if color != tt.wantColor || sign != tt.wantSign || magnitude != tt.wantMagnitude {
+				t.Errorf("signedChange(%d) = %q, %q, %d, want %q, %q, %d", tt.delta, color, sign, magnitude, tt.wantColor, tt.wantSign, tt.wantMagnitude)
 			}
 		})
 	}

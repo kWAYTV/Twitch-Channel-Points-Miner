@@ -27,7 +27,7 @@ func TestClient_processMomentMessage(t *testing.T) {
 		}
 		want := effects{
 			MomentClaims: []claimed{{"tester", "moment-1"}},
-			Lines:        []string{":video_camera: MOMENT_CLAIM: tester Claimed Moment"},
+			Lines:        []string{":video_camera: MOMENT_CLAIM: Tester Claimed Moment"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -55,7 +55,7 @@ func TestClient_processMomentMessage(t *testing.T) {
 		}
 		want := effects{
 			MomentClaims: []claimed{{"tester", "moment-1"}},
-			Lines:        []string{"error: claim moment tester: 503"},
+			Lines:        []string{"error: claim moment Tester: 503"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)

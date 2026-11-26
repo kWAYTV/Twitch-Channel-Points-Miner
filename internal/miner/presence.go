@@ -21,27 +21,25 @@ func (m *Miner) updatePresence(streamer *domain.Streamer) {
 }
 
 func (m *Miner) logOnline(streamer *domain.Streamer) {
-	name := m.styledStreamerName(streamer)
-	points := m.formattedStreamerPoints(streamer)
+	who := m.nameWithPoints(streamer)
 	gameSuffix := ""
-	if suffix := m.gameSuffix(streamer); suffix != "" {
+	if suffix := m.gameInfo(streamer); suffix != "" {
 		gameSuffix = fmt.Sprintf(" | %s %s", fmt.Sprintf("%sPlaying:%s", colorGameLabel, colorReset), suffix)
 	}
 	extrainfoSuffix := ""
 	if m.twitch != nil && streamer != nil && streamer.ChannelID != "" {
 		extrainfoSuffix = m.twitch.LogExtraInfo(streamer.ChannelID, true)
 	}
-	m.logger.EmojiEventf(":partying_face:", events.EventStreamerOnline, "%s (%s%s%s points) is %sOnline%s!%s%s", name, colorCyan, points, colorReset, colorGreen, colorReset, gameSuffix, extrainfoSuffix)
+	m.logger.EmojiEventf(":partying_face:", events.EventStreamerOnline, "%s is %sOnline%s!%s%s", who, colorGreen, colorReset, gameSuffix, extrainfoSuffix)
 }
 
 func (m *Miner) logOffline(streamer *domain.Streamer) {
-	name := m.styledStreamerName(streamer)
-	points := m.formattedStreamerPoints(streamer)
+	who := m.nameWithPoints(streamer)
 	extrainfoSuffix := ""
 	if m.twitch != nil && streamer != nil && streamer.ChannelID != "" {
 		extrainfoSuffix = m.twitch.LogExtraInfo(streamer.ChannelID, false)
 	}
-	m.logger.EmojiEventf(":sleeping:", events.EventStreamerOffline, "%s (%s%s%s points) is %sOffline%s!%s", name, colorCyan, points, colorReset, colorRed, colorReset, extrainfoSuffix)
+	m.logger.EmojiEventf(":sleeping:", events.EventStreamerOffline, "%s is %sOffline%s!%s", who, colorRed, colorReset, extrainfoSuffix)
 }
 
 // announcesPresence is false while the streamer list is first loaded: the load
@@ -94,13 +92,6 @@ func (m *Miner) setPresence(streamer *domain.Streamer, online bool, reason strin
 	}
 	if !prevKnown || prevOnline != online {
 		m.announcePresence(streamer, online)
-		m.syncWarmStartCacheFromStreamer(streamer)
-		return
-	}
-	if reason != "" && !online {
-		// Offline message already logged for state changes; keep silent on no-op toggles.
-		m.syncWarmStartCacheFromStreamer(streamer)
-		return
 	}
 	m.syncWarmStartCacheFromStreamer(streamer)
 }

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -131,29 +130,4 @@ func TestNewCommunityGoalFromPubSub(t *testing.T) {
 			t.Errorf("NewCommunityGoalFromPubSub(nil) = %+v, want nil", got)
 		}
 	})
-}
-
-func TestIntFromAny(t *testing.T) {
-	for _, row := range []struct {
-		name  string
-		value interface{}
-		want  int
-	}{
-		{"an int", 5, 5},
-		{"an int64", int64(5), 5},
-		{"a float", float64(5), 5},
-		{"a float with a fraction", 5.9, 5},
-		{"a negative float with a fraction", -5.9, -5},
-		{"zero", float64(0), 0},
-		{"a number as text", "5", 0},
-		{"a JSON number", json.Number("5"), 0},
-		{"a bool", true, 0},
-		{"nothing", nil, 0},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			if got := intFromAny(row.value); got != row.want {
-				t.Errorf("intFromAny(%#v) = %d, want %d", row.value, got, row.want)
-			}
-		})
-	}
 }

@@ -114,7 +114,7 @@ func FirstInt(data map[string]interface{}, keys ...string) int {
 	}
 	for _, key := range keys {
 		if val, ok := data[key]; ok {
-			if intVal := int(Float(val)); intVal != 0 {
+			if intVal := Int(val); intVal != 0 {
 				return intVal
 			}
 		}

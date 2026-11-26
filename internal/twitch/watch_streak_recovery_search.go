@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
@@ -12,19 +11,13 @@ import (
 // ("LAST_DAY", "LAST_WEEK") or their vods ("videos"), and the key its results sit under.
 func (r *streakRecovery) listing(source string) (mode string, op twitchapi.GQLPersistedOperation) {
 	if source == "videos" {
-		op = twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.FilterableVideoTowerVideos)
-		if op.Variables == nil {
-			op.Variables = map[string]interface{}{}
-		}
-		op.Variables["channelOwnerLogin"] = r.streamer.Username
+		op = twitchapi.GQLOperations.FilterableVideoTowerVideos.With(map[string]interface{}{"channelOwnerLogin": r.streamer.Username})
 		return "videos", op
 	}
-	op = twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.ClipsCardsUser)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["login"] = r.streamer.Username
-	op.Variables["criteria"] = map[string]interface{}{"filter": source}
+	op = twitchapi.GQLOperations.ClipsCardsUser.With(map[string]interface{}{
+		"login":    r.streamer.Username,
+		"criteria": map[string]interface{}{"filter": source},
+	})
 	return "clips", op
 }
 
@@ -32,46 +25,33 @@ func (r *streakRecovery) listing(source string) (mode string, op twitchapi.GQLPe
 // belongs to a missed stream. It stops as soon as the streak is settled.
 func (r *streakRecovery) watchMissedFrom(source string) (saved, settled bool, err error) {
 	mode, op := r.listing(source)
-	hasNext := true
 	cursor := ""
-	for hasNext {
-		op.Variables["cursor"] = cursor
-		resp, err := r.client.PostGQL(op)
-		if err != nil {
-			return false, false, err
+	end, err := r.client.eachEdge(op, "data.user."+mode, func(edge map[string]interface{}) (bool, error) {
+		if c, ok := edge["cursor"].(string); ok {
+			cursor = c
 		}
-		data, _ := jsonvalue.At(resp, "data.user."+mode).(map[string]interface{})
-		if data == nil {
-			return false, false, fmt.Errorf("missing %s data for channel %s", mode, r.streamer.ChannelID)
+		node, _ := edge["node"].(map[string]interface{})
+		broadcastIdentifier, _ := node["broadcastIdentifier"].(map[string]interface{})
+		id, _ := broadcastIdentifier["id"].(string)
+		if !slices.Contains(r.missed, id) {
+			return false, nil
 		}
-		edges, _ := data["edges"].([]interface{})
-		pageInfo, _ := data["pageInfo"].(map[string]interface{})
-		cursor = ""
-		for _, edge := range edges {
-			e, _ := edge.(map[string]interface{})
-			node, _ := e["node"].(map[string]interface{})
-			broadcastIdentifier, _ := node["broadcastIdentifier"].(map[string]interface{})
-			id, _ := broadcastIdentifier["id"].(string)
-			if c, ok := e["cursor"].(string); ok {
-				cursor = c
-			}
-			if !slices.Contains(r.missed, id) {
-				continue
-			}
-			if mode == "clips" {
-				saved, settled, err = r.watchClip(node)
-			} else {
-				saved, settled, err = r.watchVOD(node)
-			}
-			if err != nil || settled {
-				return saved, settled, err
-			}
+		var err error
+		if mode == "clips" {
+			saved, settled, err = r.watchClip(node)
+		} else {
+			saved, settled, err = r.watchVOD(node)
 		}
-		hasNext, _ = pageInfo["hasNextPage"].(bool)
-		if hasNext && len(edges) == 0 {
-			r.logf("empty %s edges but hasNextPage == true with cursor %s", mode, op.Variables["cursor"])
-			hasNext = false
-		}
+		return settled, err
+	})
+	if err != nil || settled {
+		return saved, settled, err
+	}
+	switch end {
+	case pagesMissing:
+		return false, false, fmt.Errorf("missing %s data for channel %s", mode, r.streamer.ChannelID)
+	case pagesCutShort:
+		r.logf("empty %s edges but hasNextPage == true with cursor %s", mode, cursor)
 	}
 	return false, false, nil
 }

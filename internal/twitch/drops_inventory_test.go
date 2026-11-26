@@ -148,6 +148,31 @@ func TestChannelNameFromList(t *testing.T) {
 	}
 }
 
+func TestNestedChannelName(t *testing.T) {
+	tests := []struct {
+		name string
+		node object
+		want string
+	}{
+		{"every name", object{"channel": object{"login": "streamer", "name": "Streamer", "displayName": "The Streamer"}}, "streamer"},
+		{"a name and a display name", object{"channel": object{"name": "Streamer", "displayName": "The Streamer"}}, "Streamer"},
+		{"a display name", object{"channel": object{"displayName": "The Streamer"}}, "The Streamer"},
+		{"a padded name", object{"channel": object{"name": " Streamer "}}, "Streamer"},
+		{"a blank login before a name", object{"channel": object{"login": "  ", "name": "Streamer"}}, "Streamer"},
+		{"a name beside the channel, not under it", object{"login": "streamer"}, ""},
+		{"a channel that is not an object", object{"channel": "streamer"}, ""},
+		{"no channel", object{}, ""},
+		{"nothing", nil, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := nestedChannelName(tt.node); got != tt.want {
+				t.Errorf("nestedChannelName(%v) = %q, want %q", tt.node, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDropClaimable(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/stoppable"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
@@ -58,7 +59,7 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 
 		watchList := m.pickStreamersToWatch(streamers)
 		if len(watchList) == 0 {
-			if sleepWithStop(20*time.Second, stop) {
+			if stoppable.Wait(20*time.Second, stop) {
 				return
 			}
 			continue
@@ -76,7 +77,7 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 				continue
 			}
 
-			if sleepWithStop(interval, stop) {
+			if stoppable.Wait(interval, stop) {
 				return
 			}
 		}
@@ -114,14 +115,7 @@ func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 		}
 	}
 
-	prevBroadcastID := ""
-	prevCreatedAt := time.Time{}
-	prevWatchStreakMissing := true
-	if streamer.Stream != nil {
-		prevBroadcastID = streamer.Stream.BroadcastID
-		prevCreatedAt = streamer.Stream.CreatedAt
-		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
-	}
+	before := markStream(streamer)
 	if err := m.sendMinuteWatchedWithIdentityRepair(streamer); err != nil {
 		countWatchFailure := true
 		if errors.Is(err, twitch.ErrStreamerOffline) {
@@ -142,10 +136,7 @@ func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 		m.logMinuteWatchFailure(streamer, err, countWatchFailure)
 	} else {
 		recordMinuteWatchSuccess(streamer)
-		m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
-		if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
-			m.syncWarmStartCacheFromStreamer(streamer)
-		}
+		m.syncStreakSince(streamer, before)
 	}
 	m.syncActiveStreakWatch(streamer, m.now())
 	return true
@@ -160,31 +151,4 @@ func watchInterval(count int) time.Duration {
 		return 5 * time.Second
 	}
 	return interval
-}
-
-func sleepWithStop(duration time.Duration, stop <-chan struct{}) bool {
-	if duration <= 0 {
-		return false
-	}
-	const chunks = 3
-	step := duration / chunks
-	if step <= 0 {
-		step = duration
-	}
-	elapsed := time.Duration(0)
-	for elapsed < duration {
-		remaining := duration - elapsed
-		if remaining < step {
-			step = remaining
-		}
-		timer := time.NewTimer(step)
-		select {
-		case <-stop:
-			timer.Stop()
-			return true
-		case <-timer.C:
-		}
-		elapsed += step
-	}
-	return false
 }

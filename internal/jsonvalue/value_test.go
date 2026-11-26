@@ -156,6 +156,7 @@ func TestFirstInt(t *testing.T) {
 		"half":     float64(0.5),
 		"number":   json.Number("15"),
 		"int":      int(4),
+		"int64":    int64(6),
 		"text":     "7",
 	}
 
@@ -175,6 +176,7 @@ func TestFirstInt(t *testing.T) {
 		{"a fraction", data, []string{"fraction"}, 2},
 		{"a json.Number", data, []string{"number"}, 15},
 		{"an int", data, []string{"int"}, 4},
+		{"an int64", data, []string{"int64"}, 6},
 		{"only a zero", data, []string{"zero"}, 0},
 		{"only a missing key", data, []string{"missing"}, 0},
 		{"no keys", data, nil, 0},
@@ -199,6 +201,8 @@ func TestInt(t *testing.T) {
 		{"a JSON number", float64(42), 42},
 		{"a JSON number with a fraction", 42.9, 42},
 		{"a negative JSON number", float64(-7), -7},
+		{"a negative JSON number with a fraction", -5.9, -5},
+		{"zero", float64(0), 0},
 		{"an int", 42, 42},
 		{"an int64", int64(42), 42},
 		{"a json.Number", json.Number("42"), 42},
@@ -223,6 +227,7 @@ func TestText(t *testing.T) {
 	}{
 		{"a string", "123", "123"},
 		{"a string with spaces around it", "  abc ", "abc"},
+		{"a string outside ASCII", "ñandú", "ñandú"},
 		{"an empty string", "", ""},
 		{"only spaces", "   ", ""},
 		{"nothing", nil, ""},

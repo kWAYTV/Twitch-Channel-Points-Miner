@@ -3,6 +3,8 @@ package notify
 import (
 	"strings"
 	"unicode"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/textcase"
 )
 
 // describeGain covers "+50 → Alice (12.4k points) - Reason: WATCH": points the
@@ -51,14 +53,8 @@ func gainDetails(reason, game, streak string) []string {
 	if fields := strings.Fields(reason); len(fields) > 0 {
 		kind = strings.ToUpper(fields[0])
 	}
-	playing := ""
-	if game != "" {
-		playing = "Playing " + game
-	}
-	streakLength := ""
-	if streak != "" {
-		streakLength = "Watch streak " + streak
-	}
+	playingGame := playing(game)
+	streakLength := watchStreak(streak)
 	switch kind {
 	case "WATCH":
 		if game != "" {
@@ -67,18 +63,18 @@ func gainDetails(reason, game, streak string) []string {
 		return []string{"Watching", streakLength}
 	case "WATCH_STREAK":
 		if streak != "" {
-			return []string{streakLength, playing}
+			return []string{streakLength, playingGame}
 		}
-		return []string{"Watch streak", playing}
+		return []string{"Watch streak", playingGame}
 	case "CLAIM":
 		return []string{"Bonus claim", streakLength}
 	case "RAID":
-		return []string{"Raid", playing, streakLength}
+		return []string{"Raid", playingGame, streakLength}
 	case "":
-		return []string{playing, streakLength}
+		return []string{playingGame, streakLength}
 	default:
 		label := strings.ToLower(strings.ReplaceAll(kind, "_", " "))
-		return []string{capitalise(label), playing, streakLength}
+		return []string{textcase.UpperFirst(label), playingGame, streakLength}
 	}
 }
 

@@ -108,7 +108,7 @@ func TestClient_placePrediction(t *testing.T) {
 		want := effects{
 			Timers: []time.Duration{2 * time.Minute},
 			Bets:   []bet{{"ev-1", "yes", 50}},
-			Lines:  []string{betStartLine, "error BET_FAILED: prediction tester: twitch said no"},
+			Lines:  []string{betStartLine, "error BET_FAILED: prediction Tester: twitch said no"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -122,7 +122,7 @@ func TestClient_placePrediction(t *testing.T) {
 
 		h.receive(t, "predictions-user-v1.999", `{"type":"prediction-result","data":{"prediction":{"event_id":"ev-1","result":{"type":"WIN","points_won":75}}}}`)
 
-		if got, want := h.logger.Lines, []string{betStartLine, "error BET_FAILED: prediction tester: twitch said no"}; !reflect.DeepEqual(got, want) {
+		if got, want := h.logger.Lines, []string{betStartLine, "error BET_FAILED: prediction Tester: twitch said no"}; !reflect.DeepEqual(got, want) {
 			t.Errorf("lines = %q, want %q", got, want)
 		}
 	})
@@ -136,7 +136,7 @@ func TestClient_placePrediction(t *testing.T) {
 
 		want := effects{
 			Timers: []time.Duration{2 * time.Minute},
-			Lines:  []string{betStartLine, "BET_FILTERS: Skip bet for tester: filter_condition TOTAL_USERS GT 1000000 not met (current 15)"},
+			Lines:  []string{betStartLine, "BET_FILTERS: Skip bet for Tester: filter_condition TOTAL_USERS GT 1000000 not met (current 15)"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -151,7 +151,7 @@ func TestClient_placePrediction(t *testing.T) {
 
 		h.receive(t, "predictions-user-v1.999", `{"type":"prediction-result","data":{"prediction":{"event_id":"ev-1","result":{"type":"WIN","points_won":75}}}}`)
 
-		want := []string{betStartLine, "BET_FILTERS: Skip bet for tester: filter_condition TOTAL_USERS GT 1000000 not met (current 15)"}
+		want := []string{betStartLine, "BET_FILTERS: Skip bet for Tester: filter_condition TOTAL_USERS GT 1000000 not met (current 15)"}
 		if got := h.logger.Lines; !reflect.DeepEqual(got, want) {
 			t.Errorf("lines = %q, want %q", got, want)
 		}
@@ -167,7 +167,7 @@ func TestClient_placePrediction(t *testing.T) {
 
 		want := effects{
 			Timers: []time.Duration{2 * time.Minute},
-			Lines:  []string{betStartLine, "BET_FILTERS: Skip bet for tester: balance 500 <= minimum_points 500"},
+			Lines:  []string{betStartLine, "BET_FILTERS: Skip bet for Tester: balance 500 <= minimum_points 500"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
@@ -199,7 +199,7 @@ func TestClient_placePrediction(t *testing.T) {
 
 		want := effects{
 			Timers: []time.Duration{2 * time.Minute},
-			Lines:  []string{betStartLine, "BET_GENERAL: Skip bet for tester: event status is LOCKED"},
+			Lines:  []string{betStartLine, "BET_GENERAL: Skip bet for Tester: event status is LOCKED"},
 		}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)

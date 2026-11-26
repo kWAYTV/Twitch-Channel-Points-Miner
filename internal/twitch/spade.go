@@ -23,7 +23,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 	}
 	pageURL := streamer.StreamerURL
 	if pageURL == "" {
-		pageURL = fmt.Sprintf("%s/%s", twitchapi.URL, streamer.Username)
+		pageURL = twitchapi.ChannelURL(streamer.Username)
 	}
 	mainReq, _ := http.NewRequest(http.MethodGet, pageURL, nil)
 	for k, v := range headers {
@@ -38,7 +38,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 	if err != nil {
 		return err
 	}
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		t.debugf("GetSpadeURL main page status %d", resp.StatusCode)
 	} else {
 		t.debugf("GetSpadeURL main page for %s status %d", streamer.Username, resp.StatusCode)
@@ -60,7 +60,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 	if err != nil {
 		return err
 	}
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		t.debugf("GetSpadeURL settings status %d", settingsResp.StatusCode)
 	} else {
 		t.debugf("GetSpadeURL settings for %s status %d", streamer.Username, settingsResp.StatusCode)
@@ -70,7 +70,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 		return errors.New("spade url not found")
 	}
 	streamer.Stream.SpadeURL = spade[1]
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		t.debugf("Spade URL resolved")
 	} else {
 		t.debugf("Spade URL for %s resolved to %s", streamer.Username, streamer.Stream.SpadeURL)
@@ -91,7 +91,7 @@ func (t *Client) sendSpadePayload(spadeurl string, username string, rawpayload [
 	req, _ := http.NewRequest(http.MethodPost, spadeurl, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", t.userAgent)
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		t.debugf("Send minute watched payload")
 	} else {
 		t.debugf("Send minute watched payload to %s (%s)", username, spadeurl)
@@ -102,7 +102,7 @@ func (t *Client) sendSpadePayload(spadeurl string, username string, rawpayload [
 	}
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		t.debugf("Minute watched response: %d", resp.StatusCode)
 	} else {
 		t.debugf("Minute watched response for %s: %d %s", username, resp.StatusCode, strings.TrimSpace(string(bodyBytes)))
@@ -110,7 +110,7 @@ func (t *Client) sendSpadePayload(spadeurl string, username string, rawpayload [
 	if resp.StatusCode == http.StatusNoContent {
 		return nil
 	}
-	if t.anonymizer != nil && t.anonymizer.Enabled() {
+	if t.anonymizer.Enabled() {
 		return fmt.Errorf("minute watched failed: %d", resp.StatusCode)
 	}
 	return fmt.Errorf("minute watched failed: %d %s", resp.StatusCode, string(bodyBytes))

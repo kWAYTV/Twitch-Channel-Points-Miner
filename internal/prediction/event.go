@@ -7,6 +7,7 @@ import (
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
+	"github.com/kWAYTV/twitch-points-miner/internal/points"
 )
 
 type Decision struct {
@@ -80,7 +81,7 @@ func (p *Event) ClosingAfter(now time.Time) time.Duration {
 func (p *Event) ParseResult(result map[string]interface{}) (gained, placed, won int, resultType, resultString string) {
 	resultType = strings.ToUpper(jsonvalue.String(result["type"]))
 	placed = p.Decision.Amount
-	won = int(jsonvalue.Float(result["points_won"]))
+	won = jsonvalue.Int(result["points_won"])
 	if resultType == "REFUND" {
 		placed = 0
 		won = 0
@@ -98,7 +99,7 @@ func (p *Event) ParseResult(result map[string]interface{}) (gained, placed, won 
 	if gained >= 0 {
 		sign = "+"
 	}
-	resultString = fmt.Sprintf("%s, %s: %s%s", resultType, action, sign, FormatNumber(gained))
+	resultString = fmt.Sprintf("%s, %s: %s%s", resultType, action, sign, points.Format(gained))
 	p.ResultString = resultString
 	return
 }
@@ -119,13 +120,11 @@ func Label(name, title string) string {
 }
 
 func (p *Event) String() string {
-	if p.Streamer != nil && p.Streamer.Username != "" {
-		return fmt.Sprintf("EventPrediction: %s - %s", p.Streamer.Username, p.Title)
+	name := ""
+	if p.Streamer != nil {
+		name = p.Streamer.Username
 	}
-	if p.Title != "" {
-		return fmt.Sprintf("EventPrediction: %s", p.Title)
-	}
-	return "EventPrediction"
+	return Label(name, p.Title)
 }
 
 func (p *Event) DecisionOutcome() *Outcome {

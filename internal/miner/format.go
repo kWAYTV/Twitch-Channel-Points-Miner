@@ -6,27 +6,13 @@ import (
 	"time"
 )
 
-func formatChannelPoints(points int) string {
-	value := points
-	if value < 0 {
-		value = -value
+// signedChange is how a change in points is written: a loss in red after a
+// minus, anything else in green after a plus, and the amount without its sign.
+func signedChange(delta int) (color, sign string, magnitude int) {
+	if delta < 0 {
+		return colorRed, "-", -delta
 	}
-	switch {
-	// From 999,995 the thousands would round up to "1000k".
-	case value >= 999_995:
-		return formatPointsWithSuffix(value, 1_000_000, "M")
-	case value >= 1_000:
-		return formatPointsWithSuffix(value, 1_000, "k")
-	default:
-		return fmt.Sprintf("%d", value)
-	}
-}
-
-func formatPointsWithSuffix(points int, divisor float64, suffix string) string {
-	short := float64(points) / divisor
-	formatted := fmt.Sprintf("%.2f", short)
-	formatted = strings.TrimRight(strings.TrimRight(formatted, "0"), ".")
-	return formatted + suffix
+	return colorGreen, "+", delta
 }
 
 func formatDuration(d time.Duration) string {

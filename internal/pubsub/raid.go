@@ -1,13 +1,11 @@
 package pubsub
 
 import (
-	"strings"
-
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 )
 
 func (p *Client) processRaidMessage(topic string, payload map[string]interface{}) error {
-	channelID := strings.TrimPrefix(topic, "raid.")
+	channelID := topicChannelID(topic, raidTopic)
 	streamer := p.streamerMap[channelID]
 	if streamer == nil || !streamer.Settings.FollowRaid {
 		return nil
@@ -21,14 +19,16 @@ func (p *Client) processRaidMessage(topic string, payload map[string]interface{}
 	if streamer.LastRaidID == raidID {
 		return nil
 	}
-	streamer.LastRaidID = raidID
+	// Twitch repeats the message while the raid counts down. The raid is
+	// remembered only once it is joined, so a join that failed is tried again.
 	if err := p.account.JoinRaid(streamer, raidID); err != nil {
-		p.logger.Errorf("join raid %s->%s: %v", p.streamerName(streamer), p.name(target), err)
+		p.logger.Errorf("join raid %s->%s: %v", p.anonymizer.Shown(streamer), p.anonymizer.Name(target), err)
 		return nil
 	}
+	streamer.LastRaidID = raidID
 	if target == "" {
 		target = "raid target"
 	}
-	p.logger.EmojiEventf(":performing_arts:", events.EventJoinRaid, "Joining raid from %s to %s", p.streamerName(streamer), p.name(target))
+	p.logger.EmojiEventf(":performing_arts:", events.EventJoinRaid, "Joining raid from %s to %s", p.anonymizer.Shown(streamer), p.anonymizer.Name(target))
 	return nil
 }

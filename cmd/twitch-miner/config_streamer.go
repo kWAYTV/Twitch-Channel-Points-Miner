@@ -62,20 +62,6 @@ func parseChatPresence(mode string, fallback domain.IRCMode) domain.IRCMode {
 }
 
 func buildBaseStreamerSettings(cfg config) domain.StreamerSettings {
-	betSettings := domain.BetSettings{
-		Strategy:           domain.Strategy(cfg.Bet.Strategy),
-		Percentage:         cfg.Bet.Percentage,
-		PercentageGap:      cfg.Bet.PercentageGap,
-		MaxPoints:          cfg.Bet.MaxPoints,
-		StealthMode:        cfg.Bet.StealthMode,
-		DeductStakeOnPlace: cfg.Bet.DeductStakeOnPlace,
-		DelayMode:          domain.DelayMode(cfg.Bet.DelayMode),
-		Delay:              cfg.Bet.Delay,
-		MinimumPoints:      cfg.Bet.MinimumPoints,
-		FilterCondition:    mergeFilterCondition(nil, cfg.Bet.FilterCondition),
-	}
-	betSettings.Default()
-
 	streamerSettings := domain.StreamerSettings{
 		MakePredictions: cfg.BettingMakePredictions,
 		FollowRaid:      cfg.FollowRaid,
@@ -83,7 +69,7 @@ func buildBaseStreamerSettings(cfg config) domain.StreamerSettings {
 		ClaimMoments:    cfg.ClaimMoments,
 		WatchStreak:     true,
 		CommunityGoals:  cfg.CommunityGoals,
-		Bet:             betSettings,
+		Bet:             mergeBetSettings(domain.BetSettings{}, cfg.Bet),
 		IRCMode:         parseChatPresence(cfg.IRCMode, domain.IRCModeOnline),
 	}
 	streamerSettings.Default()
@@ -101,7 +87,7 @@ func buildOverrideSettings(base domain.StreamerSettings, overrides map[string]st
 	sort.Strings(names)
 	overrideSettings := make(map[string]domain.StreamerSettings, len(overrides))
 	for _, name := range names {
-		key := strings.ToLower(strings.TrimSpace(name))
+		key := domain.LoginKey(name)
 		if key == "" {
 			continue
 		}

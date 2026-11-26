@@ -39,17 +39,23 @@ func (t *Client) IsStreamLive(channelID string) (bool, error) {
 	if channelID == "" {
 		return false, fmt.Errorf("missing channel id")
 	}
-	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.WithIsStreamLiveQuery)
-	if op.Variables == nil {
-		op.Variables = map[string]interface{}{}
-	}
-	op.Variables["id"] = channelID
-	var resp gqlIsStreamLiveResponse
-	if err := t.PostGQLDecode(op, &resp); err != nil {
+	resp, err := t.liveStream(channelID)
+	if err != nil {
 		return false, err
 	}
 	if resp.Data.User == nil {
 		return false, nil
 	}
 	return resp.Data.User.Stream != nil, nil
+}
+
+// liveStream asks Twitch for the channel's stream, which the answer has only
+// while the channel is live.
+func (t *Client) liveStream(channelID string) (*gqlIsStreamLiveResponse, error) {
+	op := twitchapi.GQLOperations.WithIsStreamLiveQuery.With(map[string]interface{}{"id": channelID})
+	var resp gqlIsStreamLiveResponse
+	if err := t.PostGQLDecode(op, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

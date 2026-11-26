@@ -3,9 +3,7 @@ package streak
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -30,7 +28,7 @@ type WarmStartCache struct {
 
 func NewWarmStartCache(accountName, path string) *WarmStartCache {
 	return &WarmStartCache{
-		accountName: strings.ToLower(strings.TrimSpace(accountName)),
+		accountName: domain.LoginKey(accountName),
 		path:        path,
 		entries:     make(map[string]WarmStartEntry),
 	}
@@ -59,17 +57,13 @@ func LoadWarmStartCache(path, accountName string) *WarmStartCache {
 	return cache
 }
 
-func (c *WarmStartCache) key(streamerLogin string) string {
-	return strings.ToLower(strings.TrimSpace(streamerLogin))
-}
-
 func (c *WarmStartCache) ResolvedEntryFor(streamer *domain.Streamer, now time.Time) (WarmStartEntry, bool) {
 	if c == nil || streamer == nil {
 		return WarmStartEntry{}, false
 	}
 
 	c.mu.Lock()
-	entry, ok := c.entries[c.key(streamer.Username)]
+	entry, ok := c.entries[domain.LoginKey(streamer.Username)]
 	c.mu.Unlock()
 	if !ok || !entryResolved(entry, streamer, now) {
 		return WarmStartEntry{}, false
@@ -83,7 +77,7 @@ func (c *WarmStartCache) Get(streamerLogin string) (WarmStartEntry, bool) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	entry, ok := c.entries[c.key(streamerLogin)]
+	entry, ok := c.entries[domain.LoginKey(streamerLogin)]
 	return entry, ok
 }
 
@@ -91,13 +85,9 @@ func (c *WarmStartCache) UpdateFromStreamer(streamer *domain.Streamer, checkedAt
 	if c == nil || streamer == nil {
 		return
 	}
-	if checkedAt.IsZero() {
-		checkedAt = time.Now()
-	}
+	entry := entryFromStreamer(c.accountName, streamer, orNow(checkedAt))
 
-	entry := entryFromStreamer(c.accountName, streamer, checkedAt)
-
-	key := c.key(streamer.Username)
+	key := domain.LoginKey(streamer.Username)
 	c.mu.Lock()
 	current, exists := c.entries[key]
 	if !exists || current != entry {
@@ -125,9 +115,6 @@ func (c *WarmStartCache) SaveIfDirty() error {
 		return entries[i].StreamerLogin < entries[j].StreamerLogin
 	})
 
-	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
-		return err
-	}
 	if err := jsonfile.SaveJSON(c.path, warmStartFile{
 		Version: warmStartCacheVersion,
 		Entries: entries,

@@ -5,16 +5,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonfile"
 )
 
 func (t *Login) saveCookies(cookiesPath string) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	if err := os.MkdirAll(filepath.Dir(cookiesPath), 0o755); err != nil {
-		return err
-	}
 	t.ensureSessionCookiesLocked()
 
 	// The jar hands back names and values only, so where a cookie belongs is
@@ -43,7 +41,7 @@ func (t *Login) saveCookies(cookiesPath string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(cookiesPath, raw, 0o600)
+	return jsonfile.Write(cookiesPath, raw, 0o600)
 }
 
 func (t *Login) loadCookies(cookiesPath string) error {
