@@ -59,8 +59,8 @@ Explained in [predictions](predictions.md).
 | `bet.max_points` | `50000` | Most points placed on one bet. |
 | `bet.minimum_points` | `0` | Do not bet while the balance is at or below this. |
 | `bet.stealth_mode` | `false` | Keep the stake under the highest bet on the outcome. |
-| `bet.delay_mode` | `"FROM_END"` | What `delay` counts from: `FROM_END`, `FROM_START` or `PERCENTAGE`. |
-| `bet.delay` | `6` | Seconds, or a fraction of the window with `PERCENTAGE`. |
+| `bet.delay_mode` | `"PERCENTAGE"` | What `delay` counts from: `PERCENTAGE`, `FROM_START` or `FROM_END`. |
+| `bet.delay` | `0.5` | A fraction of the window with `PERCENTAGE` (`0.5` is halfway), otherwise seconds. |
 | `bet.filter_condition` | off | Skip a bet unless a figure meets a rule: `by`, `where`, `value`. |
 
 ## Notifications
@@ -121,6 +121,7 @@ Renamed:
 | `disable_at_in_nickname` | `mention_without_at` |
 | `watch_queue_logging` | `show_watch_queue` |
 | `show_username_in_console` | `show_username`. It did nothing in older versions; it now does what it says. |
+| `bet.delay_mode` `FROM_END` with `bet.delay` `6` | `PERCENTAGE` with `0.5`, the new default: see [when the bet is placed](predictions.md#when-the-bet-is-placed). |
 | `debug` with `debug_deep` | `debug`: `false`, `true` or `"full"`. `"full"` is what `debug` and `debug_deep` both on used to be. |
 
 If a file has both the old and the new key, the new one is used.

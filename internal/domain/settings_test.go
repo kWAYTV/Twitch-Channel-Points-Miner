@@ -29,8 +29,8 @@ func TestStreamerSettings_Default(t *testing.T) {
 				MaxPoints:     intPtr(50000),
 				MinimumPoints: intPtr(0),
 				StealthMode:   boolPtr(false),
-				Delay:         floatPtr(6),
-				DelayMode:     DelayModeFromEnd,
+				Delay:         floatPtr(0.5),
+				DelayMode:     DelayModePercentage,
 			},
 			IRCMode: IRCModeOnline,
 		}

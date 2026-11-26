@@ -1,5 +1,7 @@
 package main
 
+import "github.com/kWAYTV/twitch-points-miner/internal/domain"
+
 // Keys whose behaviour is now fixed. They are dropped from the file.
 var removedSettings = []string{
 	"password",
@@ -51,7 +53,23 @@ func migrateSettings(settings map[string]interface{}) bool {
 	}
 	changed = liftAnonymizeLogs(settings) || changed
 	changed = mergeDebugDeep(settings) || changed
+	if changed {
+		moveOffOldBetTiming(group(settings, "bet"))
+	}
 	return changed
+}
+
+// moveOffOldBetTiming gives a file from an older version the current default
+// bet timing when it still has the old default, six seconds before the end,
+// which lost the bet whenever a channel closed betting early. It runs only
+// while such a file is converted, so the old timing can still be chosen by
+// writing it in a current file.
+func moveOffOldBetTiming(bet map[string]interface{}) {
+	if bet == nil || bet["delay_mode"] != "FROM_END" || bet["delay"] != 6.0 {
+		return
+	}
+	bet["delay_mode"] = string(domain.DefaultBetDelayMode)
+	bet["delay"] = domain.DefaultBetDelay
 }
 
 // group returns the object under key, or nil when there is none.

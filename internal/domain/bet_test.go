@@ -22,8 +22,8 @@ func TestBetSettings_Default(t *testing.T) {
 			MaxPoints:     intPtr(50000),
 			MinimumPoints: intPtr(0),
 			StealthMode:   boolPtr(false),
-			Delay:         floatPtr(6),
-			DelayMode:     DelayModeFromEnd,
+			Delay:         floatPtr(0.5),
+			DelayMode:     DelayModePercentage,
 		}
 		if !reflect.DeepEqual(settings, want) {
 			t.Errorf("Default() left %s, want %s", describe(settings), describe(want))

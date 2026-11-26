@@ -74,8 +74,10 @@ const (
 	DefaultBetMaxPoints     = 50000
 	DefaultBetMinimumPoints = 0
 	DefaultBetStealthMode   = false
-	DefaultBetDelayMode     = DelayModeFromEnd
-	DefaultBetDelay         = 6.0
+	// Halfway through the window: a channel can close betting before the
+	// window ends, and a bet left for the last seconds is then never placed.
+	DefaultBetDelayMode = DelayModePercentage
+	DefaultBetDelay     = 0.5
 )
 
 func (b *BetSettings) Default() {

@@ -119,6 +119,30 @@ func TestMigrateSettings(t *testing.T) {
 			wantChanged: true,
 		},
 		{
+			name:        "an older file with the old default bet timing",
+			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 6.0}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "PERCENTAGE", "delay": 0.5}},
+			wantChanged: true,
+		},
+		{
+			name:        "an older file with another bet timing",
+			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 10.0}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 10.0}},
+			wantChanged: true,
+		},
+		{
+			name:        "an older file with six seconds from the start",
+			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"delay_mode": "FROM_START", "delay": 6.0}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "FROM_START", "delay": 6.0}},
+			wantChanged: true,
+		},
+		{
+			name:        "a current file with the old default bet timing, chosen on purpose",
+			settings:    map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 6.0}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 6.0}},
+			wantChanged: false,
+		},
+		{
 			name:        "show_username_in_console, renamed",
 			settings:    map[string]interface{}{"show_username_in_console": true},
 			want:        map[string]interface{}{"show_username": true},

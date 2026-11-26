@@ -24,8 +24,8 @@
     "max_points": 50000,
     "minimum_points": 0,
     "stealth_mode": false,
-    "delay_mode": "FROM_END",
-    "delay": 6,
+    "delay_mode": "PERCENTAGE",
+    "delay": 0.5,
     "filter_condition": {
       "by": null,
       "where": null,
