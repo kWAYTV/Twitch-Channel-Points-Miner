@@ -84,6 +84,15 @@
         <ul id="log"></ul>
         <button id="more" type="button" hidden></button>
       </section>
+      <section class="logsec" id="bets" aria-labelledby="bets-h" hidden>
+        <div class="loghead"><h2 id="bets-h">Bets by strategy</h2><span class="lbl num" id="bets-n"></span></div>
+        <div class="betscroll">
+          <table id="bets-table">
+            <thead><tr><th scope="col">Strategy</th><th scope="col">Bets</th><th scope="col">Won</th><th scope="col">Lost</th><th scope="col">Refunded</th><th scope="col">Win rate</th><th scope="col">Staked</th><th scope="col">Net</th></tr></thead>
+            <tbody id="bets-rows"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </main>
 </div>

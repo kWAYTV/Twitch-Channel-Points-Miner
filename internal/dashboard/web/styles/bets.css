@@ -1,0 +1,9 @@
+#bets-table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 13px; }
+#bets-table th, #bets-table td { padding: 8px 0 8px 16px; border-top: 1px solid var(--hair); text-align: right; white-space: nowrap; }
+#bets-table th:first-child { padding-left: 0; text-align: left; }
+#bets-table thead th { border-top: 0; font-size: 12px; font-weight: 400; color: var(--muted); }
+#bets-table tbody th { font-weight: 500; color: var(--ink); }
+#bets-table td { color: var(--ink2); }
+#bets-table td.up { color: var(--up); }
+#bets-table td.down { color: var(--down); }
+.betscroll { overflow-x: auto; }

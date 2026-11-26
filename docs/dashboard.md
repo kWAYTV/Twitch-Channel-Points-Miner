@@ -24,6 +24,8 @@ The environment variable `TCPM_DASHBOARD_ADDR` (for example `0.0.0.0:8080`) over
 
 History is stored in the `analytics/` folder as plain JSONL files, per streamer. A balance snapshot is added every 5 minutes, and each gain, bet and claim as it happens.
 
+Every bet is also kept in `analytics/bets.jsonl` once its result is known: the strategy, the stake, how the voters and the pool stood, and what it won or lost. Under the activity log, **Bets by strategy** adds them up, so you can see whether a strategy is actually earning points.
+
 - To reset one streamer, delete their files in `analytics/`.
 - To start over, delete the folder.
 - To keep history across reinstalls, keep the folder (in Docker it is inside `./data`).
@@ -32,9 +34,10 @@ The dashboard shows real streamer names even with `anonymize_logs` on; that opti
 
 ## JSON API
 
-The page reads two endpoints, which you can use yourself:
+The page reads three endpoints, which you can use yourself:
 
 | Request | Returns |
 |---|---|
 | `GET /api/streamers` | Every streamer with their current balance. |
+| `GET /api/bets` | How each bet strategy has done over every settled bet, and the 50 newest bets with the figures they were decided from. |
 | `GET /api/streamer/{name}?range=24h` | One streamer's balance series and events. `range` is `24h` (default), `7d`, `30d` or `all`. |

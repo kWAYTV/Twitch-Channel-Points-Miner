@@ -3,6 +3,8 @@ package miner
 import (
 	"sync"
 	"testing"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 type recordedPoint struct {
@@ -29,6 +31,7 @@ type fakeAnalyticsSink struct {
 	Points    []recordedPoint
 	Snapshots []recordedSnapshot
 	Events    []recordedEvent
+	Bets      []prediction.SettledBet
 }
 
 var _ AnalyticsSink = (*fakeAnalyticsSink)(nil)
@@ -49,6 +52,12 @@ func (f *fakeAnalyticsSink) RecordEvent(event, message string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.Events = append(f.Events, recordedEvent{Event: event, Message: message})
+}
+
+func (f *fakeAnalyticsSink) RecordBet(bet prediction.SettledBet) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.Bets = append(f.Bets, bet)
 }
 
 // installAnalyticsSink installs a fresh sink for one test and removes it afterwards.

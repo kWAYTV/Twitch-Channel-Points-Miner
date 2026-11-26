@@ -19,6 +19,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.handleIndex)
 	mux.HandleFunc("GET /api/streamers", s.handleStreamers)
 	mux.HandleFunc("GET /api/streamer/{name}", s.handleStreamer)
+	mux.HandleFunc("GET /api/bets", s.handleBets)
 	return mux
 }
 

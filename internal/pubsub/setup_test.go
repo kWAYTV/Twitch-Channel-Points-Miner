@@ -7,6 +7,7 @@ import (
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/humanize"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 )
 
@@ -58,6 +59,7 @@ type harness struct {
 	gains    []gain
 	presence []presence
 	timers   []timer
+	settled  []prediction.SettledBet
 }
 
 func setup(w world) *harness {
@@ -89,10 +91,15 @@ func setup(w world) *harness {
 	onPresence := func(s *domain.Streamer, online bool, reason string) {
 		h.presence = append(h.presence, presence{s.Username, online, reason})
 	}
-	if w.noHandlers {
-		onGain, onPresence = nil, nil
+	handlers := Handlers{
+		Gain:       onGain,
+		Presence:   onPresence,
+		BetSettled: func(bet prediction.SettledBet) { h.settled = append(h.settled, bet) },
 	}
-	h.client = newClient(env, h.account, logger, privacy.New(w.anonymise), w.streamers, onGain, onPresence)
+	if w.noHandlers {
+		handlers = Handlers{}
+	}
+	h.client = newClient(env, h.account, logger, privacy.New(w.anonymise), w.streamers, handlers)
 	return h
 }
 

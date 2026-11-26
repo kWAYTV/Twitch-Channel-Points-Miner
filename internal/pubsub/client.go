@@ -58,6 +58,17 @@ type Client struct {
 	predMu          sync.Mutex
 	onGain          func(streamer *domain.Streamer, earned int, reason string, balance int)
 	onPresence      func(streamer *domain.Streamer, online bool, reason string)
+	onBetSettled    func(bet prediction.SettledBet)
+}
+
+// Handlers are what the client tells its owner about. Any of them may be nil.
+type Handlers struct {
+	// Gain is called when points are earned or spent on a channel.
+	Gain func(streamer *domain.Streamer, earned int, reason string, balance int)
+	// Presence is called when a channel goes online or offline.
+	Presence func(streamer *domain.Streamer, online bool, reason string)
+	// BetSettled is called once for each bet when its result is known.
+	BetSettled func(bet prediction.SettledBet)
 }
 
 func (p *Client) debugf(format string, args ...interface{}) {
@@ -91,13 +102,12 @@ func NewClient(
 	logger Logger,
 	anonymizer *privacy.Anonymizer,
 	streamers []*domain.Streamer,
-	onGain func(*domain.Streamer, int, string, int),
-	onPresence func(*domain.Streamer, bool, string),
+	handlers Handlers,
 	human *humanize.Timing,
 ) *Client {
 	env := twitchEnvironment()
 	env.human = human
-	return newClient(env, account, logger, anonymizer, streamers, onGain, onPresence)
+	return newClient(env, account, logger, anonymizer, streamers, handlers)
 }
 
 func newClient(
@@ -106,8 +116,7 @@ func newClient(
 	logger Logger,
 	anonymizer *privacy.Anonymizer,
 	streamers []*domain.Streamer,
-	onGain func(*domain.Streamer, int, string, int),
-	onPresence func(*domain.Streamer, bool, string),
+	handlers Handlers,
 ) *Client {
 	streamerMap := make(map[string]*domain.Streamer)
 	for _, s := range streamers {
@@ -125,8 +134,9 @@ func newClient(
 		reacting:        make(map[string]struct{}),
 		predictions:     make(map[string]*prediction.Event),
 		seenPredictions: make(map[string]struct{}),
-		onGain:          onGain,
-		onPresence:      onPresence,
+		onGain:          handlers.Gain,
+		onPresence:      handlers.Presence,
+		onBetSettled:    handlers.BetSettled,
 	}
 }
 

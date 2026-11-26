@@ -50,7 +50,7 @@ function setData(d) {
 async function refresh() {
   try {
     // List and chart are fetched together; a stale selection is corrected by the list.
-    await Promise.all([loadList(), state.sel ? load(state.sel, state.range, 0).catch(() => {}) : null]);
+    await Promise.all([loadList(), loadBets(), state.sel ? load(state.sel, state.range, 0).catch(() => {}) : null]);
     await show(REFRESH_MS / 2);
     text($('status'), 'Updated ' + dfClock.format(new Date()));
   } catch {

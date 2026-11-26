@@ -8,6 +8,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 	"github.com/kWAYTV/twitch-points-miner/internal/notify"
+	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 )
 
 // AnalyticsSink receives point changes and log events for the analytics dashboard.
@@ -16,6 +17,7 @@ type AnalyticsSink interface {
 	RecordPoint(streamer string, points, delta int, reason string)
 	RecordSnapshot(streamer string, points int, online bool)
 	RecordEvent(event, message string)
+	RecordBet(bet prediction.SettledBet)
 }
 
 const analyticsSnapshotInterval = 5 * time.Minute
@@ -43,6 +45,13 @@ func currentAnalyticsSink() AnalyticsSink {
 		return h.sink
 	}
 	return nil
+}
+
+// recordSettledBet passes a bet whose result is known on to the dashboard.
+func recordSettledBet(bet prediction.SettledBet) {
+	if sink := currentAnalyticsSink(); sink != nil {
+		sink.RecordBet(bet)
+	}
 }
 
 func (m *Miner) analyticsRecordPoint(streamer *domain.Streamer, delta int, reason string) {

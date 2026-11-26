@@ -17,6 +17,9 @@ func (p *Client) logPredictionResult(event *prediction.Event, result map[string]
 	}
 	gained, _, _, resultType, resultString := event.ParseResult(result)
 	event.BetConfirmed = true
+	if p.onBetSettled != nil {
+		p.onBetSettled(event.Settled(resultType, gained))
+	}
 	decisionLabel := event.DecisionLabel()
 	if decisionLabel == "" {
 		decisionLabel = fmt.Sprintf("Decision #%d", event.Decision.Choice+1)

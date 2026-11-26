@@ -23,6 +23,7 @@ var pageStyles = []string{
 	"streamers.css",
 	"balance.css",
 	"activity.css",
+	"bets.css",
 	"phone.css",
 }
 
@@ -39,6 +40,7 @@ var pageScripts = []string{
 	"balance.js",
 	"legend.js",
 	"activity.js",
+	"bets.js",
 	"chart-scale.js",
 	"chart.js",
 	"chart-hover.js",
