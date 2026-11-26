@@ -12,8 +12,13 @@ import (
 type ClaimedDrop struct {
 	RewardName    string
 	CampaignName  string
+	GameName      string
 	CurrentValue  int
 	RequiredValue int
+	// AccountNotConnected is set when Twitch accepted the claim but the
+	// Twitch account is not connected to the game's account, so the reward
+	// was not handed over. The drop stays in the inventory until it is.
+	AccountNotConnected bool
 }
 
 type DropStatus struct {
@@ -37,12 +42,25 @@ const (
 // ClaimDrop claims a single drop instance, and reports whether the account
 // has it afterwards.
 func (t *Client) ClaimDrop(dropInstanceID string) (bool, error) {
-	status, err := t.claimDrop(dropInstanceID)
-	return status == dropClaimed || status == dropAlreadyClaimed, err
+	answer, err := t.claimDrop(dropInstanceID)
+	return answer.settled() && answer.accountConnected, err
+}
+
+// dropClaimAnswer is what Twitch said to a claim.
+type dropClaimAnswer struct {
+	status string
+	// accountConnected is false only when Twitch says so: the claim was
+	// accepted, but nothing is handed over until the game account is linked.
+	accountConnected bool
+}
+
+// settled reports whether asking again would change nothing.
+func (a dropClaimAnswer) settled() bool {
+	return a.status == dropClaimed || a.status == dropAlreadyClaimed
 }
 
 // claimDrop asks Twitch for the drop and returns its answer.
-func (t *Client) claimDrop(dropInstanceID string) (string, error) {
+func (t *Client) claimDrop(dropInstanceID string) (dropClaimAnswer, error) {
 	op := twitchapi.ClonePersistedOperation(twitchapi.GQLOperations.DropsPageClaimDropRewards)
 	if op.Variables == nil {
 		op.Variables = map[string]interface{}{}
@@ -50,10 +68,12 @@ func (t *Client) claimDrop(dropInstanceID string) (string, error) {
 	op.Variables["input"] = map[string]interface{}{"dropInstanceID": dropInstanceID}
 	resp, err := t.PostGQL(op)
 	if err != nil {
-		return "", err
+		return dropClaimAnswer{}, err
 	}
 	status, _ := jsonvalue.At(resp, "data.claimDropRewards.status").(string)
-	return status, nil
+	connected, said := jsonvalue.At(resp, "data.claimDropRewards.isUserAccountConnected").(bool)
+	t.debugf("drop claim: Twitch answered %s, account connected: %v", status, connected || !said)
+	return dropClaimAnswer{status: status, accountConnected: connected || !said}, nil
 }
 
 func (t *Client) ClaimAllDropsFromInventory() ([]ClaimedDrop, error) {
@@ -80,17 +100,19 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 			}
 			continue
 		}
-		if answer == dropClaimed || answer == dropAlreadyClaimed {
+		if answer.settled() {
 			t.dropClaims.settle(status.DropInstanceID)
 		}
 		// Only a drop claimed just now is reported: one that was claimed
 		// before is nothing new.
-		if answer == dropClaimed {
+		if answer.status == dropClaimed {
 			claimedDrops = append(claimedDrops, ClaimedDrop{
-				RewardName:    status.RewardName,
-				CampaignName:  status.CampaignName,
-				CurrentValue:  status.CurrentValue,
-				RequiredValue: status.RequiredValue,
+				RewardName:          status.RewardName,
+				CampaignName:        status.CampaignName,
+				GameName:            status.GameName,
+				CurrentValue:        status.CurrentValue,
+				RequiredValue:       status.RequiredValue,
+				AccountNotConnected: !answer.accountConnected,
 			})
 			t.pause(time.Duration(random.Int(5, 10)) * time.Second)
 		}

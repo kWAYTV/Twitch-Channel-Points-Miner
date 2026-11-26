@@ -18,8 +18,8 @@ const (
 var (
 	tokenStatus = DropStatus{DropInstanceID: "drop-1", RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 180, RequiredValue: 180, Claimable: true}
 	crateStatus = DropStatus{DropInstanceID: "drop-2", RewardName: "Crate", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 60, RequiredValue: 60, Claimable: true}
-	tokenDrop   = ClaimedDrop{RewardName: "Token", CampaignName: "Summer", CurrentValue: 180, RequiredValue: 180}
-	crateDrop   = ClaimedDrop{RewardName: "Crate", CampaignName: "Summer", CurrentValue: 60, RequiredValue: 60}
+	tokenDrop   = ClaimedDrop{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 180, RequiredValue: 180}
+	crateDrop   = ClaimedDrop{RewardName: "Crate", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 60, RequiredValue: 60}
 )
 
 func TestClient_ClaimDrop(t *testing.T) {
@@ -192,6 +192,37 @@ func TestClient_ClaimAllDropsFromInventoryWithStatuses(t *testing.T) {
 		}
 		if got := fake.twitch.sent("DropsPage_ClaimDropRewards"); len(got) != 0 {
 			t.Errorf("drop claims sent = %v, want none", got)
+		}
+	})
+
+	t.Run("a drop of a game the account is not connected to", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(`{"data":{"claimDropRewards":{"status":"ELIGIBLE_FOR_ALL","isUserAccountConnected":false}}}`))
+
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		want := []ClaimedDrop{{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 180, RequiredValue: 180, AccountNotConnected: true}}
+		if !equal(claimed, want) {
+			t.Errorf("claimed = %+v, want %+v", claimed, want)
+		}
+	})
+
+	t.Run("a drop of a game the account is connected to", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(inventoryOneDrop))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(`{"data":{"claimDropRewards":{"status":"ELIGIBLE_FOR_ALL","isUserAccountConnected":true}}}`))
+
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if want := []ClaimedDrop{tokenDrop}; !equal(claimed, want) {
+			t.Errorf("claimed = %+v, want %+v", claimed, want)
 		}
 	})
 

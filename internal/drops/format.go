@@ -16,6 +16,13 @@ func formatClaimLine(drop twitch.ClaimedDrop) string {
 	if campaign == "" {
 		campaign = "Unknown Campaign"
 	}
+	if drop.AccountNotConnected {
+		account := "the game's account"
+		if drop.GameName != "" {
+			account = "your " + drop.GameName + " account"
+		}
+		return fmt.Sprintf("Drop %s (%s) is ready but not received: connect %s at twitch.tv/drops/inventory", reward, campaign, account)
+	}
 	progress := formatDropProgress(drop.CurrentValue, drop.RequiredValue)
 	percent := progressPercent(drop.CurrentValue, drop.RequiredValue)
 	return fmt.Sprintf("Claim %s (%s) %s (%d%%)", reward, campaign, progress, percent)

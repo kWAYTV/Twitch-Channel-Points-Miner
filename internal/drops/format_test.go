@@ -18,6 +18,16 @@ func TestFormatClaimLine(t *testing.T) {
 			"Claim Token (Summer) 180/180 (100%)",
 		},
 		{
+			"a drop whose game account is not connected",
+			twitch.ClaimedDrop{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 180, RequiredValue: 180, AccountNotConnected: true},
+			"Drop Token (Summer) is ready but not received: connect your Tanks account at twitch.tv/drops/inventory",
+		},
+		{
+			"a drop whose game account is not connected, the game unknown",
+			twitch.ClaimedDrop{RewardName: "Token", CampaignName: "Summer", AccountNotConnected: true},
+			"Drop Token (Summer) is ready but not received: connect the game's account at twitch.tv/drops/inventory",
+		},
+		{
 			"no reward name",
 			twitch.ClaimedDrop{CampaignName: "Summer", CurrentValue: 180, RequiredValue: 180},
 			"Claim Drop (Summer) 180/180 (100%)",
