@@ -86,6 +86,7 @@ func (p *Client) logPlacedBet(event *prediction.Event, decision prediction.Decis
 	if outcome == "" {
 		outcome = decision.OutcomeID
 	}
+	outcome += chanceNote(event.Basis)
 	if p.anonymizer.Enabled() {
 		p.logger.EmojiEventf(":four_leaf_clover:", events.EventBetGeneral, "Place bet on: %s for %s", outcome, p.anonymizer.Shown(event.Streamer))
 		return

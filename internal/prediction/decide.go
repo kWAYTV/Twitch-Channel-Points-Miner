@@ -18,8 +18,9 @@ func (p *Event) Decide(balance int) Decision {
 		settings.Strategy = domain.DefaultBetStrategy
 	}
 	var choice, amount int
+	var chance float64
 	if settings.Strategy == domain.StrategyKelly {
-		choice, amount = kellyDecision(p.Outcomes, balance, settings)
+		choice, amount, chance = kellyDecision(p.Outcomes, balance, settings)
 	} else {
 		choice = selectOutcome(p.Outcomes, settings)
 		if choice >= 0 && choice < len(p.Outcomes) {
@@ -29,6 +30,7 @@ func (p *Event) Decide(balance int) Decision {
 	if choice < 0 || choice >= len(p.Outcomes) {
 		return decision
 	}
+	p.Basis = basisOf(p.Outcomes, choice, chance)
 
 	decision = Decision{
 		Choice:    choice,
@@ -41,14 +43,23 @@ func (p *Event) Decide(balance int) Decision {
 
 // kellyDecision is the outcome and stake of the KELLY strategy. When no
 // outcome is worth a bet it still names the outcome most viewers chose, with
-// a stake of 0, so the log can say what was passed over.
-func kellyDecision(outcomes []Outcome, balance int, settings domain.BetSettings) (choice, amount int) {
+// a stake of 0, so the log can say what was passed over. chance is the
+// estimate the choice rests on.
+func kellyDecision(outcomes []Outcome, balance int, settings domain.BetSettings) (choice, amount int, chance float64) {
 	choice, full := kellyChoice(outcomes, balance)
 	if choice < 0 {
-		return maxIndex(outcomes, func(o Outcome) float64 { return float64(o.TotalUsers) }), 0
+		choice = maxIndex(outcomes, func(o Outcome) float64 { return float64(o.TotalUsers) })
+	} else {
+		amount = underTopBet(kellyAmount(full, balance, settings), settings, outcomes[choice].TopPoints)
 	}
-	amount = kellyAmount(full, balance, settings)
-	return choice, underTopBet(amount, settings, outcomes[choice].TopPoints)
+	if choice < 0 {
+		return choice, 0, 0
+	}
+	totalVoters := 0
+	for _, outcome := range outcomes {
+		totalVoters += outcome.TotalUsers
+	}
+	return choice, amount, wilsonLowerBound(outcomes[choice].TotalUsers, totalVoters)
 }
 
 // underTopBet lowers a stake to one point under the largest bet on the

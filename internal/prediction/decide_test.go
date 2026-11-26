@@ -28,6 +28,7 @@ func TestEvent_Decide(t *testing.T) {
 			Streamer: streamer,
 			Outcomes: []Outcome{{ID: "a", TotalUsers: 10}, {ID: "b", TotalUsers: 30}},
 			Decision: Decision{Choice: 1, OutcomeID: "b", Amount: 50},
+			Basis:    Basis{Voters: 30, TotalVoters: 40},
 		}
 		if !reflect.DeepEqual(event, wantEvent) {
 			t.Errorf("event = %+v, want %+v", event, wantEvent)

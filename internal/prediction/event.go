@@ -25,6 +25,7 @@ type Event struct {
 	WindowSeconds float64
 	Outcomes      []Outcome
 	Decision      Decision
+	Basis         Basis
 	BetPlaced     bool
 	BetConfirmed  bool
 	ResultType    string

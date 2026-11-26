@@ -196,7 +196,7 @@ func TestKellyDecision(t *testing.T) {
 	t.Run("an underpriced outcome", func(t *testing.T) {
 		// Full Kelly is a fifth of 10,000; a quarter of that is 500, which is
 		// also the 5 percent limit.
-		choice, amount := kellyDecision(underpriced, 10_000, domain.BetSettings{})
+		choice, amount, _ := kellyDecision(underpriced, 10_000, domain.BetSettings{})
 
 		if choice != 0 || amount != 500 {
 			t.Errorf("kellyDecision = %d, %d, want 0, 500", choice, amount)
@@ -204,7 +204,7 @@ func TestKellyDecision(t *testing.T) {
 	})
 
 	t.Run("an underpriced outcome, max_points lower", func(t *testing.T) {
-		choice, amount := kellyDecision(underpriced, 10_000, domain.BetSettings{MaxPoints: intPtr(120)})
+		choice, amount, _ := kellyDecision(underpriced, 10_000, domain.BetSettings{MaxPoints: intPtr(120)})
 
 		if choice != 0 || amount != 120 {
 			t.Errorf("kellyDecision = %d, %d, want 0, 120", choice, amount)
@@ -212,7 +212,7 @@ func TestKellyDecision(t *testing.T) {
 	})
 
 	t.Run("an underpriced outcome, stealth mode on", func(t *testing.T) {
-		choice, amount := kellyDecision(underpriced, 10_000, domain.BetSettings{StealthMode: boolPtr(true)})
+		choice, amount, _ := kellyDecision(underpriced, 10_000, domain.BetSettings{StealthMode: boolPtr(true)})
 
 		if choice != 0 || amount != 39 {
 			t.Errorf("kellyDecision = %d, %d, want 0, 39: one under the top bet of 40", choice, amount)
@@ -220,7 +220,7 @@ func TestKellyDecision(t *testing.T) {
 	})
 
 	t.Run("nothing underpriced", func(t *testing.T) {
-		choice, amount := kellyDecision(fair, 10_000, domain.BetSettings{})
+		choice, amount, _ := kellyDecision(fair, 10_000, domain.BetSettings{})
 
 		if choice != 1 || amount != 0 {
 			t.Errorf("kellyDecision = %d, %d, want 1, 0: the most voted outcome, with no stake", choice, amount)

@@ -43,6 +43,10 @@ func decideBet(event *prediction.Event) (prediction.Decision, *skippedBet) {
 		reason := "nothing to win: no points on any other outcome"
 		return decision, &skippedBet{events.EventBetFilters, reason, reason}
 	}
+	if bet.Strategy == domain.StrategyKelly && decision.Amount == 0 && streamer.ChannelPoints >= prediction.MinimumStake {
+		reason := "no outcome is underpriced enough to be worth a bet"
+		return decision, &skippedBet{events.EventBetFilters, reason, reason + passedOver(event)}
+	}
 	if decision.Amount < prediction.MinimumStake {
 		return decision, &skippedBet{events.EventBetFilters, "below Twitch minimum", stakeTooSmall(streamer, decision.Amount)}
 	}
@@ -84,9 +88,6 @@ func filterSkip(reason string, compared float64) *skippedBet {
 func stakeTooSmall(streamer *domain.Streamer, stake int) string {
 	if streamer.ChannelPoints < prediction.MinimumStake {
 		return fmt.Sprintf("balance %d below Twitch minimum %d", streamer.ChannelPoints, prediction.MinimumStake)
-	}
-	if streamer.Settings.Bet.Strategy == domain.StrategyKelly && stake == 0 {
-		return "no outcome is underpriced enough to be worth a bet"
 	}
 	if limit := streamer.Settings.Bet.MaxPoints; limit != nil && *limit < prediction.MinimumStake {
 		return fmt.Sprintf("max_points %d below Twitch minimum %d", *limit, prediction.MinimumStake)

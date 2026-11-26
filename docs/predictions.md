@@ -55,6 +55,8 @@ A prediction with 6 voters and one with 600 are not the same bet: one voter move
 
 So a small prediction is left alone unless its voters are nearly unanimous, and a large one is judged by its voters. A quarter of the full stake is what is bet, within your limits. When even the full stake would be under Twitch's minimum of 10 points, no bet is placed.
 
+The log shows what each decision rested on. A bet line ends with the estimate against the pool, `Chance: 63% vs pool 50%`, and a skip names the outcome that came closest: `no outcome is underpriced enough to be worth a bet (best: Yes, chance 42% vs pool 67%)`.
+
 The stake therefore moves with three things at once: your balance on the channel, the size of the pool (a stake that is large against the pool lowers its own payout), and how many viewers voted.
 
 The estimate is the weak part: nothing published shows that viewer counts predict Twitch outcomes better than the pool does. The strategy is disciplined about when and how much to bet; it does not make the estimate right.
