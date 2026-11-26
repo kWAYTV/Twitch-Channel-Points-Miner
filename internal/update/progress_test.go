@@ -144,10 +144,7 @@ func TestProgressWriter_Done(t *testing.T) {
 
 		progress.Done()
 
-		checkLog(t, log, []string{
-			"auto-update: download 100% (2.0/2.0 MB)",
-			"auto-update: download 100% (2.0/2.0 MB)",
-		})
+		checkLog(t, log, []string{"auto-update: download 100% (2.0/2.0 MB)"})
 	})
 
 	t.Run("after half the bytes", func(t *testing.T) {

@@ -242,6 +242,34 @@ func TestClient_GetFollowers(t *testing.T) {
 		}
 	})
 
+	t.Run("follows that are not an object", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("ChannelFollows", firstPage, ok(`{"data":{"user":{"follows":"none"}}}`))
+
+		follows, err := client.GetFollowers(50, domain.FollowersOrderDESC)
+
+		if err != nil {
+			t.Fatalf("GetFollowers error = %v, want none", err)
+		}
+		if follows != nil {
+			t.Errorf("GetFollowers = %q, want none", follows)
+		}
+	})
+
+	t.Run("an entry that is not an object among follows", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("ChannelFollows", firstPage, ok(`{"data":{"user":{"follows":{"edges":["broken",{"cursor":"c2","node":{"login":"beta"}}],"pageInfo":{"hasNextPage":false}}}}}`))
+
+		follows, err := client.GetFollowers(50, domain.FollowersOrderDESC)
+
+		if err != nil {
+			t.Fatalf("GetFollowers error = %v, want none", err)
+		}
+		if want := []string{"beta"}; !equal(follows, want) {
+			t.Errorf("GetFollowers = %q, want %q", follows, want)
+		}
+	})
+
 	t.Run("two pages of follows", func(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.answer("ChannelFollows", firstPage, ok(`{"data":{"user":{"follows":{"edges":[{"cursor":"c1","node":{"login":"Alpha"}},{"cursor":"c2","node":{"login":"beta"}}],"pageInfo":{"hasNextPage":true}}}}}`))

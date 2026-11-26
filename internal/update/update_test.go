@@ -103,7 +103,6 @@ func TestUpdater_run(t *testing.T) {
 			"auto-update: found newer version v1.7.0 (asset " + linuxAsset + ")",
 			"auto-update: downloading update (0.0 MB)...",
 			"auto-update: download 100% (0.0/0.0 MB)",
-			"auto-update: download 100% (0.0/0.0 MB)",
 		})
 	})
 

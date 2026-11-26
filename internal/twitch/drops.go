@@ -113,10 +113,11 @@ func (t *Client) CampaignIDsForStreamer(streamer *domain.Streamer) ([]string, er
 	if cams == nil {
 		return []string{}, nil
 	}
-	arr := cams.([]interface{})
+	campaigns, _ := cams.([]interface{})
 	var res []string
-	for _, c := range arr {
-		if id, ok := c.(map[string]interface{})["id"].(string); ok {
+	for _, entry := range campaigns {
+		campaign, _ := entry.(map[string]interface{})
+		if id, ok := campaign["id"].(string); ok {
 			res = append(res, id)
 		}
 	}
@@ -128,9 +129,6 @@ func (t *Client) inventory() map[string]interface{} {
 	if err != nil || resp == nil {
 		return nil
 	}
-	inv := jsonvalue.At(resp, "data.currentUser.inventory")
-	if inv == nil {
-		return nil
-	}
-	return inv.(map[string]interface{})
+	inv, _ := jsonvalue.At(resp, "data.currentUser.inventory").(map[string]interface{})
+	return inv
 }

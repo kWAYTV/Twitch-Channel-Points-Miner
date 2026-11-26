@@ -57,7 +57,6 @@ func TestDownloadAsset(t *testing.T) {
 		wantLog := []string{
 			"auto-update: downloading update (0.0 MB)...",
 			"auto-update: download 100% (0.0/0.0 MB)",
-			"auto-update: download 100% (0.0/0.0 MB)",
 		}
 		if !reflect.DeepEqual(log.Lines, wantLog) {
 			t.Errorf("logged %q, want %q", log.Lines, wantLog)

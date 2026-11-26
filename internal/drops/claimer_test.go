@@ -161,6 +161,27 @@ func TestClaimer_Claim(t *testing.T) {
 		checkCalls(t, inventory, []string{"claim", "claim"})
 	})
 
+	t.Run("no logger", func(t *testing.T) {
+		inventory := &fakeInventory{
+			Claimed:  []twitch.ClaimedDrop{{RewardName: "Token", CampaignName: "Summer", CurrentValue: 180, RequiredValue: 180}},
+			Statuses: []twitch.DropStatus{{RewardName: "Token", CampaignName: "Summer", CurrentValue: 180, RequiredValue: 180}},
+		}
+		claimer := NewClaimer(inventory, nil, true)
+
+		claimer.Claim("startup claim failed")
+
+		checkCalls(t, inventory, []string{"claim with statuses"})
+	})
+
+	t.Run("no logger, the inventory unreadable", func(t *testing.T) {
+		inventory := &fakeInventory{Err: errors.New("503")}
+		claimer := NewClaimer(inventory, nil, false)
+
+		claimer.Claim("startup claim failed")
+
+		checkCalls(t, inventory, []string{"claim"})
+	})
+
 	t.Run("no inventory", func(t *testing.T) {
 		logger := &fakeLogger{}
 		claimer := NewClaimer(nil, logger, true)

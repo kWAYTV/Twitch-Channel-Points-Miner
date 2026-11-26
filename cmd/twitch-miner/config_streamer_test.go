@@ -244,6 +244,14 @@ func TestBuildOverrideSettings(t *testing.T) {
 			},
 			want: map[string]domain.StreamerSettings{"first": withoutMoments, "second": withoutDrops},
 		},
+		{
+			name: "one streamer named twice, in capitals and without",
+			overrides: map[string]streamerSettingsConfig{
+				"First": {ClaimMoments: ptr(false)},
+				"first": {ClaimDrops: ptr(false)},
+			},
+			want: map[string]domain.StreamerSettings{"first": withoutDrops},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

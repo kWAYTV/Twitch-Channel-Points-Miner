@@ -5,7 +5,9 @@ type progressWriter struct {
 	total   int64
 	written int64
 	step    int64
-	logf    func(format string, args ...interface{})
+	// logged is how many bytes the last progress line reported.
+	logged int64
+	logf   func(format string, args ...interface{})
 }
 
 func newProgressWriter(total int64, logf func(format string, args ...interface{})) *progressWriter {
@@ -35,7 +37,10 @@ func (p *progressWriter) Done() {
 	if p.total > 0 && p.written < p.total {
 		p.written = p.total
 	}
-	p.logProgress()
+	// The last write may already have reported the whole download.
+	if p.logged < p.written {
+		p.logProgress()
+	}
 }
 
 func (p *progressWriter) logProgress() {
@@ -46,6 +51,7 @@ func (p *progressWriter) logProgress() {
 	if percent > 100 {
 		percent = 100
 	}
+	p.logged = p.written
 	p.logf("auto-update: download %.0f%% (%.1f/%.1f MB)", percent, bytesToMB(p.written), bytesToMB(p.total))
 }
 

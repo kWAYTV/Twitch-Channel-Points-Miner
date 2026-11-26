@@ -24,6 +24,13 @@ type Logger interface {
 	EmojiEventf(emoji string, event events.Event, format string, args ...interface{})
 }
 
+// silent is the Logger of a claimer that was given none.
+type silent struct{}
+
+func (silent) Printf(string, ...interface{})                            {}
+func (silent) Eventf(events.Event, string, ...interface{})              {}
+func (silent) EmojiEventf(string, events.Event, string, ...interface{}) {}
+
 // Claimer claims drops from the inventory, and logs their progress when asked to.
 type Claimer struct {
 	inventory    Inventory
@@ -31,7 +38,11 @@ type Claimer struct {
 	showProgress bool
 }
 
+// NewClaimer claims from inventory. Without a logger it claims in silence.
 func NewClaimer(inventory Inventory, logger Logger, showProgress bool) *Claimer {
+	if logger == nil {
+		logger = silent{}
+	}
 	return &Claimer{inventory: inventory, logger: logger, showProgress: showProgress}
 }
 

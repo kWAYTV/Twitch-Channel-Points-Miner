@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -90,13 +91,21 @@ func buildBaseStreamerSettings(cfg config) domain.StreamerSettings {
 }
 
 func buildOverrideSettings(base domain.StreamerSettings, overrides map[string]streamerSettingsConfig) map[string]domain.StreamerSettings {
+	// Two names that differ only in capitals are one streamer. They are taken
+	// in sorted order, where capitals come first, so the same one wins on
+	// every run: the spelling in lower case.
+	names := make([]string, 0, len(overrides))
+	for name := range overrides {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 	overrideSettings := make(map[string]domain.StreamerSettings, len(overrides))
-	for name, override := range overrides {
+	for _, name := range names {
 		key := strings.ToLower(strings.TrimSpace(name))
 		if key == "" {
 			continue
 		}
-		overrideSettings[key] = mergeStreamerSettings(base, override)
+		overrideSettings[key] = mergeStreamerSettings(base, overrides[name])
 	}
 	return overrideSettings
 }

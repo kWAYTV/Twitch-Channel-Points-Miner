@@ -40,16 +40,15 @@ func (r *streakRecovery) watchMissedFrom(source string) (saved, settled bool, er
 		if err != nil {
 			return false, false, err
 		}
-		respdata := jsonvalue.At(resp, "data.user."+mode)
-		if respdata == nil {
+		data, _ := jsonvalue.At(resp, "data.user."+mode).(map[string]interface{})
+		if data == nil {
 			return false, false, fmt.Errorf("missing %s data for channel %s", mode, r.streamer.ChannelID)
 		}
-		data := respdata.(map[string]interface{})
 		edges, _ := data["edges"].([]interface{})
 		pageInfo, _ := data["pageInfo"].(map[string]interface{})
 		cursor = ""
 		for _, edge := range edges {
-			e := edge.(map[string]interface{})
+			e, _ := edge.(map[string]interface{})
 			node, _ := e["node"].(map[string]interface{})
 			broadcastIdentifier, _ := node["broadcastIdentifier"].(map[string]interface{})
 			id, _ := broadcastIdentifier["id"].(string)

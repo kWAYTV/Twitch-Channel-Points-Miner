@@ -425,6 +425,22 @@ func TestClient_ClaimAllDropsFromInventoryWithStatuses(t *testing.T) {
 	})
 }
 
+func TestClient_ClaimAllDropsFromInventory_malformed(t *testing.T) {
+	t.Run("an inventory that is not an object", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(`{"data":{"currentUser":{"inventory":"none"}}}`))
+
+		claimed, err := client.ClaimAllDropsFromInventory()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventory error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none", claimed)
+		}
+	})
+}
+
 func TestClient_CampaignIDsForStreamer(t *testing.T) {
 	t.Run("a channel with two campaigns", func(t *testing.T) {
 		client, fake := setup(t)
@@ -436,6 +452,34 @@ func TestClient_CampaignIDsForStreamer(t *testing.T) {
 			t.Fatalf("CampaignIDsForStreamer error = %v, want none", err)
 		}
 		if want := []string{"campaign-1", "campaign-2"}; !equal(ids, want) {
+			t.Errorf("campaign ids = %#v, want %#v", ids, want)
+		}
+	})
+
+	t.Run("campaigns that are not a list", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("DropsHighlightService_AvailableDrops", campaignsVariables, ok(`{"data":{"channel":{"viewerDropCampaigns":"none"}}}`))
+
+		ids, err := client.CampaignIDsForStreamer(newStreamer())
+
+		if err != nil {
+			t.Fatalf("CampaignIDsForStreamer error = %v, want none", err)
+		}
+		if len(ids) != 0 {
+			t.Errorf("campaign ids = %#v, want none", ids)
+		}
+	})
+
+	t.Run("an entry that is not an object among campaigns", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("DropsHighlightService_AvailableDrops", campaignsVariables, ok(`{"data":{"channel":{"viewerDropCampaigns":["broken",{"id":"campaign-2"}]}}}`))
+
+		ids, err := client.CampaignIDsForStreamer(newStreamer())
+
+		if err != nil {
+			t.Fatalf("CampaignIDsForStreamer error = %v, want none", err)
+		}
+		if want := []string{"campaign-2"}; !equal(ids, want) {
 			t.Errorf("campaign ids = %#v, want %#v", ids, want)
 		}
 	})

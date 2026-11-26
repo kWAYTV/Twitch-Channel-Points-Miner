@@ -90,18 +90,20 @@ func (t *Client) GetFollowers(limit int, order domain.FollowersOrder) ([]string,
 		if err != nil {
 			return nil, err
 		}
-		followsResp := jsonvalue.At(resp, "data.user.follows")
-		if followsResp == nil {
+		data, _ := jsonvalue.At(resp, "data.user.follows").(map[string]interface{})
+		if data == nil {
 			break
 		}
-		data := followsResp.(map[string]interface{})
 		edges, _ := data["edges"].([]interface{})
 		pageInfo, _ := data["pageInfo"].(map[string]interface{})
 		cursor = ""
 		for _, edge := range edges {
-			e := edge.(map[string]interface{})
+			e, _ := edge.(map[string]interface{})
 			node, _ := e["node"].(map[string]interface{})
 			login, _ := node["login"].(string)
+			if login == "" {
+				continue
+			}
 			follows = append(follows, strings.ToLower(login))
 			if c, ok := e["cursor"].(string); ok {
 				cursor = c
