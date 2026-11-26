@@ -407,3 +407,24 @@ func TestChoiceLabel(t *testing.T) {
 		})
 	}
 }
+
+func TestLabel(t *testing.T) {
+	tests := []struct {
+		name     string
+		streamer string
+		title    string
+		want     string
+	}{
+		{"a streamer and a title", "alice", "Who wins?", "EventPrediction: alice - Who wins?"},
+		{"a streamer alone", "alice", "", "EventPrediction: alice"},
+		{"a title alone", "", "Who wins?", "EventPrediction: Who wins?"},
+		{"neither", "", "", "EventPrediction"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Label(tt.streamer, tt.title); got != tt.want {
+				t.Errorf("Label(%q, %q) = %q, want %q", tt.streamer, tt.title, got, tt.want)
+			}
+		})
+	}
+}

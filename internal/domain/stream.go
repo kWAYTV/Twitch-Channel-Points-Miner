@@ -42,15 +42,22 @@ func NewStream() *Stream {
 	}
 }
 
+// StartNewBroadcast forgets what was known about the broadcast before: the
+// watch streak is open again, nothing has been watched, and the playlist
+// address belongs to the old broadcast.
+func (s *Stream) StartNewBroadcast() {
+	s.WatchStreakMissing = true
+	s.ResetWatchProgress()
+	s.PlaylistURL = ""
+}
+
 func (s *Stream) Update(broadcastID, title string, game map[string]interface{}, tags []map[string]interface{}, viewers int, createdAt time.Time, dropID string) {
 	s.updateAt(broadcastID, title, game, tags, viewers, createdAt, dropID, time.Now())
 }
 
 func (s *Stream) updateAt(broadcastID, title string, game map[string]interface{}, tags []map[string]interface{}, viewers int, createdAt time.Time, dropID string, now time.Time) {
 	if s.BroadcastID != "" && s.BroadcastID != broadcastID {
-		s.WatchStreakMissing = true
-		s.ResetWatchProgress()
-		s.PlaylistURL = ""
+		s.StartNewBroadcast()
 	}
 	s.BroadcastID = broadcastID
 	s.Title = strings.TrimSpace(title)

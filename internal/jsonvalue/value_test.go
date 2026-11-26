@@ -189,3 +189,55 @@ func TestFirstInt(t *testing.T) {
 		})
 	}
 }
+
+func TestInt(t *testing.T) {
+	tests := []struct {
+		name string
+		v    interface{}
+		want int
+	}{
+		{"a JSON number", float64(42), 42},
+		{"a JSON number with a fraction", 42.9, 42},
+		{"a negative JSON number", float64(-7), -7},
+		{"an int", 42, 42},
+		{"an int64", int64(42), 42},
+		{"a json.Number", json.Number("42"), 42},
+		{"a number written as text", "42", 0},
+		{"nothing", nil, 0},
+		{"true", true, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Int(tt.v); got != tt.want {
+				t.Errorf("Int(%#v) = %d, want %d", tt.v, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestText(t *testing.T) {
+	tests := []struct {
+		name string
+		v    interface{}
+		want string
+	}{
+		{"a string", "123", "123"},
+		{"a string with spaces around it", "  abc ", "abc"},
+		{"an empty string", "", ""},
+		{"only spaces", "   ", ""},
+		{"nothing", nil, ""},
+		{"a small JSON number", float64(123), "123"},
+		{"a nine-digit JSON number", float64(123456789), "123456789"},
+		{"a JSON number with a fraction", 1.5, "1.5"},
+		{"an int", 7, "7"},
+		{"true", true, "true"},
+		{"the text fmt writes for nothing", "<nil>", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Text(tt.v); got != tt.want {
+				t.Errorf("Text(%#v) = %q, want %q", tt.v, got, tt.want)
+			}
+		})
+	}
+}

@@ -137,3 +137,49 @@ func TestGQLOperations(t *testing.T) {
 		})
 	}
 }
+
+func TestGQLPersistedOperation_With(t *testing.T) {
+	t.Run("variables on an operation that has none", func(t *testing.T) {
+		op := GQLPersistedOperation{OperationName: "JoinRaid"}
+
+		got := op.With(map[string]interface{}{"id": "raid-1"})
+
+		want := GQLPersistedOperation{OperationName: "JoinRaid", Variables: map[string]interface{}{"id": "raid-1"}}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("With = %+v, want %+v", got, want)
+		}
+		if op.Variables != nil {
+			t.Errorf("the operation now has variables %v, want it left alone", op.Variables)
+		}
+	})
+
+	t.Run("variables on top of its own", func(t *testing.T) {
+		op := GQLPersistedOperation{OperationName: "Inventory", Variables: map[string]interface{}{"fetchRewardCampaigns": true, "limit": 10}}
+
+		got := op.With(map[string]interface{}{"limit": 50, "cursor": "c1"})
+
+		want := map[string]interface{}{"fetchRewardCampaigns": true, "limit": 50, "cursor": "c1"}
+		if !reflect.DeepEqual(got.Variables, want) {
+			t.Errorf("variables = %v, want %v", got.Variables, want)
+		}
+		if kept := (map[string]interface{}{"fetchRewardCampaigns": true, "limit": 10}); !reflect.DeepEqual(op.Variables, kept) {
+			t.Errorf("the operation's own variables = %v, want them left as %v", op.Variables, kept)
+		}
+	})
+
+	t.Run("no variables", func(t *testing.T) {
+		op := GQLPersistedOperation{OperationName: "Inventory"}
+
+		got := op.With(nil)
+
+		if got.OperationName != "Inventory" || len(got.Variables) != 0 {
+			t.Errorf("With(nil) = %+v, want the operation with no variables", got)
+		}
+	})
+}
+
+func TestChannelURL(t *testing.T) {
+	if got, want := ChannelURL("alice"), "https://www.twitch.tv/alice"; got != want {
+		t.Errorf("ChannelURL(%q) = %q, want %q", "alice", got, want)
+	}
+}

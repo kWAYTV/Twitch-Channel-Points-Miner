@@ -354,3 +354,39 @@ func TestRandInt(t *testing.T) {
 		}
 	})
 }
+
+func TestAnonymizer_Shown(t *testing.T) {
+	t.Run("logs as they are", func(t *testing.T) {
+		anonymizer := New(false)
+		if got, want := anonymizer.Shown(&domain.Streamer{Username: "alice"}), "Alice"; got != want {
+			t.Errorf("Shown = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("no anonymizer", func(t *testing.T) {
+		var anonymizer *Anonymizer
+		if got, want := anonymizer.Shown(&domain.Streamer{Username: "alice"}), "Alice"; got != want {
+			t.Errorf("Shown = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("logs anonymised", func(t *testing.T) {
+		anonymizer := New(true)
+		if got, want := anonymizer.Shown(&domain.Streamer{Username: "alice"}), "Streamer1"; got != want {
+			t.Errorf("Shown = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("logs anonymised, a streamer known by id only", func(t *testing.T) {
+		anonymizer := New(true)
+		if got, want := anonymizer.Shown(&domain.Streamer{ChannelID: "123"}), "Streamer1"; got != want {
+			t.Errorf("Shown = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("no streamer", func(t *testing.T) {
+		if got := New(true).Shown(nil); got != "" {
+			t.Errorf("Shown(nil) = %q, want nothing", got)
+		}
+	})
+}

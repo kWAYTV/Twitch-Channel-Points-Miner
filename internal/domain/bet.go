@@ -67,39 +67,52 @@ type BetSettings struct {
 	DelayMode          DelayMode        `json:"delay_mode,omitempty"`
 }
 
+// What a bet setting is when the config leaves it out.
+const (
+	DefaultBetStrategy           = StrategySmart
+	DefaultBetPercentage         = 5
+	DefaultBetPercentageGap      = 20
+	DefaultBetMaxPoints          = 50000
+	DefaultBetMinimumPoints      = 0
+	DefaultBetStealthMode        = false
+	DefaultBetDeductStakeOnPlace = true
+	DefaultBetDelayMode          = DelayModeFromEnd
+	DefaultBetDelay              = 6.0
+)
+
 func (b *BetSettings) Default() {
 	if b.Strategy == "" {
-		b.Strategy = StrategySmart
+		b.Strategy = DefaultBetStrategy
 	}
 	if b.Percentage == nil {
-		v := 5
+		v := DefaultBetPercentage
 		b.Percentage = &v
 	}
 	if b.PercentageGap == nil {
-		v := 20
+		v := DefaultBetPercentageGap
 		b.PercentageGap = &v
 	}
 	if b.MaxPoints == nil {
-		v := 50000
+		v := DefaultBetMaxPoints
 		b.MaxPoints = &v
 	}
 	if b.MinimumPoints == nil {
-		v := 0
+		v := DefaultBetMinimumPoints
 		b.MinimumPoints = &v
 	}
 	if b.StealthMode == nil {
-		v := false
+		v := DefaultBetStealthMode
 		b.StealthMode = &v
 	}
 	if b.DeductStakeOnPlace == nil {
-		v := true
+		v := DefaultBetDeductStakeOnPlace
 		b.DeductStakeOnPlace = &v
 	}
 	if b.DelayMode == "" {
-		b.DelayMode = DelayModeFromEnd
+		b.DelayMode = DefaultBetDelayMode
 	}
 	if b.Delay == nil {
-		d := 6.0
+		d := DefaultBetDelay
 		b.Delay = &d
 	}
 }

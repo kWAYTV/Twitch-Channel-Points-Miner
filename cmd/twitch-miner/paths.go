@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/devrun"
 )
 
 func fileExists(path string) bool {
@@ -85,7 +87,7 @@ func defaultAppPaths(cwd string, cwdHasConfig bool, exePath, tempDir string) app
 		}
 	}
 
-	if exePath != "" && !isGoRunExecutable(exePath, tempDir) {
+	if exePath != "" && !devrun.IsGoRunExecutable(exePath, tempDir) {
 		exeDir := filepath.Dir(exePath)
 		return appPaths{
 			WorkDir:    exeDir,

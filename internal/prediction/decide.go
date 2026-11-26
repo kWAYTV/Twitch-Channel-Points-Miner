@@ -30,6 +30,9 @@ func (p *Event) Decide(balance int) Decision {
 	return decision
 }
 
+// MinimumStake is the smallest bet Twitch accepts.
+const MinimumStake = 10
+
 // stake is how many points to bet from balance. topPoints is the largest bet
 // already placed on the chosen outcome, which stealth mode stays below.
 func stake(balance int, settings domain.BetSettings, topPoints int) int {

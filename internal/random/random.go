@@ -51,6 +51,9 @@ func intFrom(source io.Reader, min, max int) int {
 	if max <= min {
 		return min
 	}
-	nBig, _ := rand.Int(source, big.NewInt(int64(max-min+1)))
+	nBig, err := rand.Int(source, big.NewInt(int64(max-min+1)))
+	if err != nil {
+		return min
+	}
 	return min + int(nBig.Int64())
 }

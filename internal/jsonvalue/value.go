@@ -3,6 +3,7 @@ package jsonvalue
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -20,6 +21,33 @@ func Float(v interface{}) float64 {
 	default:
 		return 0
 	}
+}
+
+// Int reads a whole number decoded from JSON, whatever numeric type it arrived
+// as. A fraction is cut off, and anything that is not a number is 0.
+func Int(v interface{}) int {
+	if n, ok := v.(int64); ok {
+		return int(n)
+	}
+	return int(Float(v))
+}
+
+// Text writes any JSON value as text: a string as it is, a number in full
+// digits, and nothing for a missing value. Surrounding spaces are dropped.
+func Text(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	// A number decoded from JSON is a float64, which fmt would write as
+	// 1.23456789e+08 from seven digits up.
+	if number, ok := v.(float64); ok {
+		return strconv.FormatFloat(number, 'f', -1, 64)
+	}
+	text := strings.TrimSpace(fmt.Sprint(v))
+	if text == "<nil>" {
+		return ""
+	}
+	return text
 }
 
 // String returns v when it is a string, and "" otherwise.

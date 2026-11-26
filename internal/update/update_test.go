@@ -240,27 +240,3 @@ func TestUpdater_run(t *testing.T) {
 		}
 	})
 }
-
-func TestIsGoRunExecutable(t *testing.T) {
-	tests := []struct {
-		name    string
-		path    string
-		tempDir string
-		want    bool
-	}{
-		{"an installed binary", "/opt/miner/miner", "/tmp", false},
-		{"a binary in a go-build folder", "/home/me/.cache/go-build/ab/miner", "/tmp", true},
-		{"a binary in a GO-BUILD folder", `D:\Cache\GO-BUILD123\miner.exe`, `C:\Temp`, true},
-		{"a binary under the temp folder", "/tmp/run/miner", "/tmp", true},
-		{"a binary under the temp folder in other capitals", `c:\temp\run\miner.exe`, `C:\Temp`, true},
-		{"a binary beside the temp folder", "/var/tmp/miner", "/tmp", false},
-		{"no temp folder", "/opt/miner/miner", "", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isGoRunExecutable(tt.path, tt.tempDir); got != tt.want {
-				t.Errorf("isGoRunExecutable(%q, %q) = %t, want %t", tt.path, tt.tempDir, got, tt.want)
-			}
-		})
-	}
-}

@@ -3,6 +3,8 @@ package domain
 import (
 	"sync"
 	"time"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/textcase"
 )
 
 type Streamer struct {
@@ -36,6 +38,20 @@ type ActiveMultiplier struct {
 type HistoryEntry struct {
 	Count  int
 	Amount int
+}
+
+// DisplayName is the streamer's login with its first letter in upper case, as
+// it is shown in logs.
+func (s *Streamer) DisplayName() string {
+	return textcase.UpperFirst(s.Username)
+}
+
+// Spend takes points off the balance, which never goes below zero.
+func (s *Streamer) Spend(points int) {
+	s.ChannelPoints -= points
+	if s.ChannelPoints < 0 {
+		s.ChannelPoints = 0
+	}
 }
 
 func (s *Streamer) HasActiveMultipliers() bool {

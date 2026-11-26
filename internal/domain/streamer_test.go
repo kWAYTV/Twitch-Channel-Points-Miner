@@ -71,3 +71,46 @@ func TestStreamer_PredictionWindowSeconds(t *testing.T) {
 		})
 	}
 }
+
+func TestStreamer_DisplayName(t *testing.T) {
+	tests := []struct {
+		name     string
+		username string
+		want     string
+	}{
+		{"a login", "alice", "Alice"},
+		{"no login", "", ""},
+		{"a first letter outside ASCII", "élan", "Élan"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			streamer := &Streamer{Username: tt.username}
+			if got := streamer.DisplayName(); got != tt.want {
+				t.Errorf("DisplayName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStreamer_Spend(t *testing.T) {
+	tests := []struct {
+		name    string
+		balance int
+		points  int
+		want    int
+	}{
+		{"part of the balance", 250, 100, 150},
+		{"the whole balance", 250, 250, 0},
+		{"more than the balance", 250, 300, 0},
+		{"nothing", 250, 0, 250},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			streamer := &Streamer{ChannelPoints: tt.balance}
+			streamer.Spend(tt.points)
+			if streamer.ChannelPoints != tt.want {
+				t.Errorf("balance after spending %d of %d = %d, want %d", tt.points, tt.balance, streamer.ChannelPoints, tt.want)
+			}
+		})
+	}
+}

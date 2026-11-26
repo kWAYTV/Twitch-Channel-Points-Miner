@@ -121,8 +121,11 @@ func TestSaveJSON(t *testing.T) {
 
 		err := SaveJSON(path, map[string]interface{}{"n": 1})
 
-		if !errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("SaveJSON error = %v, want a not-exist error", err)
+		if err != nil {
+			t.Fatalf("SaveJSON error = %v, want the folder created", err)
+		}
+		if got, want := saved(t, path), "{\n  \"n\": 1\n}"; got != want {
+			t.Errorf("file = %q, want %q", got, want)
 		}
 	})
 
@@ -161,4 +164,68 @@ func errorText(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+func TestWrite(t *testing.T) {
+	t.Run("content as given", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "notes.txt")
+
+		err := Write(path, []byte("as written"), 0o600)
+
+		if err != nil {
+			t.Fatalf("Write error = %v, want nil", err)
+		}
+		if got, want := saved(t, path), "as written"; got != want {
+			t.Errorf("file = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("over a file already there", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "notes.txt")
+		if err := os.WriteFile(path, []byte("a longer text that was there before"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := Write(path, []byte("new"), 0o644); err != nil {
+			t.Fatalf("Write error = %v, want nil", err)
+		}
+
+		if got, want := saved(t, path), "new"; got != want {
+			t.Errorf("file = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("in folders that do not exist", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "a", "b", "notes.txt")
+
+		if err := Write(path, []byte("deep"), 0o644); err != nil {
+			t.Fatalf("Write error = %v, want nil", err)
+		}
+
+		if got, want := saved(t, path), "deep"; got != want {
+			t.Errorf("file = %q, want %q", got, want)
+		}
+		entries, err := os.ReadDir(filepath.Join(dir, "a", "b"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 {
+			t.Errorf("folder holds %v, want notes.txt alone", entries)
+		}
+	})
+
+	t.Run("where a folder cannot be made", func(t *testing.T) {
+		dir := t.TempDir()
+		blocker := filepath.Join(dir, "blocker")
+		if err := os.WriteFile(blocker, []byte("a file"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		err := Write(filepath.Join(blocker, "notes.txt"), []byte("x"), 0o644)
+
+		if err == nil {
+			t.Errorf("Write error = nil, want an error: a file stands where the folder should be")
+		}
+	})
 }

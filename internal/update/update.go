@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
+	"github.com/kWAYTV/twitch-points-miner/internal/devrun"
 	"github.com/kWAYTV/twitch-points-miner/internal/project"
 )
 
@@ -52,7 +52,7 @@ func (u updater) run() (bool, error) {
 		return false, nil
 	}
 
-	devRun := isGoRunExecutable(u.exePath, u.tempDir)
+	devRun := devrun.IsGoRunExecutable(u.exePath, u.tempDir)
 
 	release, err := fetchLatestRelease(u.releasesURL)
 	if errors.Is(err, errNoRelease) {
@@ -85,16 +85,4 @@ func (u updater) run() (bool, error) {
 	}
 
 	return u.install(u.exePath, tempPath)
-}
-
-// isGoRunExecutable reports whether path is a binary "go run" built, which
-// lives in a go-build folder or under the temp directory.
-func isGoRunExecutable(path, tempDir string) bool {
-	lower := strings.ToLower(path)
-	if strings.Contains(lower, "go-build") {
-		return true
-	}
-	temp := strings.TrimRight(strings.ToLower(tempDir), `/\`)
-	rest, under := strings.CutPrefix(lower, temp)
-	return under && (rest == "" || rest[0] == '/' || rest[0] == '\\')
 }

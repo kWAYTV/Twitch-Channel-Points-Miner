@@ -17,6 +17,19 @@ type GQLPersistedQuery struct {
 
 // ClonePersistedOperation returns a copy of the operation with a deep-copied Variables map
 // This prevents callers from accidentally mutating shared global state when customizing variables per request
+// With returns a copy of the operation with these variables set on top of its
+// own. The operation itself, which is shared, is left as it is.
+func (op GQLPersistedOperation) With(variables map[string]interface{}) GQLPersistedOperation {
+	cloned := ClonePersistedOperation(op)
+	if cloned.Variables == nil {
+		cloned.Variables = make(map[string]interface{}, len(variables))
+	}
+	for name, value := range variables {
+		cloned.Variables[name] = value
+	}
+	return cloned
+}
+
 func ClonePersistedOperation(op GQLPersistedOperation) GQLPersistedOperation {
 	cloned := op
 	if op.Variables != nil {

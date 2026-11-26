@@ -60,6 +60,18 @@ func (a *Anonymizer) StreamerName(streamer *domain.Streamer) string {
 	return ""
 }
 
+// Shown is the name a streamer goes by in logs: the stand-in while logs are
+// anonymised, and otherwise the login with a capital.
+func (a *Anonymizer) Shown(streamer *domain.Streamer) string {
+	if streamer == nil {
+		return ""
+	}
+	if a.Enabled() {
+		return a.StreamerName(streamer)
+	}
+	return streamer.DisplayName()
+}
+
 func (a *Anonymizer) Name(raw string) string {
 	if !a.Enabled() {
 		return raw

@@ -103,6 +103,21 @@ func (p *Event) ParseResult(result map[string]interface{}) (gained, placed, won 
 	return
 }
 
+// Label names a prediction by who runs it and its title, leaving out
+// whichever is missing.
+func Label(name, title string) string {
+	switch {
+	case name != "" && title != "":
+		return fmt.Sprintf("EventPrediction: %s - %s", name, title)
+	case name != "":
+		return fmt.Sprintf("EventPrediction: %s", name)
+	case title != "":
+		return fmt.Sprintf("EventPrediction: %s", title)
+	default:
+		return "EventPrediction"
+	}
+}
+
 func (p *Event) String() string {
 	if p.Streamer != nil && p.Streamer.Username != "" {
 		return fmt.Sprintf("EventPrediction: %s - %s", p.Streamer.Username, p.Title)
