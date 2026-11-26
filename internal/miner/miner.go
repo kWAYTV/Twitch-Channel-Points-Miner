@@ -50,6 +50,9 @@ type Miner struct {
 	human               *humanize.Timing
 	warmStartCache      *streak.WarmStartCache
 	warmStartCachePath  string
+	// heartbeatPath is the file the time of each watch round is written to;
+	// empty when no heartbeat is kept.
+	heartbeatPath       string
 	activeStreakWatches map[string]streak.ActiveWatch
 	activeStreakMu      sync.Mutex
 }
@@ -57,6 +60,7 @@ type Miner struct {
 // Options is everything a Miner is configured with.
 type Options struct {
 	Username            string
+	HeartbeatPath       string
 	Logger              logging.LoggerSettings
 	StreamerSettings    domain.StreamerSettings
 	StreamerOverrides   map[string]domain.StreamerSettings
@@ -94,6 +98,7 @@ func New(options Options) *Miner {
 		anonymizer:          privacy.New(options.Logger.AnonymizeLogs),
 		human:               humanize.New(options.Humanize),
 		warmStartCachePath:  warmStartCachePathFor(options.Username),
+		heartbeatPath:       options.HeartbeatPath,
 		activeStreakWatches: make(map[string]streak.ActiveWatch),
 	}
 	m.chat = chat.NewPresence(options.Username, m.chatToken, m.logger, options.DisableAtInNickname, m.anonymizer, m.styledStreamerName)

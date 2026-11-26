@@ -13,6 +13,7 @@ import (
 func loadConfig() config {
 	configFlag := flag.String("config", "", "Path to config.json (default: ./config.json or next to the executable)")
 	dataDirFlag := flag.String("data-dir", "", "Directory for config/cookies/log (default: current directory if config.json exists; otherwise the executable directory)")
+	healthcheckFlag := flag.Bool("healthcheck", false, "Report whether the miner running in the data folder is still working, then exit (status 0 when it is)")
 	flag.Parse()
 
 	paths, err := resolveAppPaths(*configFlag, *dataDirFlag)
@@ -20,6 +21,9 @@ func loadConfig() config {
 		log.Fatalf("failed to resolve config paths: %v", err)
 	}
 	enterWorkDir(paths.WorkDir)
+	if *healthcheckFlag {
+		runHealthcheck()
+	}
 
 	setConsoleTitle(project.Name)
 	clearConsole()

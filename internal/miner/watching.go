@@ -57,6 +57,7 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 		default:
 		}
 
+		m.beat()
 		watchList := m.pickStreamersToWatch(streamers)
 		if len(watchList) == 0 {
 			if stoppable.Wait(20*time.Second, stop) {

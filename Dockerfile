@@ -37,4 +37,6 @@ ENV TCPM_DATA_DIR=/data \
     TCPM_ANALYTICS_ADDR=0.0.0.0:5000
 VOLUME /data
 EXPOSE 5000
+# Unhealthy when the miner has gone five minutes without a watch round.
+HEALTHCHECK --interval=1m --timeout=10s --start-period=5m --retries=3 CMD ["/usr/local/bin/twitch-miner", "-healthcheck"]
 ENTRYPOINT ["/usr/local/bin/twitch-miner"]

@@ -44,6 +44,8 @@ docker run -d --name twitch-miner --restart unless-stopped \
 
 If `data/config.json` does not exist, the first start writes one with defaults. Set `username` in it and restart the container.
 
+The image has a health check: `docker ps` shows the container as `unhealthy` when the miner has gone five minutes without a watch round, for example while it waits for a login. Docker does not restart an unhealthy container by itself. To ask a running miner yourself: `docker exec twitch-miner twitch-miner -healthcheck`.
+
 ## From source
 
 Requires Go 1.23 or newer.

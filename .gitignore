@@ -3,3 +3,7 @@ config.json
 cookies/
 log/
 analytics/
+heartbeat
+
+# Claude Code's working files.
+.claude/

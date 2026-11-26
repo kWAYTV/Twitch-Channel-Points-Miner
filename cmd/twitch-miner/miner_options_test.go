@@ -34,8 +34,9 @@ func TestMinerOptionsFrom(t *testing.T) {
 		got := minerOptionsFrom(cfg, loggerSettings)
 
 		want := miner.Options{
-			Username: "me",
-			Logger:   logging.LoggerSettings{Save: true, Emoji: true},
+			HeartbeatPath: "heartbeat",
+			Username:      "me",
+			Logger:        logging.LoggerSettings{Save: true, Emoji: true},
 			StreamerSettings: domain.StreamerSettings{
 				MakePredictions: true,
 				FollowRaid:      true,
@@ -76,6 +77,7 @@ func TestMinerOptionsFrom(t *testing.T) {
 		got := minerOptionsFrom(config{}, logging.LoggerSettings{})
 
 		want := miner.Options{
+			HeartbeatPath:     "heartbeat",
 			StreamerSettings:  domain.StreamerSettings{WatchStreak: true, Bet: defaultBet(), IRCMode: "ONLINE"},
 			StreamerOverrides: map[string]domain.StreamerSettings{},
 		}
@@ -87,6 +89,7 @@ func TestMinerOptionsFrom(t *testing.T) {
 	// Each row sets one switch or list and expects only its counterpart set.
 	base := func() miner.Options {
 		return miner.Options{
+			HeartbeatPath:     "heartbeat",
 			StreamerSettings:  domain.StreamerSettings{WatchStreak: true, Bet: defaultBet(), IRCMode: "ONLINE"},
 			StreamerOverrides: map[string]domain.StreamerSettings{},
 		}
