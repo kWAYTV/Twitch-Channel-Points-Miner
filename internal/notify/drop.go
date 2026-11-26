@@ -31,6 +31,30 @@ func describeDropClaim(head string) (Message, bool) {
 	return newMessage("Claimed "+reward, campaign+" campaign", "Progress "+progress), true
 }
 
+// describeDropNotConnected covers "Drops for WARDOGS are not collected: your
+// Twitch account is not connected to the game. Connect it at https://…".
+func describeDropNotConnected(head string) (Message, bool) {
+	const start, middle, link = "drops for ", " are not collected:", "connect it at "
+	if foldPrefixLen(head, start) < 0 {
+		return Message{}, false
+	}
+	end, _ := findFold(head, middle)
+	if end < 0 {
+		return Message{}, false
+	}
+	game := strings.TrimSpace(head[len(start):end])
+	if game == "" {
+		return Message{}, false
+	}
+	details := []string{"Your Twitch account is not connected to the game"}
+	if at, n := findFold(head, link); at >= 0 {
+		if address := strings.TrimSpace(head[at+n:]); address != "" {
+			details = append(details, "Connect it at "+address)
+		}
+	}
+	return newMessage("Drops for "+game+" are not collected", details...), true
+}
+
 // describeDropProgress covers "DROP_PROGRESS [####----] 40% | Game / Campaign / channel / 12m of 30m / ...".
 func describeDropProgress(head string, other []string) (Message, bool) {
 	m := reDropBar.FindStringSubmatch(head)

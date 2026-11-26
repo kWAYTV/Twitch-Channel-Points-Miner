@@ -108,3 +108,42 @@ func TestDescribeDropProgress(t *testing.T) {
 		})
 	}
 }
+
+func TestDescribeDropNotConnected(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		head string
+		want described
+	}{
+		{
+			"a game with where to connect it",
+			"Drops for WARDOGS are not collected: your Twitch account is not connected to the game. Connect it at https://account.wardogs.com",
+			described{Message{"Drops for WARDOGS are not collected", []string{"Your Twitch account is not connected to the game", "Connect it at https://account.wardogs.com"}}, true},
+		},
+		{
+			"a game of several words",
+			"Drops for World of Tanks are not collected: your Twitch account is not connected to the game. Connect it at https://www.twitch.tv/drops/inventory",
+			described{Message{"Drops for World of Tanks are not collected", []string{"Your Twitch account is not connected to the game", "Connect it at https://www.twitch.tv/drops/inventory"}}, true},
+		},
+		{
+			"no address",
+			"Drops for WARDOGS are not collected: your Twitch account is not connected to the game.",
+			described{Message{"Drops for WARDOGS are not collected", []string{"Your Twitch account is not connected to the game"}}, true},
+		},
+		{
+			"upper case",
+			"DROPS FOR WARDOGS ARE NOT COLLECTED: YOUR TWITCH ACCOUNT IS NOT CONNECTED TO THE GAME. CONNECT IT AT https://account.wardogs.com",
+			described{Message{"Drops for WARDOGS are not collected", []string{"Your Twitch account is not connected to the game", "Connect it at https://account.wardogs.com"}}, true},
+		},
+		{"no game", "Drops for  are not collected: your Twitch account is not connected to the game.", described{}},
+		{"a drop claimed", "Claim Cool Hat (Summer Drops) 60/60 (100%)", described{}},
+		{"an empty line", "", described{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			message, ok := describeDropNotConnected(tc.head)
+			if got := (described{message, ok}); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("describeDropNotConnected(%q) = %+v, want %+v", tc.head, got, tc.want)
+			}
+		})
+	}
+}

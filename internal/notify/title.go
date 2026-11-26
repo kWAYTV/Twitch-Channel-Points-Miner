@@ -53,6 +53,8 @@ func eventTitle(event events.Event) string {
 		return "Drop claimed"
 	case events.EventDropStatus:
 		return "Drop progress"
+	case events.EventDropNotConnected:
+		return "Drops not collected"
 	case events.EventChatMention:
 		return "Chat mention"
 	default:
@@ -72,7 +74,7 @@ func eventColor(event events.Event) int {
 		return 0xC23030
 	case events.EventBetRefund:
 		return 0xEDA100
-	case events.EventDropClaim, events.EventDropStatus, events.EventMomentClaim:
+	case events.EventDropClaim, events.EventDropStatus, events.EventDropNotConnected, events.EventMomentClaim:
 		return 0xE87BA4
 	case events.EventJoinRaid, events.EventGainForRaid:
 		return 0x2A78D6

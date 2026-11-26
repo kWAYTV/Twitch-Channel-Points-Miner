@@ -267,6 +267,7 @@ func TestClaimer_run(t *testing.T) {
 
 func TestClaimer_Claim_unconnectedGames(t *testing.T) {
 	const tanksLine = "Drops for Tanks are not collected: your Twitch account is not connected to the game. Connect it at https://www.twitch.tv/drops/inventory"
+	notConnected := logEntry{Emoji: ":electric_plug:", Event: "DROP_NOT_CONNECTED", Text: tanksLine}
 	unconnected := []twitch.DropStatus{
 		{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", AccountNotConnected: true},
 		{RewardName: "Crate", CampaignName: "Summer", GameName: "Tanks", AccountNotConnected: true},
@@ -278,7 +279,7 @@ func TestClaimer_Claim_unconnectedGames(t *testing.T) {
 
 		claimer.Claim("drop claim failed")
 
-		checkEntries(t, logger, []logEntry{{Text: tanksLine}})
+		checkEntries(t, logger, []logEntry{notConnected})
 	})
 
 	t.Run("the same game at the next check", func(t *testing.T) {
@@ -288,7 +289,7 @@ func TestClaimer_Claim_unconnectedGames(t *testing.T) {
 
 		claimer.Claim("drop claim failed")
 
-		checkEntries(t, logger, []logEntry{{Text: tanksLine}})
+		checkEntries(t, logger, []logEntry{notConnected})
 	})
 
 	t.Run("a game connected, then disconnected again", func(t *testing.T) {
@@ -301,7 +302,7 @@ func TestClaimer_Claim_unconnectedGames(t *testing.T) {
 
 		claimer.Claim("drop claim failed")
 
-		checkEntries(t, logger, []logEntry{{Text: tanksLine}, {Text: tanksLine}})
+		checkEntries(t, logger, []logEntry{notConnected, notConnected})
 	})
 
 	t.Run("a connected game", func(t *testing.T) {
@@ -312,4 +313,17 @@ func TestClaimer_Claim_unconnectedGames(t *testing.T) {
 
 		checkEntries(t, logger, nil)
 	})
+}
+
+func TestClaimer_Claim_readyButNotReceived(t *testing.T) {
+	claimer, inventory, logger := setup(false)
+	inventory.Claimed = []twitch.ClaimedDrop{{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", CurrentValue: 180, RequiredValue: 180, AccountNotConnected: true}}
+
+	claimer.Claim("drop claim failed")
+
+	checkEntries(t, logger, []logEntry{{
+		Emoji: ":electric_plug:",
+		Event: "DROP_NOT_CONNECTED",
+		Text:  "Drop Token (Summer) is ready but not received: connect your Tanks account at twitch.tv/drops/inventory",
+	}})
 }

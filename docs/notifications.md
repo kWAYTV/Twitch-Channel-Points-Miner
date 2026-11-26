@@ -69,6 +69,7 @@ Treat the tokens and the webhook URL like passwords: anyone who has one can post
 | `MOMENT_CLAIM` | A Moment is claimed. |
 | `DROP_CLAIM` | A drop is claimed. |
 | `DROP_STATUS` | Drop progress, with `show_drops_progress` on. Frequent. |
+| `DROP_NOT_CONNECTED` | A game's drops are not collected because your Twitch account is not connected to it. Once per game. |
 | `CHAT_MENTION` | Someone mentions you in a chat the miner is in. |
 | `BET_START` | A prediction opened and a bet is scheduled. |
 | `BET_FILTERS` | A bet was skipped by a filter or a limit. Frequent. |

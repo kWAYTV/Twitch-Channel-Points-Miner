@@ -28,6 +28,7 @@ var emojiMap = map[string]string{
 	":disappointed_relieved:":    "😥",
 	":video_game:":               "🎮",
 	":ambulance:":                "🚑",
+	":electric_plug:":            "🔌",
 }
 
 func emojize(code string) string {

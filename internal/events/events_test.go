@@ -100,6 +100,7 @@ func TestEventGlyph(t *testing.T) {
 		{"bet failed", EventBetFailed, glyph{"⛔", ToneNegative, true}},
 		{"drop claim", EventDropClaim, glyph{"📦", TonePositive, true}},
 		{"drop status", EventDropStatus, glyph{"📋", ToneNeutral, true}},
+		{"drops not connected", EventDropNotConnected, glyph{"🔌", ToneNegative, true}},
 		{"moment claim", EventMomentClaim, glyph{"⚡", TonePositive, true}},
 		{"chat mention", EventChatMention, glyph{"💬", ToneNeutral, true}},
 		{"an unknown event", "NONSENSE", glyph{"", "", false}},

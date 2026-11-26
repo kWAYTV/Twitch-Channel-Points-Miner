@@ -80,6 +80,7 @@ func Describe(line string) Message {
 		func() (Message, bool) { return describeRaid(head) },
 		func() (Message, bool) { return describeMoment(head) },
 		func() (Message, bool) { return describeDropClaim(head) },
+		func() (Message, bool) { return describeDropNotConnected(head) },
 		func() (Message, bool) { return describeDropProgress(head, other) },
 		func() (Message, bool) { return describeMention(head) },
 	}

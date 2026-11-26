@@ -95,7 +95,7 @@ func (c *Claimer) warnUnconnected(statuses []twitch.DropStatus) {
 		}
 		unconnected[game] = struct{}{}
 		if _, warned := c.warnedGames[game]; !warned {
-			c.logger.Printf("%s", formatUnconnectedLine(status))
+			c.logger.EmojiEventf(":electric_plug:", events.EventDropNotConnected, "%s", formatUnconnectedLine(status))
 		}
 	}
 	c.warnedGames = unconnected
@@ -103,6 +103,10 @@ func (c *Claimer) warnUnconnected(statuses []twitch.DropStatus) {
 
 func (c *Claimer) logClaimed(drops []twitch.ClaimedDrop) {
 	for _, drop := range drops {
+		if drop.AccountNotConnected {
+			c.logger.EmojiEventf(":electric_plug:", events.EventDropNotConnected, "%s", formatClaimLine(drop))
+			continue
+		}
 		c.logger.EmojiEventf(":package:", events.EventDropClaim, "%s", formatClaimLine(drop))
 	}
 }
