@@ -16,7 +16,7 @@ func TestBetSettings_Default(t *testing.T) {
 		settings.Default()
 
 		want := BetSettings{
-			Strategy:      StrategySmart,
+			Strategy:      StrategyKelly,
 			Percentage:    intPtr(5),
 			PercentageGap: intPtr(20),
 			MaxPoints:     intPtr(50000),

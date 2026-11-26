@@ -221,3 +221,34 @@ func TestBelowMinimumPoints(t *testing.T) {
 		})
 	}
 }
+
+func TestStakeTooSmall_kelly(t *testing.T) {
+	kelly := domain.StreamerSettings{Bet: domain.BetSettings{Strategy: domain.StrategyKelly}}
+
+	t.Run("no stake because nothing is underpriced", func(t *testing.T) {
+		streamer := &domain.Streamer{ChannelPoints: 1000, Settings: kelly}
+
+		want := "no outcome is underpriced: none has a larger share of the viewers than of the pool"
+		if got := stakeTooSmall(streamer, 0); got != want {
+			t.Errorf("stakeTooSmall = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("a stake held under the minimum by the limits", func(t *testing.T) {
+		streamer := &domain.Streamer{ChannelPoints: 100, Settings: kelly}
+
+		want := "calculated stake 5 below Twitch minimum"
+		if got := stakeTooSmall(streamer, 5); got != want {
+			t.Errorf("stakeTooSmall = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("a balance under the minimum", func(t *testing.T) {
+		streamer := &domain.Streamer{ChannelPoints: 9, Settings: kelly}
+
+		want := "balance 9 below Twitch minimum 10"
+		if got := stakeTooSmall(streamer, 0); got != want {
+			t.Errorf("stakeTooSmall = %q, want %q", got, want)
+		}
+	})
+}

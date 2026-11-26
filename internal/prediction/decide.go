@@ -14,12 +14,21 @@ func (p *Event) Decide(balance int) Decision {
 	}
 	settings := p.Streamer.Settings.Bet
 
-	choice := selectOutcome(p.Outcomes, settings)
+	if settings.Strategy == "" {
+		settings.Strategy = domain.DefaultBetStrategy
+	}
+	var choice, amount int
+	if settings.Strategy == domain.StrategyKelly {
+		choice, amount = kellyDecision(p.Outcomes, balance, settings)
+	} else {
+		choice = selectOutcome(p.Outcomes, settings)
+		if choice >= 0 && choice < len(p.Outcomes) {
+			amount = stake(balance, settings, p.Outcomes[choice].TopPoints)
+		}
+	}
 	if choice < 0 || choice >= len(p.Outcomes) {
 		return decision
 	}
-
-	amount := stake(balance, settings, p.Outcomes[choice].TopPoints)
 
 	decision = Decision{
 		Choice:    choice,
@@ -30,29 +39,34 @@ func (p *Event) Decide(balance int) Decision {
 	return decision
 }
 
+// kellyDecision is the outcome and stake of the KELLY strategy. When no
+// outcome is worth a bet it still names the outcome most viewers chose, with
+// a stake of 0, so the log can say what was passed over.
+func kellyDecision(outcomes []Outcome, balance int, settings domain.BetSettings) (choice, amount int) {
+	choice, full := kellyChoice(outcomes, balance)
+	if choice < 0 {
+		return maxIndex(outcomes, func(o Outcome) float64 { return float64(o.TotalUsers) }), 0
+	}
+	amount = kellyAmount(full, balance, settings)
+	return choice, underTopBet(amount, settings, outcomes[choice].TopPoints)
+}
+
+// underTopBet lowers a stake to one point under the largest bet on the
+// outcome when stealth mode is on, so it is never the top bet.
+func underTopBet(amount int, settings domain.BetSettings, topPoints int) int {
+	if settings.StealthMode == nil || !*settings.StealthMode || topPoints <= 0 || amount < topPoints {
+		return amount
+	}
+	return max(topPoints-1, 1)
+}
+
 // MinimumStake is the smallest bet Twitch accepts.
 const MinimumStake = 10
 
 // stake is how many points to bet from balance. topPoints is the largest bet
 // already placed on the chosen outcome, which stealth mode stays below.
 func stake(balance int, settings domain.BetSettings, topPoints int) int {
-	percentage := domain.DefaultBetPercentage
-	if settings.Percentage != nil {
-		percentage = *settings.Percentage
-	}
-	amount := int(float64(balance) * (float64(percentage) / 100))
-	if settings.MaxPoints != nil && amount > *settings.MaxPoints {
-		amount = *settings.MaxPoints
-	}
-	if amount > balance {
-		amount = balance
-	}
-	if settings.StealthMode != nil && *settings.StealthMode && topPoints > 0 && amount >= topPoints {
-		amount = topPoints - 1
-		if amount < 1 {
-			amount = 1
-		}
-	}
+	amount := underTopBet(stakeLimit(balance, settings), settings, topPoints)
 	if amount < MinimumStake {
 		if settings.MaxPoints != nil && *settings.MaxPoints < MinimumStake {
 			amount = min(*settings.MaxPoints, balance)
@@ -67,12 +81,7 @@ func selectOutcome(outcomes []Outcome, settings domain.BetSettings) int {
 	if len(outcomes) == 0 {
 		return -1
 	}
-	strategy := settings.Strategy
-	if strategy == "" {
-		strategy = domain.DefaultBetStrategy
-	}
-
-	switch strategy {
+	switch settings.Strategy {
 	case domain.StrategyMostVoted:
 		return maxIndex(outcomes, func(o Outcome) float64 { return float64(o.TotalUsers) })
 	case domain.StrategyHighOdds:

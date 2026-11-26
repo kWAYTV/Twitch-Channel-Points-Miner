@@ -24,7 +24,7 @@ func defaultsDecoded() config {
 		GameExclude:      []string{},
 		WatchPriority:    []string{"STREAK", "DROPS", "ORDER"},
 		Bet: betConfig{
-			Strategy:        "SMART",
+			Strategy:        "KELLY",
 			Percentage:      ptr(5),
 			PercentageGap:   ptr(20),
 			MaxPoints:       ptr(50000),

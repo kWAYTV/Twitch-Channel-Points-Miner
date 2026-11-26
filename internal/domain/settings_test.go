@@ -23,7 +23,7 @@ func TestStreamerSettings_Default(t *testing.T) {
 
 		want := StreamerSettings{
 			Bet: BetSettings{
-				Strategy:      StrategySmart,
+				Strategy:      StrategyKelly,
 				Percentage:    intPtr(5),
 				PercentageGap: intPtr(20),
 				MaxPoints:     intPtr(50000),

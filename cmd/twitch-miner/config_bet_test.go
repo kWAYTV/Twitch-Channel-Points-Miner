@@ -35,7 +35,7 @@ func TestMergeBetSettings(t *testing.T) {
 	t.Run("nothing overridden and nothing in the base", func(t *testing.T) {
 		got := mergeBetSettings(domain.BetSettings{}, betConfig{})
 		want := domain.BetSettings{
-			Strategy:        "SMART",
+			Strategy:        "KELLY",
 			Percentage:      ptr(5),
 			PercentageGap:   ptr(20),
 			MaxPoints:       ptr(50000),

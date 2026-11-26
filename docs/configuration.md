@@ -53,8 +53,8 @@ Explained in [predictions](predictions.md).
 | Key | Default | Meaning |
 |---|---|---|
 | `make_predictions` | `true` | Place predictions. |
-| `bet.strategy` | `"SMART"` | How the outcome is chosen: `SMART`, `MOST_VOTED`, `HIGH_ODDS`, `PERCENTAGE`, `SMART_MONEY`, `NUMBER_1` to `NUMBER_8`. |
-| `bet.percentage` | `5` | Percent of the balance to bet. |
+| `bet.strategy` | `"KELLY"` | How the outcome is chosen: `KELLY`, `SMART`, `MOST_VOTED`, `HIGH_ODDS`, `PERCENTAGE`, `SMART_MONEY`, `NUMBER_1` to `NUMBER_8`. |
+| `bet.percentage` | `5` | Percent of the balance to bet. With `KELLY`, the most it may bet. |
 | `bet.percentage_gap` | `20` | For `SMART`: how close the two most-voted outcomes must be to switch to the highest odds. |
 | `bet.max_points` | `50000` | Most points placed on one bet. |
 | `bet.minimum_points` | `0` | Do not bet while the balance is at or below this. |

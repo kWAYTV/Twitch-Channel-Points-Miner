@@ -68,6 +68,9 @@ func stakeTooSmall(streamer *domain.Streamer, stake int) string {
 	if streamer.ChannelPoints < prediction.MinimumStake {
 		return fmt.Sprintf("balance %d below Twitch minimum %d", streamer.ChannelPoints, prediction.MinimumStake)
 	}
+	if streamer.Settings.Bet.Strategy == domain.StrategyKelly && stake == 0 {
+		return "no outcome is underpriced: none has a larger share of the viewers than of the pool"
+	}
 	if limit := streamer.Settings.Bet.MaxPoints; limit != nil && *limit < prediction.MinimumStake {
 		return fmt.Sprintf("max_points %d below Twitch minimum %d", *limit, prediction.MinimumStake)
 	}

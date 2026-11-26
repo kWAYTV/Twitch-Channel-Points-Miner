@@ -172,7 +172,7 @@ func TestSelectOutcome(t *testing.T) {
 		{"number 8 of seven: high odds", eight[:7], domain.BetSettings{Strategy: domain.StrategyNumber8}, 0},
 
 		{"smart, a clear favourite: most voted", four, domain.BetSettings{Strategy: domain.StrategySmart}, 0},
-		{"no strategy: smart", four, domain.BetSettings{}, 0},
+		{"no strategy: high odds, as for an unknown one", four, domain.BetSettings{}, 1},
 		{"smart, a gap wider than the favourite's lead: high odds", four, domain.BetSettings{Strategy: domain.StrategySmart, PercentageGap: intPtr(40)}, 1},
 		{
 			"smart, a lead one under the gap: high odds",

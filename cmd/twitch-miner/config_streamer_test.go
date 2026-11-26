@@ -10,7 +10,7 @@ import (
 // defaultBet is what an empty bet becomes once its defaults are filled in.
 func defaultBet() domain.BetSettings {
 	return domain.BetSettings{
-		Strategy:      "SMART",
+		Strategy:      "KELLY",
 		Percentage:    ptr(5),
 		PercentageGap: ptr(20),
 		MaxPoints:     ptr(50000),

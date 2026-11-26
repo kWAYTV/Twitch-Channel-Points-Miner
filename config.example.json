@@ -18,7 +18,7 @@
 
   "make_predictions": true,
   "bet": {
-    "strategy": "SMART",
+    "strategy": "KELLY",
     "percentage": 5,
     "percentage_gap": 20,
     "max_points": 50000,

@@ -7,7 +7,7 @@ All settings below live under `bet`. They can be changed for one streamer under 
 ```json
 "make_predictions": true,
 "bet": {
-  "strategy": "SMART",
+  "strategy": "KELLY",
   "percentage": 5,
   "percentage_gap": 20,
   "max_points": 50000,
@@ -25,6 +25,7 @@ All settings below live under `bet`. They can be changed for one streamer under 
 
 | Strategy | Picks |
 |---|---|
+| `KELLY` | The outcome the pool underprices, and only when there is one. Default. See [the Kelly strategy](#the-kelly-strategy). |
 | `SMART` | The outcome most people voted for. If the two most-voted outcomes are closer than `percentage_gap` percentage points, the one with the highest odds instead. |
 | `MOST_VOTED` | The outcome with the most voters. |
 | `HIGH_ODDS` | The outcome with the highest odds (the biggest payout, the least likely). |
@@ -34,7 +35,20 @@ All settings below live under `bet`. They can be changed for one streamer under 
 
 `percentage_gap` (default `20`) is only used by `SMART`.
 
+## The Kelly strategy
+
+A Twitch prediction is a parimutuel pool: the winners share everything that was bet, in proportion to their stakes. A bet only pays off over time when the outcome is likelier than its share of the pool says. `KELLY` applies the two rules that follow from that:
+
+- **Bet only on value.** The chance of an outcome is estimated as its share of the viewers who voted, one viewer one vote. The pool gives the odds. An outcome is underpriced when its share of the viewers is larger than its share of the pool. If none is, no bet is placed (`no outcome is underpriced`).
+- **Size by the Kelly criterion.** The stake is the one that makes the balance grow fastest over many bets, worked out for a pool where your own stake lowers the payout. A quarter of that is bet, the usual precaution when the chance is an estimate, and it never exceeds `percentage` of the balance or `max_points`.
+
+The estimate is the weak part: nothing published shows that viewer counts predict Twitch outcomes better than the pool does. The strategy is disciplined about when and how much to bet; it does not make the estimate right. Use `filter_condition` to skip predictions with few voters, where a share of the viewers means little.
+
+`percentage_gap` is not used by `KELLY`.
+
 ## Sizing the stake
+
+With `KELLY`, `percentage` and `max_points` are upper limits and the stake is usually smaller. With every other strategy:
 
 1. Start from `percentage` percent of your balance on that channel (default `5`).
 2. Cap it at `max_points` (default `50000`).

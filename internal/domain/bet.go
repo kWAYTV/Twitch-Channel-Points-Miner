@@ -8,14 +8,17 @@ const (
 	StrategyPercentage Strategy = "PERCENTAGE"
 	StrategySmartMoney Strategy = "SMART_MONEY"
 	StrategySmart      Strategy = "SMART"
-	StrategyNumber1    Strategy = "NUMBER_1"
-	StrategyNumber2    Strategy = "NUMBER_2"
-	StrategyNumber3    Strategy = "NUMBER_3"
-	StrategyNumber4    Strategy = "NUMBER_4"
-	StrategyNumber5    Strategy = "NUMBER_5"
-	StrategyNumber6    Strategy = "NUMBER_6"
-	StrategyNumber7    Strategy = "NUMBER_7"
-	StrategyNumber8    Strategy = "NUMBER_8"
+	// StrategyKelly bets only on an outcome the pool underprices, and sizes
+	// the stake by the Kelly criterion.
+	StrategyKelly   Strategy = "KELLY"
+	StrategyNumber1 Strategy = "NUMBER_1"
+	StrategyNumber2 Strategy = "NUMBER_2"
+	StrategyNumber3 Strategy = "NUMBER_3"
+	StrategyNumber4 Strategy = "NUMBER_4"
+	StrategyNumber5 Strategy = "NUMBER_5"
+	StrategyNumber6 Strategy = "NUMBER_6"
+	StrategyNumber7 Strategy = "NUMBER_7"
+	StrategyNumber8 Strategy = "NUMBER_8"
 )
 
 type DelayMode string
@@ -68,7 +71,7 @@ type BetSettings struct {
 
 // What a bet setting is when the config leaves it out.
 const (
-	DefaultBetStrategy      = StrategySmart
+	DefaultBetStrategy      = StrategyKelly
 	DefaultBetPercentage    = 5
 	DefaultBetPercentageGap = 20
 	DefaultBetMaxPoints     = 50000
