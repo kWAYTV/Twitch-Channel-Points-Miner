@@ -80,14 +80,10 @@ var GQLOperations = struct {
 	DropsPageClaimDropRewards              GQLPersistedOperation
 	ChannelPointsContext                   GQLPersistedOperation
 	JoinRaid                               GQLPersistedOperation
-	ModViewChannelQuery                    GQLPersistedOperation
 	Inventory                              GQLPersistedOperation
 	MakePrediction                         GQLPersistedOperation
-	ViewerDropsDashboard                   GQLPersistedOperation
-	DropCampaignDetails                    GQLPersistedOperation
 	DropsHighlightServiceAvailable         GQLPersistedOperation
 	GetIDFromLogin                         GQLPersistedOperation
-	PersonalSections                       []GQLPersistedOperation
 	ChannelFollows                         GQLPersistedOperation
 	UserPointsContribution                 GQLPersistedOperation
 	ContributeCommunityPointsCommunityGoal GQLPersistedOperation
@@ -105,28 +101,14 @@ var GQLOperations = struct {
 	DropsPageClaimDropRewards:    newPersistedOperation("DropsPage_ClaimDropRewards", "a455deea71bdc9015b78eb49f4acfbce8baa7ccbedd28e549bb025bd0f751930", nil),
 	ChannelPointsContext:         newPersistedOperation("ChannelPointsContext", "374314de591e69925fce3ddc2bcf085796f56ebb8cad67a0daa3165c03adc345", nil),
 	JoinRaid:                     newPersistedOperation("JoinRaid", "c6a332a86d1087fbbb1a8623aa01bd1313d2386e7c63be60fdb2d1901f01a4ae", nil),
-	ModViewChannelQuery:          newPersistedOperation("ModViewChannelQuery", "df5d55b6401389afb12d3017c9b2cf1237164220c8ef4ed754eae8188068a807", nil),
 	Inventory: newPersistedOperation("Inventory", "d86775d0ef16a63a33ad52e80eaff963b2d5b72fada7c991504a57496e1d8e4b", map[string]interface{}{
 		"fetchRewardCampaigns": true,
 	}),
 	MakePrediction:                 newPersistedOperation("MakePrediction", "b44682ecc88358817009f20e69d75081b1e58825bb40aa53d5dbadcc17c881d8", nil),
-	ViewerDropsDashboard:           newPersistedOperation("ViewerDropsDashboard", "5a4da2ab3d5b47c9f9ce864e727b2cb346af1e3ea8b897fe8f704a97ff017619", map[string]interface{}{"fetchRewardCampaigns": true}),
-	DropCampaignDetails:            newPersistedOperation("DropCampaignDetails", "f6396f5ffdde867a8f6f6da18286e4baf02e5b98d14689a69b5af320a4c7b7b8", nil),
 	DropsHighlightServiceAvailable: newPersistedOperation("DropsHighlightService_AvailableDrops", "782dad0f032942260171d2d80a654f88bdd0c5a9dddc392e9bc92218a0f42d20", nil),
 	GetIDFromLogin: newPersistedOperation("GetIDFromLogin", "94e82a7b1e3c21e186daa73ee2afc4b8f23bade1fbbff6fe8ac133f50a2f58ca", map[string]interface{}{
 		"login": nil,
 	}),
-	PersonalSections: []GQLPersistedOperation{
-		newPersistedOperation("PersonalSections", "9fbdfb00156f754c26bde81eb47436dee146655c92682328457037da1a48ed39", map[string]interface{}{
-			"input": map[string]interface{}{
-				"sectionInputs":         []string{"FOLLOWED_SECTION"},
-				"recommendationContext": map[string]interface{}{"platform": "web"},
-			},
-			"channelLogin":                          nil,
-			"withChannelUser":                       false,
-			"creatorAnniversariesExperimentEnabled": false,
-		}),
-	},
 	ChannelFollows: newPersistedOperation("ChannelFollows", "eecf815273d3d949e5cf0085cc5084cd8a1b5b7b6f7990cf43cb0beadf546907", map[string]interface{}{
 		"limit": 100,
 		"order": "ASC",

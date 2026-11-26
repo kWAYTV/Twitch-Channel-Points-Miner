@@ -146,10 +146,6 @@ func operationNote(name string) string {
 		return "join raid"
 	case "DropsPage_ClaimDropRewards":
 		return "claim drop"
-	case "ViewerDropsDashboard":
-		return "drops dashboard"
-	case "DropCampaignDetails":
-		return "drop details"
 	case "DropsHighlightService_AvailableDrops":
 		return "available drops"
 	case "Inventory":
@@ -158,16 +154,12 @@ func operationNote(name string) string {
 		return "resolve id"
 	case "ChannelFollows":
 		return "followers"
-	case "PersonalSections":
-		return "followed streams"
 	case "UserPointsContribution":
 		return "community goal"
 	case "ContributeCommunityPointsCommunityGoal":
 		return "contribute goal"
 	case "MakePrediction":
 		return "make prediction"
-	case "ModViewChannelQuery":
-		return "mod view"
 	case "ClipsCards__User":
 		return "clips"
 	case "FilterableVideoTower_Videos":
