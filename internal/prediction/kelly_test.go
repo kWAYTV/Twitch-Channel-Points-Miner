@@ -67,8 +67,8 @@ func TestKellyChoice(t *testing.T) {
 	t.Run("most viewers on the side with less of the pool", func(t *testing.T) {
 		// Yes has 60% of the viewers and half of a very large pool.
 		outcomes := []Outcome{
-			{ID: "yes", TotalUsers: 60, TotalPoints: 50_000_000},
-			{ID: "no", TotalUsers: 40, TotalPoints: 50_000_000},
+			{ID: "yes", TotalUsers: 600_000, TotalPoints: 50_000_000},
+			{ID: "no", TotalUsers: 400_000, TotalPoints: 50_000_000},
 		}
 
 		index, stake := kellyChoice(outcomes, 1_000)
@@ -80,8 +80,8 @@ func TestKellyChoice(t *testing.T) {
 
 	t.Run("the second outcome underpriced", func(t *testing.T) {
 		outcomes := []Outcome{
-			{ID: "yes", TotalUsers: 40, TotalPoints: 50_000_000},
-			{ID: "no", TotalUsers: 60, TotalPoints: 50_000_000},
+			{ID: "yes", TotalUsers: 400_000, TotalPoints: 50_000_000},
+			{ID: "no", TotalUsers: 600_000, TotalPoints: 50_000_000},
 		}
 
 		index, stake := kellyChoice(outcomes, 1_000)
@@ -106,9 +106,9 @@ func TestKellyChoice(t *testing.T) {
 
 	t.Run("three outcomes, the middle one underpriced", func(t *testing.T) {
 		outcomes := []Outcome{
-			{ID: "a", TotalUsers: 30, TotalPoints: 40_000_000},
-			{ID: "b", TotalUsers: 50, TotalPoints: 30_000_000},
-			{ID: "c", TotalUsers: 20, TotalPoints: 30_000_000},
+			{ID: "a", TotalUsers: 300_000, TotalPoints: 40_000_000},
+			{ID: "b", TotalUsers: 500_000, TotalPoints: 30_000_000},
+			{ID: "c", TotalUsers: 200_000, TotalPoints: 30_000_000},
 		}
 
 		index, _ := kellyChoice(outcomes, 1_000)
@@ -147,6 +147,8 @@ func TestKellyAmount(t *testing.T) {
 		{"over max_points", 8_000, 10_000, domain.BetSettings{Percentage: intPtr(50), MaxPoints: intPtr(300)}, 300},
 		{"under Twitch's minimum, the limit allowing it", 20, 10_000, domain.BetSettings{}, 10},
 		{"under Twitch's minimum, the limit under it too", 20, 100, domain.BetSettings{Percentage: intPtr(5)}, 5},
+		{"a full stake of exactly Twitch's minimum", 10, 10_000, domain.BetSettings{}, 10},
+		{"a full stake under Twitch's minimum", 9.9, 10_000, domain.BetSettings{}, 0},
 		{"nothing worth betting", 0, 10_000, domain.BetSettings{}, 0},
 	}
 	for _, tt := range tests {
@@ -183,8 +185,8 @@ func TestStakeLimit(t *testing.T) {
 
 func TestKellyDecision(t *testing.T) {
 	underpriced := []Outcome{
-		{ID: "yes", TotalUsers: 60, TotalPoints: 50_000_000, TopPoints: 40},
-		{ID: "no", TotalUsers: 40, TotalPoints: 50_000_000},
+		{ID: "yes", TotalUsers: 600_000, TotalPoints: 50_000_000, TopPoints: 40},
+		{ID: "no", TotalUsers: 400_000, TotalPoints: 50_000_000},
 	}
 	fair := []Outcome{
 		{ID: "yes", TotalUsers: 30, TotalPoints: 30_000},
@@ -228,8 +230,8 @@ func TestKellyDecision(t *testing.T) {
 
 func TestEvent_Decide_kelly(t *testing.T) {
 	outcomes := []Outcome{
-		{ID: "yes", TotalUsers: 60, TotalPoints: 50_000_000},
-		{ID: "no", TotalUsers: 40, TotalPoints: 50_000_000},
+		{ID: "yes", TotalUsers: 600_000, TotalPoints: 50_000_000},
+		{ID: "no", TotalUsers: 400_000, TotalPoints: 50_000_000},
 	}
 
 	t.Run("the KELLY strategy", func(t *testing.T) {
@@ -264,6 +266,81 @@ func TestEvent_Decide_kelly(t *testing.T) {
 
 		if want := (Decision{Choice: 1, OutcomeID: "no", Amount: 0}); got != want {
 			t.Errorf("Decide = %+v, want %+v", got, want)
+		}
+	})
+}
+
+func TestChanceOf(t *testing.T) {
+	tests := []struct {
+		name       string
+		users      int
+		totalUsers int
+		pool       int
+		totalPool  int
+		want       float64
+	}{
+		// Two thirds of the voters, half the pool.
+		{"four of six voters", 4, 6, 500, 1_000, 14.0 / 26},
+		{"forty of sixty voters", 40, 60, 500, 1_000, 50.0 / 80},
+		{"four hundred of six hundred voters", 400, 600, 500, 1_000, 410.0 / 620},
+		{"nobody voted: the pool's share", 0, 0, 300, 1_000, 0.3},
+		{"voters and pool agree", 30, 100, 300, 1_000, 0.3},
+		{"every voter and the whole pool", 5, 5, 1_000, 1_000, 1},
+		{"no voters on it and none of the pool", 0, 10, 0, 1_000, 0},
+		{"an empty pool", 4, 6, 0, 0, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := chanceOf(tt.users, tt.totalUsers, tt.pool, tt.totalPool); math.Abs(got-tt.want) > 1e-9 {
+				t.Errorf("chanceOf(%d, %d, %d, %d) = %v, want %v", tt.users, tt.totalUsers, tt.pool, tt.totalPool, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestKellyChoice_poolSize(t *testing.T) {
+	// The same split every time: two thirds of the voters on Yes, the pool
+	// half and half, and a pool far larger than the balance.
+	split := func(yes, no int) []Outcome {
+		return []Outcome{
+			{ID: "yes", TotalUsers: yes, TotalPoints: 50_000_000},
+			{ID: "no", TotalUsers: no, TotalPoints: 50_000_000},
+		}
+	}
+
+	t.Run("six voters", func(t *testing.T) {
+		// A chance of 14/26, so 1/13 of the balance.
+		index, stake := kellyChoice(split(4, 2), 1_000)
+
+		if index != 0 || !near(stake, 77) {
+			t.Errorf("kellyChoice = %d, %.2f, want 0, 77", index, stake)
+		}
+	})
+
+	t.Run("sixty voters", func(t *testing.T) {
+		// A chance of 50/80, so a quarter of the balance.
+		index, stake := kellyChoice(split(40, 20), 1_000)
+
+		if index != 0 || !near(stake, 250) {
+			t.Errorf("kellyChoice = %d, %.2f, want 0, 250", index, stake)
+		}
+	})
+
+	t.Run("six hundred voters", func(t *testing.T) {
+		// A chance of 410/620, so 10/31 of the balance.
+		index, stake := kellyChoice(split(400, 200), 1_000)
+
+		if index != 0 || !near(stake, 323) {
+			t.Errorf("kellyChoice = %d, %.2f, want 0, 323", index, stake)
+		}
+	})
+
+	t.Run("one voter", func(t *testing.T) {
+		// A chance of 11/21, so 1/21 of the balance.
+		index, stake := kellyChoice(split(1, 0), 1_000)
+
+		if index != 0 || !near(stake, 48) {
+			t.Errorf("kellyChoice = %d, %.2f, want 0, 48", index, stake)
 		}
 	})
 }

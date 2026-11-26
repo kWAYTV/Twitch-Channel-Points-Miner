@@ -39,10 +39,27 @@ func decideBet(event *prediction.Event) (prediction.Decision, *skippedBet) {
 	if skip, compared, reason := event.ShouldSkipByFilter(); skip {
 		return decision, filterSkip(reason, compared)
 	}
+	if nothingToWin(event, decision) {
+		reason := "nothing to win: no points on any other outcome"
+		return decision, &skippedBet{events.EventBetFilters, reason, reason}
+	}
 	if decision.Amount < prediction.MinimumStake {
 		return decision, &skippedBet{events.EventBetFilters, "below Twitch minimum", stakeTooSmall(streamer, decision.Amount)}
 	}
 	return decision, nil
+}
+
+// nothingToWin says whether every point in the pool is on the chosen outcome.
+// A win would then pay back the stake and nothing more.
+func nothingToWin(event *prediction.Event, decision prediction.Decision) bool {
+	if decision.Choice < 0 || decision.Choice >= len(event.Outcomes) {
+		return false
+	}
+	total := 0
+	for _, outcome := range event.Outcomes {
+		total += outcome.TotalPoints
+	}
+	return total > 0 && event.Outcomes[decision.Choice].TotalPoints == total
 }
 
 // belowMinimumPoints says whether the balance is at or under the streamer's
@@ -69,7 +86,7 @@ func stakeTooSmall(streamer *domain.Streamer, stake int) string {
 		return fmt.Sprintf("balance %d below Twitch minimum %d", streamer.ChannelPoints, prediction.MinimumStake)
 	}
 	if streamer.Settings.Bet.Strategy == domain.StrategyKelly && stake == 0 {
-		return "no outcome is underpriced: none has a larger share of the viewers than of the pool"
+		return "no outcome is underpriced enough to be worth a bet"
 	}
 	if limit := streamer.Settings.Bet.MaxPoints; limit != nil && *limit < prediction.MinimumStake {
 		return fmt.Sprintf("max_points %d below Twitch minimum %d", *limit, prediction.MinimumStake)

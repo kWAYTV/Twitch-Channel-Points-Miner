@@ -228,7 +228,7 @@ func TestStakeTooSmall_kelly(t *testing.T) {
 	t.Run("no stake because nothing is underpriced", func(t *testing.T) {
 		streamer := &domain.Streamer{ChannelPoints: 1000, Settings: kelly}
 
-		want := "no outcome is underpriced: none has a larger share of the viewers than of the pool"
+		want := "no outcome is underpriced enough to be worth a bet"
 		if got := stakeTooSmall(streamer, 0); got != want {
 			t.Errorf("stakeTooSmall = %q, want %q", got, want)
 		}
@@ -251,4 +251,28 @@ func TestStakeTooSmall_kelly(t *testing.T) {
 			t.Errorf("stakeTooSmall = %q, want %q", got, want)
 		}
 	})
+}
+
+func TestNothingToWin(t *testing.T) {
+	tests := []struct {
+		name     string
+		outcomes []prediction.Outcome
+		choice   int
+		want     bool
+	}{
+		{"every point on the chosen outcome", []prediction.Outcome{{TotalPoints: 2_220}, {TotalPoints: 0}}, 0, true},
+		{"a few points on the other outcome", []prediction.Outcome{{TotalPoints: 2_220}, {TotalPoints: 10}}, 0, false},
+		{"every point on the other outcome", []prediction.Outcome{{TotalPoints: 0}, {TotalPoints: 2_220}}, 0, false},
+		{"three outcomes, every point on the chosen one", []prediction.Outcome{{TotalPoints: 0}, {TotalPoints: 500}, {TotalPoints: 0}}, 1, true},
+		{"an empty pool", []prediction.Outcome{{TotalPoints: 0}, {TotalPoints: 0}}, 0, false},
+		{"a choice outside the outcomes", []prediction.Outcome{{TotalPoints: 500}}, 3, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := &prediction.Event{Outcomes: tt.outcomes}
+			if got := nothingToWin(event, prediction.Decision{Choice: tt.choice}); got != tt.want {
+				t.Errorf("nothingToWin() = %t, want %t", got, tt.want)
+			}
+		})
+	}
 }

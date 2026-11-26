@@ -13,8 +13,29 @@ import (
 // it: the stake that makes the balance grow fastest over many bets.
 //
 // The pool gives the odds, but not the chance of winning. That is estimated
-// here as the outcome's share of the viewers who voted, one head one vote,
+// here from the outcome's share of the viewers who voted, one head one vote,
 // which a few large stakes cannot move the way they move the pool.
+//
+// A share of six voters says little and a share of six hundred says a lot.
+// So the estimate starts from what the pool itself implies and moves towards
+// the voters' share as more of them vote. A small prediction then offers
+// little or no edge and gets a small stake or none, and a large one is
+// judged by its voters, without a separate rule for each size.
+
+// priorVoters is how many voters' worth of evidence the pool's own split
+// counts for. With fewer voters than this the pool weighs more than the
+// votes; with many more, the votes decide.
+const priorVoters = 20
+
+// chanceOf estimates the chance that an outcome wins: the voters' share,
+// pulled towards the outcome's share of the pool by priorVoters.
+func chanceOf(users, totalUsers, pool, totalPool int) float64 {
+	if totalPool <= 0 {
+		return 0
+	}
+	poolShare := float64(pool) / float64(totalPool)
+	return (float64(users) + priorVoters*poolShare) / (float64(totalUsers) + priorVoters)
+}
 
 // kellyFraction is the part of the full Kelly stake that is bet. The full
 // stake is right only when the chance of winning is known exactly; with an
@@ -64,7 +85,7 @@ func kellyStake(balance, p, outcomePool, totalPool float64) float64 {
 
 // kellyChoice picks the outcome a Kelly bettor would bet on, and the full
 // Kelly stake for it. The index is -1 when no outcome is worth a bet: none is
-// likelier, by its share of the viewers, than its share of the pool.
+// likelier, by its estimated chance, than its share of the pool.
 func kellyChoice(outcomes []Outcome, balance int) (index int, stake float64) {
 	totalUsers, totalPool := 0, 0
 	for _, o := range outcomes {
@@ -76,7 +97,7 @@ func kellyChoice(outcomes []Outcome, balance int) (index int, stake float64) {
 	}
 	index = -1
 	for i, o := range outcomes {
-		chance := float64(o.TotalUsers) / float64(totalUsers)
+		chance := chanceOf(o.TotalUsers, totalUsers, o.TotalPoints, totalPool)
 		if s := kellyStake(float64(balance), chance, float64(o.TotalPoints), float64(totalPool)); s > stake {
 			index, stake = i, s
 		}
@@ -85,11 +106,12 @@ func kellyChoice(outcomes []Outcome, balance int) (index int, stake float64) {
 }
 
 // kellyAmount turns the full Kelly stake into the points to bet: the fraction
-// of it that is bet, within the limits the settings put on every stake. A
-// stake under Twitch's minimum is raised to it when the limits allow, because
-// the minimum is small against any balance worth betting from.
+// of it that is bet, within the limits the settings put on every stake. When
+// that fraction is under Twitch's minimum it is raised to the minimum, but
+// only while the minimum is itself no more than the full Kelly stake: past
+// that point a bet would be larger than the edge is worth, so none is placed.
 func kellyAmount(full float64, balance int, settings domain.BetSettings) int {
-	if full <= 0 {
+	if full < MinimumStake {
 		return 0
 	}
 	limit := stakeLimit(balance, settings)

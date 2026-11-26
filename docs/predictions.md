@@ -39,10 +39,22 @@ All settings below live under `bet`. They can be changed for one streamer under 
 
 A Twitch prediction is a parimutuel pool: the winners share everything that was bet, in proportion to their stakes. A bet only pays off over time when the outcome is likelier than its share of the pool says. `KELLY` applies the two rules that follow from that:
 
-- **Bet only on value.** The chance of an outcome is estimated as its share of the viewers who voted, one viewer one vote. The pool gives the odds. An outcome is underpriced when its share of the viewers is larger than its share of the pool. If none is, no bet is placed (`no outcome is underpriced`).
+- **Bet only on value.** The chance of an outcome is estimated from its share of the viewers who voted, one viewer one vote. The pool gives the odds. An outcome is underpriced when that chance is larger than its share of the pool. If none is underpriced enough, no bet is placed.
 - **Size by the Kelly criterion.** The stake is the one that makes the balance grow fastest over many bets, worked out for a pool where your own stake lowers the payout. A quarter of that is bet, the usual precaution when the chance is an estimate, and it never exceeds `percentage` of the balance or `max_points`.
 
-The estimate is the weak part: nothing published shows that viewer counts predict Twitch outcomes better than the pool does. The strategy is disciplined about when and how much to bet; it does not make the estimate right. Use `filter_condition` to skip predictions with few voters, where a share of the viewers means little.
+### Small and large predictions
+
+A prediction with 6 voters and one with 600 are not the same bet: one voter moves the first by a sixth. `KELLY` handles this without a rule per size. Its estimate starts from the pool's own split and moves towards the voters' share as more of them vote, the pool counting for 20 voters:
+
+| Voters, two thirds on Yes, pool split evenly | Estimated chance of Yes | Full Kelly stake |
+|---|---|---|
+| 6 | 54% | 8% of the balance |
+| 60 | 63% | 25% |
+| 600 | 66% | 32% |
+
+So a small prediction gets a small stake or none, and a large one is judged by its voters. A quarter of the full stake is what is bet, within your limits. When even the full stake would be under Twitch's minimum of 10 points, no bet is placed.
+
+The estimate is the weak part: nothing published shows that viewer counts predict Twitch outcomes better than the pool does. The strategy is disciplined about when and how much to bet; it does not make the estimate right.
 
 `percentage_gap` is not used by `KELLY`.
 
@@ -56,6 +68,8 @@ With `KELLY`, `percentage` and `max_points` are upper limits and the stake is us
 4. Twitch does not accept less than 10 points. A smaller stake is raised to 10 when the balance allows it; otherwise the bet is skipped.
 
 `minimum_points` skips betting while your balance on the channel is at or below it. Use it to keep a reserve.
+
+Whatever the strategy, no bet is placed when every point in the pool is on the chosen outcome: a win would pay back the stake and nothing more.
 
 The stake is subtracted from the balance the miner shows as soon as the bet is placed, without waiting for Twitch to report it.
 
