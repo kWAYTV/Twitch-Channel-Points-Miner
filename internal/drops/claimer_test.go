@@ -205,7 +205,7 @@ func TestClaimer_Run(t *testing.T) {
 		stop := make(chan struct{})
 		close(stop)
 
-		claimer.Run(stop)
+		claimer.Run(stop, nil)
 
 		checkEntries(t, logger, nil)
 		checkCalls(t, inventory, nil)

@@ -8,13 +8,12 @@ import (
 )
 
 func (m *Miner) streakRecovery(streamers []*domain.Streamer, stop <-chan struct{}) {
-	ticker := time.NewTicker(60 * time.Minute)
-	defer ticker.Stop()
+	ticks := m.human.Every(60*time.Minute, periodSpread, stop)
 	for {
 		m.recoverStreaks(streamers)
 
 		select {
-		case <-ticker.C:
+		case <-ticks:
 			continue
 		case <-stop:
 			return

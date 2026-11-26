@@ -103,11 +103,10 @@ func (m *Miner) updateHistory(streamer *domain.Streamer, reason string, amount i
 }
 
 func (m *Miner) contextRefresher(streamers []*domain.Streamer, stop <-chan struct{}) {
-	ticker := time.NewTicker(20 * time.Minute)
-	defer ticker.Stop()
+	ticks := m.human.Every(20*time.Minute, periodSpread, stop)
 	for {
 		select {
-		case <-ticker.C:
+		case <-ticks:
 			m.refreshContexts(streamers)
 		case <-stop:
 			return

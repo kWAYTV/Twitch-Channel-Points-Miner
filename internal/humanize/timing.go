@@ -67,3 +67,43 @@ func (t *Timing) BetMoment(moment, window float64) float64 {
 	earliest := min(1, moment)
 	return min(max(shifted, earliest), latest)
 }
+
+// Every sends the time on the returned channel once per interval until stop
+// is closed, each interval made up to spread shorter or longer. Switched off,
+// the intervals are exact. A tick nobody is waiting for is dropped.
+func (t *Timing) Every(interval time.Duration, spread float64, stop <-chan struct{}) <-chan time.Time {
+	ticks := make(chan time.Time)
+	go func() {
+		for {
+			timer := time.NewTimer(t.Around(interval, spread))
+			select {
+			case <-stop:
+				timer.Stop()
+				return
+			case at := <-timer.C:
+				select {
+				case ticks <- at:
+				case <-stop:
+					return
+				default:
+				}
+			}
+		}
+	}()
+	return ticks
+}
+
+// Stake rounds a stake down to the kind of number a person types: two
+// leading digits and zeros, so 487 becomes 480 and 12,345 becomes 12,000.
+// Rounding down keeps it within every limit it was already within. It is the
+// stake itself when switched off, and a stake under 20 is left alone.
+func (t *Timing) Stake(points int) int {
+	if t == nil || points < 20 {
+		return points
+	}
+	step := 10
+	for points/step >= 100 {
+		step *= 10
+	}
+	return points / step * step
+}

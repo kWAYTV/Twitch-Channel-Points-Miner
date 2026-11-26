@@ -146,6 +146,13 @@ func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 // vary: a fifth shorter or longer.
 const watchIntervalSpread = 0.2
 
+// periodSpread is how far the wait between two periodic checks may vary.
+const periodSpread = 0.2
+
+// loadStagger is the longest a streamer's loading is held back at startup,
+// so that the requests do not all leave in the same instant.
+const loadStagger = 1200 * time.Millisecond
+
 func watchInterval(count int) time.Duration {
 	if count <= 0 {
 		return 20 * time.Second

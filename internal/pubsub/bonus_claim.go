@@ -49,14 +49,13 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 
 // pollPendingClaims proactively checks each streamer for any outstanding community-point bonuses.
 func (p *Client) pollPendingClaims(stop <-chan struct{}) {
-	ticker := time.NewTicker(5 * time.Hour)
-	defer ticker.Stop()
+	ticks := p.env.human.Every(5*time.Hour, 0.2, stop)
 	p.checkPendingClaims()
 	for {
 		select {
 		case <-stop:
 			return
-		case <-ticker.C:
+		case <-ticks:
 			p.checkPendingClaims()
 		}
 	}

@@ -22,6 +22,9 @@ func (m *Miner) loadStreamers(targets []string) []*domain.Streamer {
 
 	loaded := make([]*domain.Streamer, len(targets))
 	forEachIndex(len(targets), streamerConcurrency, func(i int) {
+		if pause := m.human.Between(0, loadStagger); pause > 0 {
+			time.Sleep(pause)
+		}
 		loaded[i] = m.loadStreamer(targets[i])
 	})
 

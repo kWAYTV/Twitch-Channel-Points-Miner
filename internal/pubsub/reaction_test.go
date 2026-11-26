@@ -129,3 +129,32 @@ func TestClient_scheduleBet_humanTimings(t *testing.T) {
 		}
 	})
 }
+
+func TestClient_placePrediction_humanStake(t *testing.T) {
+	t.Run("a stake of 487, with human timings", func(t *testing.T) {
+		streamer := bettor()
+		streamer.ChannelPoints = 9_740
+		h := betDue(t, world{streamers: []*domain.Streamer{streamer}, human: midway()})
+
+		h.timers[0].fire()
+
+		if got, want := h.account.Bets, []bet{{"ev-1", "yes", 480}}; !reflect.DeepEqual(got, want) {
+			t.Errorf("bets = %+v, want %+v", got, want)
+		}
+		if got, want := h.gains, []gain{{"tester", -480, "PREDICTION", 0}}; !reflect.DeepEqual(got, want) {
+			t.Errorf("gains = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("a stake of 487, with exact timings", func(t *testing.T) {
+		streamer := bettor()
+		streamer.ChannelPoints = 9_740
+		h := betDue(t, world{streamers: []*domain.Streamer{streamer}})
+
+		h.timers[0].fire()
+
+		if got, want := h.account.Bets, []bet{{"ev-1", "yes", 487}}; !reflect.DeepEqual(got, want) {
+			t.Errorf("bets = %+v, want %+v", got, want)
+		}
+	})
+}

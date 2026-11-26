@@ -20,6 +20,10 @@ func (p *Client) placePrediction(eventID string) {
 		p.stopTracking(event, "SKIPPED")
 		return
 	}
+	// A viewer types a round number. Rounded down, the stake stays within
+	// every limit it passed.
+	decision.Amount = p.env.human.Stake(decision.Amount)
+	event.Decision.Amount = decision.Amount
 	if err := p.account.MakePrediction(event); err != nil {
 		p.logger.ErrorEventf(events.EventBetFailed, "prediction %s: %v", p.anonymizer.Shown(event.Streamer), err)
 		p.stopTracking(event, "ERROR")

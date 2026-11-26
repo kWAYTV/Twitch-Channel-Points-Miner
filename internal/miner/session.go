@@ -71,7 +71,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 
 	// background loops
 	if claimDropsEnabled {
-		go dropClaimer.Run(m.stop)
+		go dropClaimer.Run(m.stop, m.human)
 	}
 	go m.contextRefresher(streamerObjs, m.stop)
 	go m.minuteWatcher(streamerObjs, m.stop)

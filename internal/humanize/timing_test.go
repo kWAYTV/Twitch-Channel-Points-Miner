@@ -107,3 +107,64 @@ func TestTiming_BetMoment(t *testing.T) {
 		})
 	}
 }
+
+func TestTiming_Stake(t *testing.T) {
+	tests := []struct {
+		name   string
+		timing *Timing
+		points int
+		want   int
+	}{
+		{"three digits", drawing(0), 487, 480},
+		{"already round", drawing(0), 500, 500},
+		{"two digits", drawing(0), 47, 40},
+		{"four digits", drawing(0), 1_234, 1_200},
+		{"five digits", drawing(0), 12_345, 12_000},
+		{"six digits", drawing(0), 249_999, 240_000},
+		{"exactly a hundred", drawing(0), 100, 100},
+		{"just under a hundred", drawing(0), 99, 90},
+		{"twenty", drawing(0), 20, 20},
+		{"under twenty", drawing(0), 19, 19},
+		{"Twitch's minimum", drawing(0), 10, 10},
+		{"nothing", drawing(0), 0, 0},
+		{"switched off", nil, 487, 487},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.timing.Stake(tt.points); got != tt.want {
+				t.Errorf("Stake(%d) = %d, want %d", tt.points, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTiming_Every(t *testing.T) {
+	t.Run("ticks until stopped", func(t *testing.T) {
+		stop := make(chan struct{})
+		ticks := drawing(0.5).Every(time.Millisecond, 0.2, stop)
+
+		<-ticks
+		<-ticks
+		close(stop)
+	})
+
+	t.Run("switched off, it still ticks", func(t *testing.T) {
+		stop := make(chan struct{})
+		defer close(stop)
+		var off *Timing
+
+		<-off.Every(time.Millisecond, 0.2, stop)
+	})
+
+	t.Run("stopped before the first tick", func(t *testing.T) {
+		stop := make(chan struct{})
+		close(stop)
+		ticks := drawing(0.5).Every(time.Hour, 0.2, stop)
+
+		select {
+		case <-ticks:
+			t.Errorf("a tick arrived, want none after stop")
+		case <-time.After(5 * time.Millisecond):
+		}
+	})
+}

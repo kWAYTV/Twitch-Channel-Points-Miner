@@ -5,11 +5,16 @@ import (
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/humanize"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 // claimInterval is how often the inventory is checked for claimable drops.
 const claimInterval = 30 * time.Minute
+
+// claimIntervalSpread is how far an interval may vary when timings are
+// humanized: a fifth shorter or longer.
+const claimIntervalSpread = 0.2
 
 // Inventory is the part of the Twitch client that lists and claims drops.
 type Inventory interface {
@@ -48,11 +53,10 @@ func NewClaimer(inventory Inventory, logger Logger, showProgress bool) *Claimer 
 	return &Claimer{inventory: inventory, logger: logger, showProgress: showProgress}
 }
 
-// Run claims on every interval until stop is closed.
-func (c *Claimer) Run(stop <-chan struct{}) {
-	ticker := time.NewTicker(claimInterval)
-	defer ticker.Stop()
-	c.run(stop, ticker.C)
+// Run claims on every interval until stop is closed. human varies the
+// intervals; nil keeps them exact.
+func (c *Claimer) Run(stop <-chan struct{}, human *humanize.Timing) {
+	c.run(stop, human.Every(claimInterval, claimIntervalSpread, stop))
 }
 
 func (c *Claimer) run(stop <-chan struct{}, ticks <-chan time.Time) {
