@@ -15,6 +15,7 @@ Earns Twitch channel points for you by watching streams in the background. Writt
 - Claims bonus chests, drops and moments, and follows raids.
 - Goes after drops only for the games you list, if you list any.
 - Places predictions with configurable strategies and filters.
+- Varies its timings like a viewer would, not on an exact schedule.
 - Shows balances and history on a built-in web dashboard.
 - Sends Discord, Telegram and Matrix notifications in plain sentences.
 

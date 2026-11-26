@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/humanize"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 )
 
@@ -44,6 +45,8 @@ type world struct {
 	noHandlers bool
 	// sleep stands in for waiting between connections; it returns at once when left nil.
 	sleep func(time.Duration)
+	// human varies the timings; exact when left nil.
+	human *humanize.Timing
 }
 
 type harness struct {
@@ -78,6 +81,7 @@ func setup(w world) *harness {
 		now:      func() time.Time { return w.now },
 		after:    func(d time.Duration, f func()) { h.timers = append(h.timers, timer{d, f}) },
 		sleep:    w.sleep,
+		human:    w.human,
 	}
 	onGain := func(s *domain.Streamer, earned int, reason string, balance int) {
 		h.gains = append(h.gains, gain{s.Username, earned, reason, balance})

@@ -119,3 +119,21 @@ func TestMiner_filterExcludedTargets(t *testing.T) {
 		})
 	}
 }
+
+func TestNew_humanize(t *testing.T) {
+	t.Run("humanize on", func(t *testing.T) {
+		miner := New(Options{Username: "me", Humanize: true})
+
+		if miner.human == nil {
+			t.Errorf("timings are exact, want them varied")
+		}
+	})
+
+	t.Run("humanize off", func(t *testing.T) {
+		miner := New(Options{Username: "me"})
+
+		if miner.human != nil {
+			t.Errorf("timings are varied, want them exact")
+		}
+	})
+}

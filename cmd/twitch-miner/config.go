@@ -10,6 +10,7 @@ type discordConfig struct {
 type config struct {
 	Username          string          `json:"username"`
 	AutoUpdate        bool            `json:"auto_update"`
+	Humanize          bool            `json:"humanize"`
 	Debug             debugLevel      `json:"debug"`
 	ShowWatchQueue    bool            `json:"show_watch_queue"`
 	ShowSeconds       bool            `json:"show_seconds"`

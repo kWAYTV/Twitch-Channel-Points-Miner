@@ -1,6 +1,7 @@
 {
   "username": "your-twitch-username",
   "auto_update": true,
+  "humanize": true,
 
   "streamers": [],
   "streamers_exclude": [],

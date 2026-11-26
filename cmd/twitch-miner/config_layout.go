@@ -36,7 +36,7 @@ var streamerOverrideLayout = &layout{
 var configLayout = &layout{
 	groups: [][]string{
 		// Account
-		{"username", "auto_update"},
+		{"username", "auto_update", "humanize"},
 		// Who to mine and in which order
 		{"streamers", "streamers_exclude", "streamer_overrides", "watch_priority", "game_priority", "game_exclude"},
 		// What to claim and join

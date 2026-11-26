@@ -35,16 +35,15 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 		}
 		return nil
 	}
-	// p.logger.EmojiPrintf(":gift:", "Claim bonus for %s (claim %s, channel %s)", streamer.Username, claimID, channelID)
-	if err := p.account.ClaimBonus(streamer, claimID); err != nil {
-		if p.anonymizer.Enabled() {
-			p.logger.Errorf("claim bonus %s: %v", p.anonymizer.Shown(streamer), err)
-		} else {
-			p.logger.Errorf("claim bonus %s (channel %s): %v", p.anonymizer.Shown(streamer), channelID, err)
+	p.react("bonus:"+claimID, func() {
+		if err := p.account.ClaimBonus(streamer, claimID); err != nil {
+			if p.anonymizer.Enabled() {
+				p.logger.Errorf("claim bonus %s: %v", p.anonymizer.Shown(streamer), err)
+			} else {
+				p.logger.Errorf("claim bonus %s (channel %s): %v", p.anonymizer.Shown(streamer), channelID, err)
+			}
 		}
-		return nil
-	}
-	// p.logger.Printf("Claim bonus success for %s (claim %s)", streamer.Username, claimID)
+	})
 	return nil
 }
 

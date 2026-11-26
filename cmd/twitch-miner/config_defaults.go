@@ -6,6 +6,7 @@ func defaultConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"username":            "your-twitch-username",
 		"auto_update":         true,
+		"humanize":            true,
 		"debug":               false,
 		"show_watch_queue":    false,
 		"show_seconds":        false,

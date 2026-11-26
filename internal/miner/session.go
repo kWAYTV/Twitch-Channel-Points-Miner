@@ -93,6 +93,7 @@ func (m *Miner) startPubSub(tw *twitch.Client, streamers []*domain.Streamer, sto
 		streamers,
 		m.handlePubSubGain,
 		m.handlePubSubPresence,
+		m.human,
 	)
 	client.Start(stop)
 }

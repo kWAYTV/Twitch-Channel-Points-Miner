@@ -63,7 +63,7 @@ The stake is subtracted from the balance the miner shows as soon as the bet is p
 
 A prediction that is already open when the miner starts is picked up from its next update and bet on in the time that is left. One you already bet on yourself, from the site or another session, is left alone.
 
-By default the bet is placed three quarters of the way through the window. Later is better informed, because the figures are read when the bet is placed, but a channel can close betting before the window ends, and a bet left for the last seconds is then never placed (`Skip bet ...: event status is LOCKED`).
+By default the bet is placed three quarters of the way through the window, give or take a tenth of the window with [`humanize`](configuration.md#humanize) on. Later is better informed, because the figures are read when the bet is placed, but a channel can close betting before the window ends, and a bet left for the last seconds is then never placed (`Skip bet ...: event status is LOCKED`).
 
 | `delay_mode` | `delay` means |
 |---|---|

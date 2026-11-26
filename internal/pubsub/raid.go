@@ -21,14 +21,16 @@ func (p *Client) processRaidMessage(topic string, payload map[string]interface{}
 	}
 	// Twitch repeats the message while the raid counts down. The raid is
 	// remembered only once it is joined, so a join that failed is tried again.
-	if err := p.account.JoinRaid(streamer, raidID); err != nil {
-		p.logger.Errorf("join raid %s->%s: %v", p.anonymizer.Shown(streamer), p.anonymizer.Name(target), err)
-		return nil
-	}
-	streamer.LastRaidID = raidID
-	if target == "" {
-		target = "raid target"
-	}
-	p.logger.EmojiEventf(":performing_arts:", events.EventJoinRaid, "Joining raid from %s to %s", p.anonymizer.Shown(streamer), p.anonymizer.Name(target))
+	p.react("raid:"+raidID, func() {
+		if err := p.account.JoinRaid(streamer, raidID); err != nil {
+			p.logger.Errorf("join raid %s->%s: %v", p.anonymizer.Shown(streamer), p.anonymizer.Name(target), err)
+			return
+		}
+		streamer.LastRaidID = raidID
+		if target == "" {
+			target = "raid target"
+		}
+		p.logger.EmojiEventf(":performing_arts:", events.EventJoinRaid, "Joining raid from %s to %s", p.anonymizer.Shown(streamer), p.anonymizer.Name(target))
+	})
 	return nil
 }

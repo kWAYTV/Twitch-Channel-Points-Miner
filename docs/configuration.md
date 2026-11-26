@@ -19,6 +19,17 @@ Where the file is looked for is described in [getting started](getting-started.m
 |---|---|---|
 | `username` | | Twitch login to mine with. |
 | `auto_update` | `true` | Replace the binary when a newer release is published. Always off in the Docker image. |
+| `humanize` | `true` | Vary timings the way a viewer's vary, instead of acting at the same instant every time. See [below](#humanize). |
+
+### Humanize
+
+With `humanize` on, nothing the miner does happens on an exact schedule:
+
+- A bet is placed within a tenth of the window either side of its set moment, and never later than a moment set in the last tenth: with the default, anywhere from 65% to 85% of the way through.
+- A bonus chest, a Moment and a raid are answered 2 to 8 seconds after they appear, not in the same instant.
+- The pause between two watched minutes is up to a fifth shorter or longer.
+
+Nothing is skipped because of it: each of these waits is far shorter than the time Twitch leaves. Turn it off to get exact timings back.
 
 ## Streamers
 

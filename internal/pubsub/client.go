@@ -7,6 +7,7 @@ import (
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
+	"github.com/kWAYTV/twitch-points-miner/internal/humanize"
 	"github.com/kWAYTV/twitch-points-miner/internal/prediction"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 )
@@ -45,6 +46,11 @@ type Client struct {
 	env         environment
 	streamers   []*domain.Streamer
 	streamerMap map[string]*domain.Streamer
+	// reacting holds what is being answered after a human pause, so a
+	// message Twitch repeats meanwhile is not answered twice.
+	reacting   map[string]struct{}
+	reactingMu sync.Mutex
+
 	predictions map[string]*prediction.Event
 	// seenPredictions holds every event that was scheduled, or that the
 	// account bet on from elsewhere, so none is scheduled a second time.
@@ -87,8 +93,11 @@ func NewClient(
 	streamers []*domain.Streamer,
 	onGain func(*domain.Streamer, int, string, int),
 	onPresence func(*domain.Streamer, bool, string),
+	human *humanize.Timing,
 ) *Client {
-	return newClient(twitchEnvironment(), account, logger, anonymizer, streamers, onGain, onPresence)
+	env := twitchEnvironment()
+	env.human = human
+	return newClient(env, account, logger, anonymizer, streamers, onGain, onPresence)
 }
 
 func newClient(
@@ -113,6 +122,7 @@ func newClient(
 		env:             env,
 		streamers:       streamers,
 		streamerMap:     streamerMap,
+		reacting:        make(map[string]struct{}),
 		predictions:     make(map[string]*prediction.Event),
 		seenPredictions: make(map[string]struct{}),
 		onGain:          onGain,

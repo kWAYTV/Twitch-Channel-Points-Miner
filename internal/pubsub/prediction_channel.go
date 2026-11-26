@@ -74,8 +74,8 @@ func (p *Client) scheduleBet(streamer *domain.Streamer, eventID, status string, 
 	if seen {
 		return
 	}
-	window := eventMap["prediction_window_seconds"]
-	eventMap["prediction_window_seconds"] = streamer.PredictionWindowSeconds(jsonvalue.Float(window))
+	window := jsonvalue.Float(eventMap["prediction_window_seconds"])
+	eventMap["prediction_window_seconds"] = p.env.human.BetMoment(streamer.PredictionWindowSeconds(window), window)
 	event := prediction.NewEvent(streamer, eventMap)
 	if event == nil {
 		return

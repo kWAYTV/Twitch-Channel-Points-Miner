@@ -11,6 +11,7 @@ func defaultsDecoded() config {
 	return config{
 		Username:         "your-twitch-username",
 		AutoUpdate:       true,
+		Humanize:         true,
 		ClaimDrops:       true,
 		ClaimMoments:     true,
 		MakePredictions:  true,
@@ -67,6 +68,7 @@ func TestDecodeConfig(t *testing.T) {
 		settings := map[string]interface{}{
 			"username":            "me",
 			"auto_update":         true,
+			"humanize":            true,
 			"debug":               "full",
 			"show_watch_queue":    true,
 			"show_seconds":        true,
@@ -124,6 +126,7 @@ func TestDecodeConfig(t *testing.T) {
 		want := config{
 			Username:          "me",
 			AutoUpdate:        true,
+			Humanize:          true,
 			Debug:             debugFull,
 			ShowWatchQueue:    true,
 			ShowSeconds:       true,

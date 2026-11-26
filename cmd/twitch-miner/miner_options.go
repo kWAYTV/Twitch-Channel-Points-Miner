@@ -20,5 +20,6 @@ func minerOptionsFrom(cfg config, loggerSettings logging.LoggerSettings) miner.O
 		ShowGame:            cfg.ShowGame,
 		WatchQueueLogging:   cfg.ShowWatchQueue,
 		ShowDropsProgress:   cfg.ShowDropsProgress,
+		Humanize:            cfg.Humanize,
 	}
 }

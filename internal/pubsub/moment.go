@@ -18,10 +18,12 @@ func (p *Client) processMomentMessage(topic string, payload map[string]interface
 	if momentID == "" {
 		return nil
 	}
-	if err := p.account.ClaimMoment(streamer, momentID); err != nil {
-		p.logger.Errorf("claim moment %s: %v", p.anonymizer.Shown(streamer), err)
-		return nil
-	}
-	p.logger.EmojiEventf(":video_camera:", events.EventMomentClaim, "%s Claimed Moment", p.anonymizer.Shown(streamer))
+	p.react("moment:"+momentID, func() {
+		if err := p.account.ClaimMoment(streamer, momentID); err != nil {
+			p.logger.Errorf("claim moment %s: %v", p.anonymizer.Shown(streamer), err)
+			return
+		}
+		p.logger.EmojiEventf(":video_camera:", events.EventMomentClaim, "%s Claimed Moment", p.anonymizer.Shown(streamer))
+	})
 	return nil
 }

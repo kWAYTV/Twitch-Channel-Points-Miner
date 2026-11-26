@@ -95,6 +95,7 @@ const olderConfig = `{
 const olderConfigConverted = `{
   "username": "me",
   "auto_update": false,
+  "humanize": true,
 
   "streamers": ["one", "two"],
   "streamers_exclude": [],
@@ -184,6 +185,7 @@ func TestLoadOrCreateConfig_olderVersion(t *testing.T) {
 		}
 		want := config{
 			Username:         "me",
+			Humanize:         true,
 			Debug:            debugFull,
 			ShowWatchQueue:   true,
 			ClaimDrops:       true,

@@ -8,6 +8,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
 	"github.com/kWAYTV/twitch-points-miner/internal/chat"
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/humanize"
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 	"github.com/kWAYTV/twitch-points-miner/internal/streak"
@@ -46,6 +47,7 @@ type Miner struct {
 	showDropsProgress   bool
 	logWatchQueue       bool
 	anonymizer          *privacy.Anonymizer
+	human               *humanize.Timing
 	warmStartCache      *streak.WarmStartCache
 	warmStartCachePath  string
 	activeStreakWatches map[string]streak.ActiveWatch
@@ -66,6 +68,8 @@ type Options struct {
 	ShowGame            bool
 	WatchQueueLogging   bool
 	ShowDropsProgress   bool
+	// Humanize varies timings the way a viewer's vary.
+	Humanize bool
 }
 
 // New returns a Miner that is ready to Mine. It does not contact Twitch yet.
@@ -88,6 +92,7 @@ func New(options Options) *Miner {
 		showDropsProgress:   options.ShowDropsProgress,
 		logWatchQueue:       options.WatchQueueLogging,
 		anonymizer:          privacy.New(options.Logger.AnonymizeLogs),
+		human:               humanize.New(options.Humanize),
 		warmStartCachePath:  warmStartCachePathFor(options.Username),
 		activeStreakWatches: make(map[string]streak.ActiveWatch),
 	}

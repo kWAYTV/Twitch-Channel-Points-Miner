@@ -116,3 +116,17 @@ func TestMinerOptionsFrom(t *testing.T) {
 		})
 	}
 }
+
+func TestMinerOptionsFrom_humanize(t *testing.T) {
+	t.Run("humanize on", func(t *testing.T) {
+		if got := minerOptionsFrom(config{Humanize: true}, logging.LoggerSettings{}); !got.Humanize {
+			t.Errorf("Humanize = false, want true")
+		}
+	})
+
+	t.Run("humanize off", func(t *testing.T) {
+		if got := minerOptionsFrom(config{}, logging.LoggerSettings{}); got.Humanize {
+			t.Errorf("Humanize = true, want false")
+		}
+	})
+}

@@ -77,7 +77,7 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 				continue
 			}
 
-			if stoppable.Wait(interval, stop) {
+			if stoppable.Wait(m.human.Around(interval, watchIntervalSpread), stop) {
 				return
 			}
 		}
@@ -141,6 +141,10 @@ func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 	m.syncActiveStreakWatch(streamer, m.now())
 	return true
 }
+
+// watchIntervalSpread is how far the pause between two watched minutes may
+// vary: a fifth shorter or longer.
+const watchIntervalSpread = 0.2
 
 func watchInterval(count int) time.Duration {
 	if count <= 0 {
