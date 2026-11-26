@@ -35,6 +35,9 @@ type Claimer struct {
 	inventory    Inventory
 	logger       Logger
 	showProgress bool
+	// warnedGames are the unconnected games already reported, so each is
+	// reported once and again only after it was connected in between.
+	warnedGames map[string]struct{}
 }
 
 // NewClaimer claims from inventory. Without a logger it claims in silence.
@@ -74,7 +77,28 @@ func (c *Claimer) Claim(errorPrefix string) {
 		return
 	}
 	c.logStatuses(statuses)
+	c.warnUnconnected(statuses)
 	c.logClaimed(drops)
+}
+
+// warnUnconnected says which games' drops are not being collected because the
+// account is not connected to them.
+func (c *Claimer) warnUnconnected(statuses []twitch.DropStatus) {
+	unconnected := make(map[string]struct{})
+	for _, status := range statuses {
+		if !status.AccountNotConnected {
+			continue
+		}
+		game := gameLabel(status.GameName)
+		if _, listed := unconnected[game]; listed {
+			continue
+		}
+		unconnected[game] = struct{}{}
+		if _, warned := c.warnedGames[game]; !warned {
+			c.logger.Printf("%s", formatUnconnectedLine(status))
+		}
+	}
+	c.warnedGames = unconnected
 }
 
 func (c *Claimer) logClaimed(drops []twitch.ClaimedDrop) {

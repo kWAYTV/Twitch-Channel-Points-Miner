@@ -17,4 +17,5 @@ type twitchAPI interface {
 	SendMinuteWatched(streamer *domain.Streamer) error
 	RecoverStreak(streamer *domain.Streamer) (bool, error)
 	LogExtraInfo(channelID string, online bool) string
+	DropsUnavailableFor(game string) bool
 }

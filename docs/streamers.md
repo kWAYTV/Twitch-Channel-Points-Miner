@@ -57,7 +57,9 @@ Twitch counts drop progress on one channel at a time, so `DROPS` gives one slot 
 - With `game_priority` set, only streams of those games do, the first game first. A drop of a game you did not list never takes a slot.
 - Finished drops are claimed every 30 minutes, whatever the game, except games in `game_exclude`.
 
-A drop of a game your Twitch account is not connected to cannot be handed over. The miner says so once and names the game: connect the account at twitch.tv/drops/inventory.
+A drop of a game your Twitch account is not connected to cannot be handed over, so the miner leaves that game alone: it does not claim its drops and does not give it the drops slot. It says so once, naming the game and where to connect the account, and picks the game up again by itself once the account is connected.
+
+Twitch only reports the connection for campaigns you have some progress in, so the first minutes of a new campaign are watched before the miner can know.
 
 ## Watch streaks
 

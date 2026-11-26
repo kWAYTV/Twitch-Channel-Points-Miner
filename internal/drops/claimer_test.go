@@ -264,3 +264,52 @@ func TestClaimer_run(t *testing.T) {
 		checkCalls(t, inventory, nil)
 	})
 }
+
+func TestClaimer_Claim_unconnectedGames(t *testing.T) {
+	const tanksLine = "Drops for Tanks are not collected: your Twitch account is not connected to the game. Connect it at https://www.twitch.tv/drops/inventory"
+	unconnected := []twitch.DropStatus{
+		{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks", AccountNotConnected: true},
+		{RewardName: "Crate", CampaignName: "Summer", GameName: "Tanks", AccountNotConnected: true},
+	}
+
+	t.Run("two drops of one unconnected game", func(t *testing.T) {
+		claimer, inventory, logger := setup(false)
+		inventory.Statuses = unconnected
+
+		claimer.Claim("drop claim failed")
+
+		checkEntries(t, logger, []logEntry{{Text: tanksLine}})
+	})
+
+	t.Run("the same game at the next check", func(t *testing.T) {
+		claimer, inventory, logger := setup(false)
+		inventory.Statuses = unconnected
+		claimer.Claim("drop claim failed")
+
+		claimer.Claim("drop claim failed")
+
+		checkEntries(t, logger, []logEntry{{Text: tanksLine}})
+	})
+
+	t.Run("a game connected, then disconnected again", func(t *testing.T) {
+		claimer, inventory, logger := setup(false)
+		inventory.Statuses = unconnected
+		claimer.Claim("drop claim failed")
+		inventory.Statuses = []twitch.DropStatus{{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks"}}
+		claimer.Claim("drop claim failed")
+		inventory.Statuses = unconnected
+
+		claimer.Claim("drop claim failed")
+
+		checkEntries(t, logger, []logEntry{{Text: tanksLine}, {Text: tanksLine}})
+	})
+
+	t.Run("a connected game", func(t *testing.T) {
+		claimer, inventory, logger := setup(false)
+		inventory.Statuses = []twitch.DropStatus{{RewardName: "Token", CampaignName: "Summer", GameName: "Tanks"}}
+
+		claimer.Claim("drop claim failed")
+
+		checkEntries(t, logger, nil)
+	})
+}

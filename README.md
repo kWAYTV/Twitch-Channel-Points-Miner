@@ -45,7 +45,7 @@ Without Docker, download the binary for your system from [Releases](https://gith
 | [Predictions](docs/predictions.md) | Strategies, stake sizing, timing and filters. |
 | [Notifications](docs/notifications.md) | Discord, Telegram and Matrix setup, and the events you can choose. |
 | [Dashboard](docs/dashboard.md) | The web page, remote access, stored history, the JSON API. |
-| [Troubleshooting](docs/troubleshooting.md) | Login, permissions, no watch points, drops that are not received, missing notifications. |
+| [Troubleshooting](docs/troubleshooting.md) | Login, permissions, no watch points, drops that are not collected, missing notifications. |
 
 ## Development
 

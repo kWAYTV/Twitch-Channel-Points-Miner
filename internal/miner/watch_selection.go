@@ -76,7 +76,8 @@ func (m *Miner) keepActiveStreaks(slots *watchSlots, streamers []*domain.Streame
 // dropsCandidates lists the streamers worth watching for drops: the stream
 // carries drops and drop claims are on for the streamer. With a game priority
 // list, only streams of those games count, so a drop of a game nobody asked
-// for never takes a slot.
+// for never takes a slot. Neither does a game the account is not connected to,
+// whose drops could not be received.
 func (m *Miner) dropsCandidates(candidates []watchCandidate, streamers []*domain.Streamer) []watchCandidate {
 	drops := make([]watchCandidate, 0, len(candidates))
 	for _, c := range candidates {
@@ -88,6 +89,9 @@ func (m *Miner) dropsCandidates(candidates []watchCandidate, streamers []*domain
 			continue
 		}
 		if len(m.gamePriority) > 0 && !c.priorityGame {
+			continue
+		}
+		if m.twitch != nil && m.twitch.DropsUnavailableFor(s.Stream.GameName()) {
 			continue
 		}
 		drops = append(drops, c)

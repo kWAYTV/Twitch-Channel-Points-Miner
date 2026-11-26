@@ -13,6 +13,33 @@ type dropClaims struct {
 	mu            sync.Mutex
 	settled       map[string]struct{}
 	excludedGames map[string]struct{}
+	// unconnectedGames are the games whose drops the last inventory check
+	// showed cannot be handed over.
+	unconnectedGames map[string]struct{}
+}
+
+// DropsUnavailableFor reports whether drops of this game cannot be received
+// because the account is not connected to it, as far as the last inventory
+// check showed. Watching for them would earn nothing.
+func (t *Client) DropsUnavailableFor(game string) bool {
+	t.dropClaims.mu.Lock()
+	defer t.dropClaims.mu.Unlock()
+	_, unconnected := t.dropClaims.unconnectedGames[domain.GameKey(game)]
+	return unconnected
+}
+
+// rememberUnconnected replaces what is known with what this inventory says,
+// so a game stops counting as soon as its account is connected.
+func (c *dropClaims) rememberUnconnected(statuses []DropStatus) {
+	games := make(map[string]struct{})
+	for _, status := range statuses {
+		if key := domain.GameKey(status.GameName); status.AccountNotConnected && key != "" {
+			games[key] = struct{}{}
+		}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.unconnectedGames = games
 }
 
 // ExcludeGamesFromDropClaims stops the drops of these games from being

@@ -30,9 +30,9 @@ Watch time is reported to `spade.twitch.tv`, which ad and tracker blocklists oft
 
 Bonus chests, predictions and raids do not need it, so they keep working while watching earns nothing.
 
-## A drop is ready but not received
+## Drops for a game are not collected
 
-`Drop <name> (<campaign>) is ready but not received: connect your <game> account` means Twitch accepted the claim but has nowhere to deliver it. Connect the game's account at <https://www.twitch.tv/drops/inventory>; the miner claims it at the next check.
+`Drops for <game> are not collected: your Twitch account is not connected to the game` means Twitch has nowhere to deliver them. The miner stops claiming that game's drops and stops watching for them. Connect the account at the address in the message, or at <https://www.twitch.tv/drops/inventory>; the miner notices at its next check, within 30 minutes, and claims what is waiting.
 
 To stop collecting drops for a game, put it in `game_exclude`. To go after drops for some games only, list them in `game_priority`. More in [streamers and watching](streamers.md#drops).
 

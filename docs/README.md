@@ -8,6 +8,6 @@
 | [Predictions](predictions.md) | How an outcome is chosen, how the stake is sized, when the bet is placed, and filters. |
 | [Notifications](notifications.md) | Setting up Discord, Telegram and Matrix, the events you can choose, what a message looks like. |
 | [Dashboard](dashboard.md) | The web page, reaching it from other machines, stored history, the JSON API. |
-| [Troubleshooting](troubleshooting.md) | Login, file permissions, no watch points, drops that are not received, an unreachable dashboard, missing notifications. |
+| [Troubleshooting](troubleshooting.md) | Login, file permissions, no watch points, drops that are not collected, an unreachable dashboard, missing notifications. |
 
 For working on the code, see [CONTRIBUTING.md](../.github/CONTRIBUTING.md).

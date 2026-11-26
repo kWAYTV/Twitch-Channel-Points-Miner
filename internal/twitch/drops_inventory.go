@@ -54,6 +54,8 @@ func dropStatusesFromInventory(inv map[string]interface{}) []DropStatus {
 		campaignName := campaignNameFromInventory(campaign)
 		gameName := gameNameFromInventory(campaign)
 		channelName := channelNameFromInventory(campaign)
+		connected, said := jsonvalue.At(campaign, "self.isAccountConnected").(bool)
+		linkURL := jsonvalue.String(campaign["accountLinkURL"])
 		td, _ := campaign["timeBasedDrops"].([]interface{})
 		for _, d := range td {
 			inner, ok := d.(map[string]interface{})
@@ -76,6 +78,9 @@ func dropStatusesFromInventory(inv map[string]interface{}) []DropStatus {
 				RequiredValue:  required,
 				Claimable:      dropClaimable(inner, self, current, required, claimed),
 				Claimed:        claimed,
+
+				AccountNotConnected: said && !connected,
+				AccountLinkURL:      linkURL,
 			})
 		}
 	}

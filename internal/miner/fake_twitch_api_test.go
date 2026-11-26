@@ -25,10 +25,12 @@ type fakeChannel struct {
 type fakeTwitchAPI struct {
 	mu sync.Mutex
 
-	Token     string
-	Channels  map[string]*fakeChannel
-	Fail      map[string]error
-	ExtraInfo string
+	Token    string
+	Channels map[string]*fakeChannel
+	// UnconnectedGames are the games whose drops cannot be received.
+	UnconnectedGames map[string]bool
+	Fail             map[string]error
+	ExtraInfo        string
 
 	MinutesWatched []string
 	Recoveries     []string
@@ -160,6 +162,12 @@ func (f *fakeTwitchAPI) RecoverStreak(streamer *domain.Streamer) (bool, error) {
 	}
 	f.Recoveries = append(f.Recoveries, streamer.Username)
 	return channel.StreakSaved, nil
+}
+
+func (f *fakeTwitchAPI) DropsUnavailableFor(game string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.UnconnectedGames[game]
 }
 
 func (f *fakeTwitchAPI) LogExtraInfo(channelID string, online bool) string {

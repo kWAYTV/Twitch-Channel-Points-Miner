@@ -571,3 +571,115 @@ func TestClient_CampaignIDsForStreamer(t *testing.T) {
 		}
 	})
 }
+
+func TestClient_ClaimAllDropsFromInventory_accountConnection(t *testing.T) {
+	const unconnected = `{"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[{"name":"Summer","accountLinkURL":"https://tanks.example/link","self":{"isAccountConnected":false},"game":{"displayName":"Tanks"},"timeBasedDrops":[{"name":"Token","requiredMinutesWatched":180,"self":{"dropInstanceID":"drop-1","currentMinutesWatched":180,"isClaimed":false}}]}]}}}}`
+	const connected = `{"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[{"name":"Summer","accountLinkURL":"https://tanks.example/link","self":{"isAccountConnected":true},"game":{"displayName":"Tanks"},"timeBasedDrops":[{"name":"Token","requiredMinutesWatched":180,"self":{"dropInstanceID":"drop-1","currentMinutesWatched":180,"isClaimed":false}}]}]}}}}`
+
+	t.Run("a finished drop of a game the inventory says is not connected", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(unconnected))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+
+		claimed, statuses, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if claimed != nil {
+			t.Errorf("claimed = %+v, want none", claimed)
+		}
+		want := []DropStatus{{
+			DropInstanceID: "drop-1", RewardName: "Token", CampaignName: "Summer", GameName: "Tanks",
+			CurrentValue: 180, RequiredValue: 180, Claimable: true,
+			AccountNotConnected: true, AccountLinkURL: "https://tanks.example/link",
+		}}
+		if !equal(statuses, want) {
+			t.Errorf("statuses = %+v, want %+v", statuses, want)
+		}
+		if got := fake.twitch.sent("DropsPage_ClaimDropRewards"); len(got) != 0 {
+			t.Errorf("drop claims sent = %v, want none: the claim would deliver nothing", got)
+		}
+	})
+
+	t.Run("a finished drop of a game the inventory says is connected", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(connected))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+
+		claimed, _, err := client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if err != nil {
+			t.Fatalf("ClaimAllDropsFromInventoryWithStatuses error = %v, want none", err)
+		}
+		if want := []ClaimedDrop{tokenDrop}; !equal(claimed, want) {
+			t.Errorf("claimed = %+v, want %+v", claimed, want)
+		}
+	})
+}
+
+func TestClient_DropsUnavailableFor(t *testing.T) {
+	const unconnected = `{"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[{"name":"Summer","accountLinkURL":"https://tanks.example/link","self":{"isAccountConnected":false},"game":{"displayName":"Tanks"},"timeBasedDrops":[{"name":"Token","requiredMinutesWatched":180,"self":{"dropInstanceID":"drop-1","currentMinutesWatched":180,"isClaimed":false}}]}]}}}}`
+	const connected = `{"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[{"name":"Summer","accountLinkURL":"https://tanks.example/link","self":{"isAccountConnected":true},"game":{"displayName":"Tanks"},"timeBasedDrops":[{"name":"Token","requiredMinutesWatched":180,"self":{"dropInstanceID":"drop-1","currentMinutesWatched":180,"isClaimed":false}}]}]}}}}`
+
+	t.Run("before any inventory check", func(t *testing.T) {
+		client, _ := setup(t)
+
+		if client.DropsUnavailableFor("Tanks") {
+			t.Errorf("DropsUnavailableFor(Tanks) = true, want false: nothing is known yet")
+		}
+	})
+
+	t.Run("a game the inventory says is not connected", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(unconnected))
+		client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if !client.DropsUnavailableFor("Tanks") {
+			t.Errorf("DropsUnavailableFor(Tanks) = false, want true")
+		}
+	})
+
+	t.Run("that game in other capitals and spaces", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(unconnected))
+		client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if !client.DropsUnavailableFor(" tanks ") {
+			t.Errorf("DropsUnavailableFor(\" tanks \") = false, want true")
+		}
+	})
+
+	t.Run("another game", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(unconnected))
+		client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if client.DropsUnavailableFor("Planes") {
+			t.Errorf("DropsUnavailableFor(Planes) = true, want false")
+		}
+	})
+
+	t.Run("a game the inventory says is connected", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(connected))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+		client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if client.DropsUnavailableFor("Tanks") {
+			t.Errorf("DropsUnavailableFor(Tanks) = true, want false")
+		}
+	})
+
+	t.Run("a game connected since the last check", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.answer("Inventory", inventoryVariables, ok(unconnected), ok(connected))
+		fake.twitch.answer("DropsPage_ClaimDropRewards", "", ok(dropGranted))
+		client.ClaimAllDropsFromInventoryWithStatuses()
+		client.ClaimAllDropsFromInventoryWithStatuses()
+
+		if client.DropsUnavailableFor("Tanks") {
+			t.Errorf("DropsUnavailableFor(Tanks) = true, want false: it was connected in between")
+		}
+	})
+}

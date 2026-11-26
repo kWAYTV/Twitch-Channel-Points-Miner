@@ -318,3 +318,34 @@ func TestProgressPercent(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatUnconnectedLine(t *testing.T) {
+	tests := []struct {
+		name   string
+		status twitch.DropStatus
+		want   string
+	}{
+		{
+			"a game with its own link",
+			twitch.DropStatus{GameName: "Tanks", AccountLinkURL: "https://tanks.example/link"},
+			"Drops for Tanks are not collected: your Twitch account is not connected to the game. Connect it at https://tanks.example/link",
+		},
+		{
+			"a game without a link",
+			twitch.DropStatus{GameName: "Tanks"},
+			"Drops for Tanks are not collected: your Twitch account is not connected to the game. Connect it at https://www.twitch.tv/drops/inventory",
+		},
+		{
+			"no game name",
+			twitch.DropStatus{AccountLinkURL: "https://tanks.example/link"},
+			"Drops for Unknown Game are not collected: your Twitch account is not connected to the game. Connect it at https://tanks.example/link",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatUnconnectedLine(tt.status); got != tt.want {
+				t.Errorf("formatUnconnectedLine() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

@@ -31,6 +31,11 @@ type DropStatus struct {
 	RequiredValue  int
 	Claimable      bool
 	Claimed        bool
+	// AccountNotConnected is set when Twitch says the account is not
+	// connected to the game's account, so the drop cannot be handed over.
+	AccountNotConnected bool
+	// AccountLinkURL is where the game says to connect the account.
+	AccountLinkURL string
 }
 
 // The answers to a claim that mean the drop is the account's.
@@ -79,9 +84,12 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 		return claimedDrops, nil, nil
 	}
 	statuses := dropStatusesFromInventory(inv)
+	t.dropClaims.rememberUnconnected(statuses)
 	var claimErr error
 	for _, status := range statuses {
-		if status.DropInstanceID == "" || status.Claimed || t.dropClaims.skips(status) {
+		// A claim for a game the account is not connected to is accepted and
+		// delivers nothing, so it is not made.
+		if status.DropInstanceID == "" || status.Claimed || status.AccountNotConnected || t.dropClaims.skips(status) {
 			continue
 		}
 		answer, err := t.claimDrop(status.DropInstanceID)

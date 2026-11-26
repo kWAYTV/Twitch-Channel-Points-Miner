@@ -177,6 +177,30 @@ func TestMiner_pickByPriority(t *testing.T) {
 		assertPicked(t, got, "alice", "bob")
 	})
 
+	t.Run("DROPS with drops only on a game the account is not connected to", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}})
+		h.twitch.UnconnectedGames = map[string]bool{"Wardogs": true}
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := dropsStreamer("carol", "3", "Wardogs")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("DROPS with drops on an unconnected game and on a connected one", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS", "ORDER"}})
+		h.twitch.UnconnectedGames = map[string]bool{"Wardogs": true}
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := dropsStreamer("bob", "2", "Wardogs")
+		carol := dropsStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
 	t.Run("DROPS when a drops stream already holds a slot", func(t *testing.T) {
 		h := setup(t, Options{WatchPriority: []string{"ORDER", "DROPS"}})
 		alice := dropsStreamer("alice", "1", "Poker")

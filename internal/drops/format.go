@@ -38,6 +38,24 @@ func campaignLabel(name string) string {
 	return "Unknown Campaign"
 }
 
+// gameLabel is the game's name as shown, with a stand-in when Twitch gave none.
+func gameLabel(name string) string {
+	if name = strings.TrimSpace(name); name != "" {
+		return name
+	}
+	return "Unknown Game"
+}
+
+// formatUnconnectedLine says that a game's drops are not collected and where
+// to connect the account.
+func formatUnconnectedLine(status twitch.DropStatus) string {
+	link := strings.TrimSpace(status.AccountLinkURL)
+	if link == "" {
+		link = "https://www.twitch.tv/drops/inventory"
+	}
+	return fmt.Sprintf("Drops for %s are not collected: your Twitch account is not connected to the game. Connect it at %s", gameLabel(status.GameName), link)
+}
+
 func formatDropProgress(current, required int) string {
 	if required > 0 {
 		return fmt.Sprintf("%d/%d", current, required)
