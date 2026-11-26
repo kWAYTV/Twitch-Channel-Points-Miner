@@ -25,7 +25,7 @@
     "minimum_points": 0,
     "stealth_mode": false,
     "delay_mode": "PERCENTAGE",
-    "delay": 0.5,
+    "delay": 0.75,
     "filter_condition": {
       "by": null,
       "where": null,

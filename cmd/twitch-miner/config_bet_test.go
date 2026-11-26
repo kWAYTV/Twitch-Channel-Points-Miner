@@ -42,7 +42,7 @@ func TestMergeBetSettings(t *testing.T) {
 			MinimumPoints:   ptr(0),
 			StealthMode:     ptr(false),
 			FilterCondition: nil,
-			Delay:           ptr(0.5),
+			Delay:           ptr(0.75),
 			DelayMode:       "PERCENTAGE",
 		}
 		if !reflect.DeepEqual(got, want) {

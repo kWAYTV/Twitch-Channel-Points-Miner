@@ -121,7 +121,7 @@ func TestMigrateSettings(t *testing.T) {
 		{
 			name:        "an older file with the old default bet timing",
 			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 6.0}},
-			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "PERCENTAGE", "delay": 0.5}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "PERCENTAGE", "delay": 0.75}},
 			wantChanged: true,
 		},
 		{

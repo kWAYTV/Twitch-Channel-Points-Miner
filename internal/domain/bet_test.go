@@ -22,7 +22,7 @@ func TestBetSettings_Default(t *testing.T) {
 			MaxPoints:     intPtr(50000),
 			MinimumPoints: intPtr(0),
 			StealthMode:   boolPtr(false),
-			Delay:         floatPtr(0.5),
+			Delay:         floatPtr(0.75),
 			DelayMode:     DelayModePercentage,
 		}
 		if !reflect.DeepEqual(settings, want) {

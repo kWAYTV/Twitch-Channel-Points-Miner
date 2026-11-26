@@ -16,7 +16,7 @@ func defaultBet() domain.BetSettings {
 		MaxPoints:     ptr(50000),
 		MinimumPoints: ptr(0),
 		StealthMode:   ptr(false),
-		Delay:         ptr(0.5),
+		Delay:         ptr(0.75),
 		DelayMode:     "PERCENTAGE",
 	}
 }

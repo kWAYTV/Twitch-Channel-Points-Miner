@@ -126,7 +126,7 @@ const olderConfigConverted = `{
     "minimum_points": 0,
     "stealth_mode": false,
     "delay_mode": "PERCENTAGE",
-    "delay": 0.5,
+    "delay": 0.75,
     "filter_condition": {
       "by": null,
       "where": null,
@@ -205,7 +205,7 @@ func TestLoadOrCreateConfig_olderVersion(t *testing.T) {
 				MaxPoints:       ptr(50000),
 				StealthMode:     ptr(false),
 				DelayMode:       "PERCENTAGE",
-				Delay:           ptr(0.5),
+				Delay:           ptr(0.75),
 				MinimumPoints:   ptr(0),
 				FilterCondition: &filterConditionConfig{},
 			},

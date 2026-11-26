@@ -14,7 +14,7 @@ All settings below live under `bet`. They can be changed for one streamer under 
   "minimum_points": 0,
   "stealth_mode": false,
   "delay_mode": "PERCENTAGE",
-  "delay": 0.5,
+  "delay": 0.75,
   "filter_condition": { "by": null, "where": null, "value": null }
 }
 ```
@@ -63,11 +63,11 @@ The stake is subtracted from the balance the miner shows as soon as the bet is p
 
 A prediction that is already open when the miner starts is picked up from its next update and bet on in the time that is left. One you already bet on yourself, from the site or another session, is left alone.
 
-By default the bet is placed halfway through the window. Later is better informed, because the figures are read when the bet is placed, but a channel can close betting before the window ends, and a bet left for the last seconds is then never placed (`Skip bet ...: event status is LOCKED`).
+By default the bet is placed three quarters of the way through the window. Later is better informed, because the figures are read when the bet is placed, but a channel can close betting before the window ends, and a bet left for the last seconds is then never placed (`Skip bet ...: event status is LOCKED`).
 
 | `delay_mode` | `delay` means |
 |---|---|
-| `PERCENTAGE` | A fraction of the window, so `0.5` is halfway through (default). |
+| `PERCENTAGE` | A fraction of the window: `0.75`, the default, is three quarters through, and `0.5` halfway. |
 | `FROM_START` | Seconds after the prediction opens. |
 | `FROM_END` | Seconds before the window closes. `6` sees almost all the votes, and misses the bet when betting is closed early. |
 

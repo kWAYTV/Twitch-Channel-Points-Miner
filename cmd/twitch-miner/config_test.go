@@ -30,7 +30,7 @@ func defaultsDecoded() config {
 			MaxPoints:       ptr(50000),
 			StealthMode:     ptr(false),
 			DelayMode:       "PERCENTAGE",
-			Delay:           ptr(0.5),
+			Delay:           ptr(0.75),
 			MinimumPoints:   ptr(0),
 			FilterCondition: &filterConditionConfig{},
 		},
