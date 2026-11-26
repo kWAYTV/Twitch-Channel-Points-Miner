@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -198,12 +196,18 @@ func TestLoadOrCreateConfig(t *testing.T) {
 
 		got, err := loadOrCreateConfig(path)
 
-		var pathErr *fs.PathError
-		if !errors.As(err, &pathErr) || pathErr.Op != "open" || pathErr.Path != path {
-			t.Errorf("loadOrCreateConfig() error = %v, want a failure to open %s", err, path)
+		if err == nil || !strings.Contains(err.Error(), path) {
+			t.Errorf("loadOrCreateConfig() error = %v, want a failure that names %s", err, path)
 		}
 		if want := (config{}); !reflect.DeepEqual(got, want) {
 			t.Errorf("loadOrCreateConfig() = %+v, want %+v", got, want)
+		}
+		if info, statErr := os.Stat(path); statErr != nil || !info.IsDir() {
+			t.Errorf("the folder is gone or no longer a folder: %v", statErr)
+		}
+		leftBehind, _ := filepath.Glob(path + "*.tmp")
+		if len(leftBehind) != 0 {
+			t.Errorf("files left behind: %v, want none", leftBehind)
 		}
 	})
 }

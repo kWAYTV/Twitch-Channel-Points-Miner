@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -314,4 +316,48 @@ func TestKeyGroups(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWriteSettings_replacesTheFile(t *testing.T) {
+	t.Run("a file already there is replaced, not written into", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "config.json")
+		if err := writeSettings(path, map[string]interface{}{"username": "before"}); err != nil {
+			t.Fatalf("first write: %v", err)
+		}
+		// A second name for the same file: it keeps showing the old file only
+		// if the new one is moved into place over it.
+		kept := filepath.Join(dir, "kept.json")
+		if err := os.Link(path, kept); err != nil {
+			t.Skipf("hard links are not available here: %v", err)
+		}
+
+		if err := writeSettings(path, map[string]interface{}{"username": "after"}); err != nil {
+			t.Fatalf("second write: %v", err)
+		}
+
+		if got, want := readFile(t, kept), "{\n  \"username\": \"before\"\n}\n"; got != want {
+			t.Errorf("the old file now reads %q, want it untouched: %q", got, want)
+		}
+		if got, want := readFile(t, path), "{\n  \"username\": \"after\"\n}\n"; got != want {
+			t.Errorf("config.json reads %q, want %q", got, want)
+		}
+	})
+
+	t.Run("nothing else is left in the folder", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "config.json")
+
+		if err := writeSettings(path, map[string]interface{}{"username": "me"}); err != nil {
+			t.Fatalf("writeSettings: %v", err)
+		}
+
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 || entries[0].Name() != "config.json" {
+			t.Errorf("folder holds %v, want config.json alone", entries)
+		}
+	})
 }

@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/jsonfile"
 )
 
 const (
@@ -16,16 +16,14 @@ const (
 	inlineListWidth = 72
 )
 
-// writeSettings saves the config in the order configLayout gives it.
+// writeSettings saves the config in the order configLayout gives it. The file
+// is moved into place whole, so a crash part-way leaves the old config.
 func writeSettings(path string, settings map[string]interface{}) error {
 	raw, err := formatSettings(settings)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(path, raw, 0o644)
+	return jsonfile.Write(path, raw, 0o644)
 }
 
 // formatSettings renders the config as JSON, laid out as configLayout says.
