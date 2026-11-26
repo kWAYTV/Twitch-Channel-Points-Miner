@@ -27,3 +27,8 @@ archives:
 
 checksum:
   name_template: checksums.txt
+
+# The release is made as a draft. The workflow publishes it once the image is
+# pushed and starts, so a release never exists without its image.
+release:
+  draft: true

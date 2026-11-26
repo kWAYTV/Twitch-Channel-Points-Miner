@@ -17,7 +17,7 @@ CI runs four jobs side by side: lint, the tests (race detector, random order), a
 
 ## Commit messages and releases
 
-Commit messages follow [Conventional Commits](https://www.conventionalcommits.org), and the `commit-msg` hook checks them. Nobody picks a version: after CI passes on `main`, the release workflow reads the commits since the last release and publishes the next one, with notes, binaries and a versioned image.
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org), and the `commit-msg` hook checks them. Nobody picks a version: after CI passes on `main`, the release workflow reads the commits since the last release and publishes the next one, with notes, binaries and a versioned image. The release appears only once its image is pushed and has started.
 
 | Commit | Release |
 |---|---|
