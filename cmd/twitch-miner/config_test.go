@@ -1,230 +1,222 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"os"
-	"path/filepath"
 	"reflect"
+	"regexp"
 	"testing"
-
-	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
-func TestDefaultConfigIncludesExpectedKeys(t *testing.T) {
-	cfg := defaultConfig()
-	required := []string{
-		"username",
-		"password",
-		"claim_moments",
-		"streamers",
-		"game_priority",
-		"chat_presence",
-		"disable_at_in_nickname",
-		"show_drops_progress",
-		"bet",
-		"watch_priority",
-	}
-	for _, key := range required {
-		if _, ok := cfg[key]; !ok {
-			t.Fatalf("missing key %q in default config", key)
-		}
-	}
-	if got, ok := cfg["show_drops_progress"].(bool); !ok || got {
-		t.Fatalf("show_drops_progress default got %#v, want false", cfg["show_drops_progress"])
-	}
-}
-
-func TestLoadOrCreateConfigCreatesFileAndDefaults(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "cfg.json")
-
-	cfg, err := loadOrCreateConfig(path)
-	if err != nil {
-		t.Fatalf("load/create config error: %v", err)
-	}
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("config file should be created: %v", err)
-	}
-	if len(cfg.WatchPriority) == 0 {
-		t.Fatalf("watch priority should have defaults: %#v", cfg)
-	}
-}
-
-func TestBuildBaseStreamerSettingsAppliesGlobalFilterCondition(t *testing.T) {
-	cfg := config{
-		BettingMakePredictions: true,
-		FollowRaid:             true,
-		ClaimDrops:             true,
-		CommunityGoals:         false,
-		IRCMode:                "ONLINE",
+// defaultsDecoded is the config a first run loads.
+func defaultsDecoded() config {
+	return config{
+		Username:                  "your-twitch-username",
+		AutoUpdate:                true,
+		ClaimDropsStartup:         true,
+		ClaimDrops:                true,
+		ClaimMoments:              true,
+		BettingMakePredictions:    true,
+		FollowRaid:                true,
+		Emojis:                    true,
+		ShowGame:                  true,
+		WatchStreakWarmStartCache: true,
+		IRCMode:                   "ONLINE",
+		Streamers:                 []string{},
+		StreamersExclude:          []string{},
+		GamePriority:              []string{},
+		GameExclude:               []string{},
+		WatchPriority:             []string{"STREAK", "DROPS", "ORDER"},
 		Bet: betConfig{
-			FilterCondition: &filterConditionConfig{
-				By:    "TOTAL_USERS",
-				Where: "GTE",
-				Value: func() *float64 { v := 500000.0; return &v }(),
+			Strategy:           "SMART",
+			Percentage:         ptr(5),
+			PercentageGap:      ptr(20),
+			MaxPoints:          ptr(50000),
+			StealthMode:        ptr(false),
+			DeductStakeOnPlace: ptr(true),
+			DelayMode:          "FROM_END",
+			Delay:              ptr(6.0),
+			MinimumPoints:      ptr(0),
+			FilterCondition:    &filterConditionConfig{},
+		},
+		Discord:           discordConfig{Events: []string{}},
+		Analytics:         analyticsConfig{Enabled: true, Host: "127.0.0.1", Port: 5000},
+		Telegram:          telegramConfig{Events: []string{}},
+		StreamerOverrides: map[string]streamerSettingsConfig{},
+	}
+}
+
+func TestDecodeConfig(t *testing.T) {
+	t.Run("the defaults", func(t *testing.T) {
+		got, err := decodeConfig(defaultConfig())
+		if err != nil {
+			t.Fatalf("decodeConfig() error = %v, want none", err)
+		}
+		if want := defaultsDecoded(); !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("no keys", func(t *testing.T) {
+		got, err := decodeConfig(map[string]interface{}{})
+		if err != nil {
+			t.Fatalf("decodeConfig() error = %v, want none", err)
+		}
+		if want := (config{}); !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("every key set", func(t *testing.T) {
+		settings := map[string]interface{}{
+			"username":                      "me",
+			"password":                      "secret",
+			"auto_update":                   true,
+			"debug":                         true,
+			"debug_deep":                    true,
+			"watch_queue_logging":           true,
+			"disable_ssl_cert_verification": true,
+			"show_seconds":                  true,
+			"claim_drops_startup":           true,
+			"claim_drops":                   true,
+			"claim_moments":                 true,
+			"betting(make_predictions)":     true,
+			"follow_raid":                   true,
+			"community_goals":               true,
+			"emojis":                        true,
+			"save_logs":                     true,
+			"show_game":                     true,
+			"watch_streak_warm_start_cache": true,
+			"chat_presence":                 "ALWAYS",
+			"disable_at_in_nickname":        true,
+			"show_drops_progress":           true,
+			"streamers":                     []interface{}{"one", "two"},
+			"streamers_exclude":             []interface{}{"three"},
+			"game_priority":                 []interface{}{"Chess"},
+			"game_exclude":                  []interface{}{"Slots"},
+			"watch_priority":                []interface{}{"ORDER"},
+			"timezone":                      "Europe/Madrid",
+			"privacy":                       map[string]interface{}{"anonymize_logs": true},
+			"discord":                       map[string]interface{}{"webhook_api": "https://discord.com/api/webhooks/1/a", "events": []interface{}{"BET_WIN"}},
+			"analytics":                     map[string]interface{}{"enabled": true, "host": "0.0.0.0", "port": 8080},
+			"telegram":                      map[string]interface{}{"chat_id": -1001234567890, "token": "123:abc", "events": []interface{}{"BET_LOSE"}, "disable_notification": true},
+			"bet": map[string]interface{}{
+				"strategy":              "PERCENTAGE",
+				"percentage":            10,
+				"percentage_gap":        30,
+				"max_points":            1000,
+				"stealth_mode":          true,
+				"deduct_stake_on_place": false,
+				"delay_mode":            "FROM_START",
+				"delay":                 2.5,
+				"minimum_points":        100,
+				"filter_condition":      map[string]interface{}{"by": "TOTAL_USERS", "where": "GT", "value": 50},
 			},
-		},
-	}
-
-	base := buildBaseStreamerSettings(cfg)
-	if base.Bet.FilterCondition == nil {
-		t.Fatalf("expected global filter_condition applied to base streamer settings")
-	}
-	if base.Bet.FilterCondition.By != "TOTAL_USERS" {
-		t.Fatalf("expected By TOTAL_USERS, got %s", base.Bet.FilterCondition.By)
-	}
-	if base.Bet.FilterCondition.Where != "GTE" {
-		t.Fatalf("expected Where GTE, got %s", base.Bet.FilterCondition.Where)
-	}
-	if base.Bet.FilterCondition.Value == nil || *base.Bet.FilterCondition.Value != 500000.0 {
-		t.Fatalf("expected Value 500000, got %#v", base.Bet.FilterCondition.Value)
-	}
-}
-
-func TestBuildBaseStreamerSettingsUsesGlobalClaimMoments(t *testing.T) {
-	cfg := config{
-		BettingMakePredictions: true,
-		FollowRaid:             true,
-		ClaimDrops:             true,
-		ClaimMoments:           false,
-		CommunityGoals:         false,
-		IRCMode:                "ONLINE",
-	}
-
-	base := buildBaseStreamerSettings(cfg)
-	if base.ClaimMoments {
-		t.Fatalf("expected base claim_moments false from global config")
-	}
-}
-
-func TestBuildOverrideSettingsMergesFilterCondition(t *testing.T) {
-	base := domain.StreamerSettings{
-		MakePredictions: true,
-		Bet: domain.BetSettings{
-			Strategy: domain.StrategySmart,
-		},
-	}
-	base.Default()
-
-	overrides := map[string]streamerSettingsConfig{
-		"SomeStreamer": {
-			Bet: betConfig{
-				FilterCondition: &filterConditionConfig{
-					By:    "TOTAL_POINTS",
-					Where: "GT",
-					Value: func() *float64 { v := 999999.0; return &v }(),
+			"streamer_overrides": map[string]interface{}{
+				"one": map[string]interface{}{
+					"make_predictions": false,
+					"follow_raid":      false,
+					"claim_drops":      false,
+					"claim_moments":    false,
+					"watch_streak":     false,
+					"community_goals":  false,
+					"chat_presence":    "NEVER",
+					"bet":              map[string]interface{}{"max_points": 5},
 				},
 			},
-		},
-	}
+		}
+		got, err := decodeConfig(settings)
+		if err != nil {
+			t.Fatalf("decodeConfig() error = %v, want none", err)
+		}
+		want := config{
+			Username:                   "me",
+			Password:                   "secret",
+			AutoUpdate:                 true,
+			Debug:                      true,
+			DebugDeep:                  true,
+			WatchQueueLogging:          true,
+			DisableSSLCertVerification: true,
+			ShowSeconds:                true,
+			ClaimDropsStartup:          true,
+			ClaimDrops:                 true,
+			ClaimMoments:               true,
+			BettingMakePredictions:     true,
+			FollowRaid:                 true,
+			CommunityGoals:             true,
+			Emojis:                     true,
+			SaveLogs:                   true,
+			ShowGame:                   true,
+			WatchStreakWarmStartCache:  true,
+			IRCMode:                    "ALWAYS",
+			DisableAtInNickname:        true,
+			ShowDropsProgress:          true,
+			Streamers:                  []string{"one", "two"},
+			StreamersExclude:           []string{"three"},
+			GamePriority:               []string{"Chess"},
+			GameExclude:                []string{"Slots"},
+			WatchPriority:              []string{"ORDER"},
+			Timezone:                   ptr("Europe/Madrid"),
+			Privacy:                    privacyConfig{AnonymizeLogs: true},
+			Discord:                    discordConfig{WebhookAPI: "https://discord.com/api/webhooks/1/a", Events: []string{"BET_WIN"}},
+			Analytics:                  analyticsConfig{Enabled: true, Host: "0.0.0.0", Port: 8080},
+			Telegram:                   telegramConfig{ChatID: "-1001234567890", Token: "123:abc", Events: []string{"BET_LOSE"}, DisableNotification: true},
+			Bet: betConfig{
+				Strategy:           "PERCENTAGE",
+				Percentage:         ptr(10),
+				PercentageGap:      ptr(30),
+				MaxPoints:          ptr(1000),
+				StealthMode:        ptr(true),
+				DeductStakeOnPlace: ptr(false),
+				DelayMode:          "FROM_START",
+				Delay:              ptr(2.5),
+				MinimumPoints:      ptr(100),
+				FilterCondition:    &filterConditionConfig{By: "TOTAL_USERS", Where: "GT", Value: ptr(50.0)},
+			},
+			StreamerOverrides: map[string]streamerSettingsConfig{
+				"one": {
+					MakePredictions: ptr(false),
+					FollowRaid:      ptr(false),
+					ClaimDrops:      ptr(false),
+					ClaimMoments:    ptr(false),
+					WatchStreak:     ptr(false),
+					CommunityGoals:  ptr(false),
+					IRCMode:         ptr("NEVER"),
+					Bet:             betConfig{MaxPoints: ptr(5)},
+				},
+			},
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
 
-	merged := buildOverrideSettings(base, overrides)
-	override, ok := merged["somestreamer"]
-	if !ok {
-		t.Fatalf("expected override settings keyed by lowercased streamer name")
-	}
-	if override.Bet.FilterCondition == nil {
-		t.Fatalf("expected override filter_condition merged into settings")
-	}
-	if override.Bet.FilterCondition.By != "TOTAL_POINTS" || override.Bet.FilterCondition.Where != "GT" {
-		t.Fatalf("expected override filter_condition TOTAL_POINTS GT, got %v %v", override.Bet.FilterCondition.By, override.Bet.FilterCondition.Where)
-	}
-	if override.Bet.FilterCondition.Value == nil || *override.Bet.FilterCondition.Value != 999999.0 {
-		t.Fatalf("expected override Value 999999, got %#v", override.Bet.FilterCondition.Value)
-	}
-}
+	t.Run("a key the program does not know", func(t *testing.T) {
+		got, err := decodeConfig(map[string]interface{}{"username": "me", "an_old_key": true})
+		if err != nil {
+			t.Fatalf("decodeConfig() error = %v, want none", err)
+		}
+		if want := (config{Username: "me"}); !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
 
-func TestBuildOverrideSettingsCanEnableClaimMomentsOverGlobalDefault(t *testing.T) {
-	base := domain.StreamerSettings{
-		ClaimMoments: false,
-	}
-	base.Default()
+	t.Run("a number where text belongs", func(t *testing.T) {
+		got, err := decodeConfig(map[string]interface{}{"username": 5})
+		wantErr := regexp.MustCompile(`^json: cannot unmarshal number into Go struct field .*username of type string$`)
+		if err == nil || !wantErr.MatchString(err.Error()) {
+			t.Errorf("decodeConfig() error = %v, want one matching %s", err, wantErr)
+		}
+		if want := (config{}); !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
 
-	enable := true
-	overrides := map[string]streamerSettingsConfig{
-		"SomeStreamer": {
-			ClaimMoments: &enable,
-		},
-	}
-
-	merged := buildOverrideSettings(base, overrides)
-	got, ok := merged["somestreamer"]
-	if !ok {
-		t.Fatalf("expected override for somestreamer")
-	}
-	if !got.ClaimMoments {
-		t.Fatalf("expected streamer override to enable claim_moments")
-	}
-}
-
-func TestFillMissingAddsOnlyWhatIsAbsent(t *testing.T) {
-	settings := map[string]interface{}{
-		"username": "me",
-		"bet":      map[string]interface{}{"percentage": 9.0},
-		"privacy":  nil,
-	}
-	defaults := map[string]interface{}{
-		"username": "your-twitch-username",
-		"emojis":   true,
-		"bet": map[string]interface{}{
-			"percentage":       5,
-			"filter_condition": map[string]interface{}{"by": nil},
-		},
-		"privacy": map[string]interface{}{"anonymize_logs": false},
-	}
-
-	if !fillMissing(settings, defaults) {
-		t.Fatalf("missing keys should be reported as added")
-	}
-	bet := settings["bet"].(map[string]interface{})
-	if settings["username"] != "me" || bet["percentage"] != 9.0 {
-		t.Fatalf("values the user set must not change: %v", settings)
-	}
-	if settings["emojis"] != true {
-		t.Fatalf("a missing top-level key should be added: %v", settings)
-	}
-	if _, ok := bet["filter_condition"].(map[string]interface{}); !ok {
-		t.Fatalf("a missing nested group should be added: %v", bet)
-	}
-	if privacy, ok := settings["privacy"].(map[string]interface{}); !ok || privacy["anonymize_logs"] != false {
-		t.Fatalf("a group that is not an object should be replaced by its defaults: %v", settings["privacy"])
-	}
-	if fillMissing(settings, defaults) {
-		t.Fatalf("a complete config should need nothing added")
-	}
-}
-
-// config.example.json is what a new user copies, so it has to be exactly what
-// the program would write on a first run.
-func TestExampleConfigMatchesDefaults(t *testing.T) {
-	raw, err := os.ReadFile(filepath.Join("..", "..", "config.example.json"))
-	if err != nil {
-		t.Fatalf("read example: %v", err)
-	}
-	var example map[string]interface{}
-	if err := json.Unmarshal(raw, &example); err != nil {
-		t.Fatalf("example is not valid JSON: %v", err)
-	}
-	normalized, err := json.Marshal(defaultConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
-	var defaults map[string]interface{}
-	if err := json.Unmarshal(normalized, &defaults); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(example, defaults) {
-		t.Fatalf("config.example.json is out of date: copy the config.json a first run writes over it")
-	}
-	written, err := formatSettings(defaultConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))) != string(written) {
-		t.Fatalf("config.example.json is not laid out the way the program writes it: copy a first run's config.json over it")
-	}
-	if _, err := decodeConfig(example); err != nil {
-		t.Fatalf("example does not load: %v", err)
-	}
+	t.Run("a value JSON cannot hold", func(t *testing.T) {
+		got, err := decodeConfig(map[string]interface{}{"username": make(chan int)})
+		if err == nil || err.Error() != "json: unsupported type: chan int" {
+			t.Errorf("decodeConfig() error = %v, want json: unsupported type: chan int", err)
+		}
+		if want := (config{}); !reflect.DeepEqual(got, want) {
+			t.Errorf("decodeConfig() = %+v, want %+v", got, want)
+		}
+	})
 }

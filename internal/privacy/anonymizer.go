@@ -18,8 +18,7 @@ type Anonymizer struct {
 	streamerAliases   map[string]string
 	points            map[string]*pointsState
 
-	initialPointsMin int
-	initialPointsMax int
+	initialPoints func() int
 }
 
 type pointsState struct {
@@ -29,13 +28,17 @@ type pointsState struct {
 }
 
 func New(enabled bool) *Anonymizer {
+	return newAnonymizer(enabled, func() int { return randInt(100, 1000) })
+}
+
+// newAnonymizer takes initialPoints, the made-up balance a streamer starts from.
+func newAnonymizer(enabled bool, initialPoints func() int) *Anonymizer {
 	return &Anonymizer{
 		enabled:           enabled,
 		nextStreamerIndex: 1,
 		streamerAliases:   make(map[string]string),
 		points:            make(map[string]*pointsState),
-		initialPointsMin:  100,
-		initialPointsMax:  1000,
+		initialPoints:     initialPoints,
 	}
 }
 
@@ -103,7 +106,7 @@ func (a *Anonymizer) PseudoChannelPoints(streamer *domain.Streamer) int {
 	}
 
 	if !state.initialized {
-		state.pseudo = randInt(a.initialPointsMin, a.initialPointsMax)
+		state.pseudo = a.initialPoints()
 		state.lastReal = streamer.ChannelPoints
 		state.initialized = true
 		return state.pseudo
@@ -113,23 +116,6 @@ func (a *Anonymizer) PseudoChannelPoints(streamer *domain.Streamer) int {
 	state.pseudo += delta
 	state.lastReal = streamer.ChannelPoints
 	return state.pseudo
-}
-
-func streamerKey(streamer *domain.Streamer) string {
-	if streamer == nil {
-		return ""
-	}
-	if id := strings.TrimSpace(streamer.ChannelID); id != "" {
-		return "id:" + id
-	}
-	if name := normalizeKey(streamer.Username); name != "" {
-		return "name:" + name
-	}
-	return ""
-}
-
-func normalizeKey(raw string) string {
-	return strings.ToLower(strings.TrimSpace(raw))
 }
 
 func randInt(min, max int) int {

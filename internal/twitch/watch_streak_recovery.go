@@ -120,14 +120,23 @@ func (r *streakRecovery) checkSettled() (saved, settled bool, err error) {
 // waitForExpiryRefresh gives Twitch a moment to refresh the streak expiry after
 // clips were watched and no vod was.
 func (r *streakRecovery) waitForExpiryRefresh() {
-	if r.vods != 0 {
-		return
+	if wait := expiryRefreshWait(r.clips, r.vods); wait > 0 {
+		r.client.pause(wait)
 	}
-	if r.clips == 1 {
-		r.client.pause(10 * time.Second)
-	} else if r.clips > 1 {
-		r.client.pause(5 * time.Second)
+}
+
+// expiryRefreshWait is how long to wait before the last streak check: nothing
+// once a vod was watched, longest after a single clip.
+func expiryRefreshWait(clips, vods int) time.Duration {
+	if vods != 0 {
+		return 0
 	}
+	if clips == 1 {
+		return 10 * time.Second
+	} else if clips > 1 {
+		return 5 * time.Second
+	}
+	return 0
 }
 
 func (r *streakRecovery) logf(format string, args ...interface{}) {

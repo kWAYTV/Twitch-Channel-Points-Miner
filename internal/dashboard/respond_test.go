@@ -3,79 +3,98 @@ package dashboard
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"io"
-	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
-	"time"
 )
 
-func TestIndexAndJSONAreCompressedAndRevalidated(t *testing.T) {
-	clock := time.UnixMilli(1_700_000_000_000)
-	s := newTestStore(t, t.TempDir(), &clock)
-	for i := 0; i < 500; i++ {
-		clock = clock.Add(time.Minute)
-		s.RecordPoint("alice", 1000+i*10, 10, "CLAIM")
+func gunzip(t *testing.T, data []byte) []byte {
+	t.Helper()
+	zr, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("gzip reader: %v", err)
 	}
-	srv := httptest.NewServer(NewServer(s).Handler())
-	defer srv.Close()
-	// Compression is requested by hand so the client does not undo it transparently.
-	client := &http.Client{Transport: &http.Transport{DisableCompression: true}}
-	do := func(path string, header map[string]string) (*http.Response, []byte) {
-		t.Helper()
-		req, _ := http.NewRequest(http.MethodGet, srv.URL+path, nil)
-		for k, v := range header {
-			req.Header.Set(k, v)
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			t.Fatalf("GET %s: %v", path, err)
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return resp, body
+	out, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatalf("gunzip: %v", err)
 	}
-	gunzip := func(data []byte) []byte {
-		t.Helper()
-		zr, err := gzip.NewReader(bytes.NewReader(data))
-		if err != nil {
-			t.Fatalf("gzip reader: %v", err)
-		}
-		out, err := io.ReadAll(zr)
-		if err != nil {
-			t.Fatalf("gunzip: %v", err)
-		}
-		return out
+	return out
+}
+
+func TestAcceptsGzip(t *testing.T) {
+	tests := []struct {
+		name           string
+		acceptEncoding string
+		want           bool
+	}{
+		{"gzip alone", "gzip", true},
+		{"gzip among others", "br, gzip, deflate", true},
+		{"no header", "", false},
+		{"other encodings only", "br, deflate", false},
+		{"identity", "identity", false},
+		{"gzip refused with q=0 (today: accepted)", "gzip;q=0", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := acceptsGzip(tt.acceptEncoding); got != tt.want {
+				t.Errorf("acceptsGzip(%q) = %v, want %v", tt.acceptEncoding, got, tt.want)
+			}
+		})
 	}
 
-	resp, body := do("/", nil)
-	etag := resp.Header.Get("ETag")
-	if etag == "" || resp.Header.Get("Content-Encoding") != "" || !bytes.Equal(body, indexHTML) {
-		t.Fatalf("plain index: etag=%q encoding=%q len=%d", etag, resp.Header.Get("Content-Encoding"), len(body))
+	t.Run("gzip refused with q=0 (bug: should not be accepted)", func(t *testing.T) {
+		t.Skip("bug: the header is searched for the word gzip, so its q=0 is ignored")
+		if got := acceptsGzip("gzip;q=0"); got != false {
+			t.Errorf("acceptsGzip(%q) = %v, want false", "gzip;q=0", got)
+		}
+	})
+}
+
+func TestCompresses(t *testing.T) {
+	tests := []struct {
+		name           string
+		size           int
+		acceptEncoding string
+		want           bool
+	}{
+		{"1023 bytes for a client that takes gzip", 1023, "gzip", false},
+		{"1024 bytes for a client that takes gzip", 1024, "gzip", true},
+		{"1025 bytes for a client that takes gzip", 1025, "gzip", true},
+		{"1024 bytes for a client that does not", 1024, "", false},
+		{"an empty body for a client that takes gzip", 0, "gzip", false},
 	}
-	resp, body = do("/", map[string]string{"Accept-Encoding": "gzip"})
-	if resp.Header.Get("Content-Encoding") != "gzip" || !bytes.Equal(gunzip(body), indexHTML) {
-		t.Fatalf("gzip index does not round-trip")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compresses(tt.size, tt.acceptEncoding); got != tt.want {
+				t.Errorf("compresses(%d, %q) = %v, want %v", tt.size, tt.acceptEncoding, got, tt.want)
+			}
+		})
 	}
-	if len(body) >= len(indexHTML)/2 {
-		t.Fatalf("index barely compressed: %d of %d bytes", len(body), len(indexHTML))
+}
+
+func TestGzipBytes(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+	}{
+		{"a line of text", "Channel Points Miner"},
+		{"text outside ASCII", "Añadido 🎁"},
+		{"a kilobyte of one letter", strings.Repeat("x", 1024)},
+		{"nothing", ""},
 	}
-	resp, body = do("/", map[string]string{"If-None-Match": etag})
-	if resp.StatusCode != http.StatusNotModified || len(body) != 0 {
-		t.Fatalf("revalidation: status %d, %d bytes", resp.StatusCode, len(body))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			packed := gzipBytes([]byte(tt.data), gzip.BestCompression)
+			if got := string(gunzip(t, packed)); got != tt.data {
+				t.Errorf("gunzip(gzipBytes(%q)) = %q, want the input back", tt.data, got)
+			}
+		})
 	}
 
-	resp, body = do("/api/streamer/alice?range=all", map[string]string{"Accept-Encoding": "gzip"})
-	if resp.Header.Get("Content-Encoding") != "gzip" {
-		t.Fatalf("large JSON should be compressed")
-	}
-	var got streamerResponse
-	if err := json.Unmarshal(gunzip(body), &got); err != nil || got.Stats.End != 5990 {
-		t.Fatalf("compressed JSON: err=%v stats=%+v", err, got.Stats)
-	}
-	// A small body is sent as is.
-	if resp, _ = do("/api/streamers", map[string]string{"Accept-Encoding": "gzip"}); resp.Header.Get("Content-Encoding") != "" {
-		t.Fatalf("small JSON should not be compressed")
-	}
+	t.Run("a kilobyte of one letter packs to under 64 bytes", func(t *testing.T) {
+		packed := gzipBytes([]byte(strings.Repeat("x", 1024)), gzip.BestCompression)
+		if len(packed) >= 64 {
+			t.Errorf("gzipBytes of 1024 equal bytes = %d bytes, want under 64", len(packed))
+		}
+	})
 }

@@ -13,7 +13,7 @@ func (m *Miner) logWatchQueueSlots(slots *watchSlots, streamers []*domain.Stream
 	if m.logger == nil || !m.logWatchQueue {
 		return
 	}
-	interval := m.watchInterval(len(slots.picked))
+	interval := watchInterval(len(slots.picked))
 	lines := make([]string, 0, len(slots.picked)+1)
 	lines = append(lines, fmt.Sprintf("WATCH queue (≈%s between streamers):", formatDuration(interval)))
 	for slot, idx := range slots.picked {

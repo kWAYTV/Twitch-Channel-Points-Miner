@@ -14,14 +14,7 @@ func (t *Client) ContributeToCommunityGoals(streamer *domain.Streamer) {
 	if streamer == nil || !streamer.Settings.CommunityGoals || len(streamer.CommunityGoals) == 0 {
 		return
 	}
-	hasActive := false
-	for _, goal := range streamer.CommunityGoals {
-		if goal != nil && goal.Status == "STARTED" && goal.IsInStock {
-			hasActive = true
-			break
-		}
-	}
-	if !hasActive {
+	if !hasActiveCommunityGoal(streamer.CommunityGoals) {
 		return
 	}
 
@@ -91,6 +84,16 @@ func (t *Client) ContributeToCommunityGoal(streamer *domain.Streamer, goalID, ti
 		streamer.ChannelPoints = 0
 	}
 	return nil
+}
+
+// hasActiveCommunityGoal reports whether any goal is started and still in stock.
+func hasActiveCommunityGoal(goals map[string]*domain.CommunityGoal) bool {
+	for _, goal := range goals {
+		if goal != nil && goal.Status == "STARTED" && goal.IsInStock {
+			return true
+		}
+	}
+	return false
 }
 
 func minInt(values ...int) int {

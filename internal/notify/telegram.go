@@ -35,32 +35,28 @@ type TelegramNotifier struct {
 	events              map[events.Event]struct{}
 	disableNotification bool
 	client              *http.Client
+	logf                func(format string, args ...any)
 	warnOnce            sync.Once
 }
 
 // NewTelegramNotifier returns nil unless both chat_id and token are set.
 func NewTelegramNotifier(settings TelegramSettings) *TelegramNotifier {
-	return newTelegramNotifier(settings, telegramAPIBase)
+	return newTelegramNotifier(settings, telegramAPIBase, log.Printf)
 }
 
-func newTelegramNotifier(settings TelegramSettings, apiBase string) *TelegramNotifier {
+func newTelegramNotifier(settings TelegramSettings, apiBase string, logf func(format string, args ...any)) *TelegramNotifier {
 	chatID := strings.TrimSpace(settings.ChatID)
 	token := strings.TrimSpace(settings.Token)
 	if chatID == "" || token == "" {
 		return nil
 	}
-	selected := make(map[events.Event]struct{})
-	for _, raw := range settings.Events {
-		if event := events.NormalizeEventName(raw); event != "" {
-			selected[event] = struct{}{}
-		}
-	}
 	return &TelegramNotifier{
 		endpoint:            apiBase + "/bot" + token + "/sendMessage",
 		chatID:              chatID,
-		events:              selected,
+		events:              selectedEvents(settings.Events),
 		disableNotification: settings.DisableNotification,
 		client:              &http.Client{Timeout: 5 * time.Second},
+		logf:                logf,
 	}
 }
 
@@ -92,22 +88,28 @@ func (t *TelegramNotifier) Send(message Message, event events.Event) {
 	if resp.StatusCode == http.StatusOK {
 		return
 	}
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	t.warn(telegramFailure(resp.Status, body))
+}
+
+// telegramFailure words why Telegram refused a message: the description in its
+// answer, or the HTTP status when it gave none.
+func telegramFailure(status string, body []byte) string {
 	var apiErr struct {
 		Description string `json:"description"`
 	}
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	_ = json.Unmarshal(body, &apiErr)
 	if apiErr.Description == "" {
-		apiErr.Description = resp.Status
+		return status
 	}
-	t.warn(apiErr.Description)
+	return apiErr.Description
 }
 
 // warn reports the first delivery problem only, so a bad token or chat id is
 // visible without flooding the log.
 func (t *TelegramNotifier) warn(reason string) {
 	t.warnOnce.Do(func() {
-		log.Printf("telegram: notification not delivered: %s (further failures are not logged)", reason)
+		t.logf("telegram: notification not delivered: %s (further failures are not logged)", reason)
 	})
 }
 

@@ -32,9 +32,29 @@ type Client struct {
 	stopped             chan struct{}
 	conn                net.Conn
 	connMu              sync.Mutex
+	link                link
+}
+
+// link is how a chat reaches Twitch, and how it waits before trying again.
+type link struct {
+	dial  func() (net.Conn, error)
+	sleep func(time.Duration)
+}
+
+func twitchLink() link {
+	return link{dial: dialTwitch, sleep: time.Sleep}
+}
+
+func dialTwitch() (net.Conn, error) {
+	addr := net.JoinHostPort(twitchapi.IRC, strconv.Itoa(twitchapi.IRCPort))
+	return net.DialTimeout("tcp", addr, 10*time.Second)
 }
 
 func NewClient(username, token, channel string, logger Logger, disableAtInNickname bool, anonymizer *privacy.Anonymizer) *Client {
+	return newClient(username, token, channel, logger, disableAtInNickname, anonymizer, twitchLink())
+}
+
+func newClient(username, token, channel string, logger Logger, disableAtInNickname bool, anonymizer *privacy.Anonymizer, link link) *Client {
 	return &Client{
 		username:            strings.ToLower(strings.TrimSpace(username)),
 		channel:             strings.ToLower(strings.TrimSpace(channel)),
@@ -44,6 +64,7 @@ func NewClient(username, token, channel string, logger Logger, disableAtInNickna
 		disableAtInNickname: disableAtInNickname,
 		stop:                make(chan struct{}),
 		stopped:             make(chan struct{}),
+		link:                link,
 	}
 }
 
@@ -74,7 +95,7 @@ func (c *Client) run() {
 		if c.isStopped() {
 			return
 		}
-		time.Sleep(5 * time.Second)
+		c.link.sleep(5 * time.Second)
 	}
 }
 
@@ -83,8 +104,7 @@ func (c *Client) connectAndListen() error {
 		return fmt.Errorf("missing chat credentials")
 	}
 
-	addr := net.JoinHostPort(twitchapi.IRC, strconv.Itoa(twitchapi.IRCPort))
-	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+	conn, err := c.link.dial()
 	if err != nil {
 		return err
 	}
@@ -133,7 +153,7 @@ func (c *Client) connectAndListen() error {
 }
 
 func (c *Client) handleLine(line string) {
-	if strings.Contains(strings.ToLower(line), "authentication failed") {
+	if isAuthFailure(line) {
 		if c.logger != nil {
 			if c.anonymizer != nil && c.anonymizer.Enabled() {
 				c.logger.Printf("chat authentication failed")
@@ -144,30 +164,11 @@ func (c *Client) handleLine(line string) {
 		c.closeConn()
 		return
 	}
-	if !strings.Contains(line, "PRIVMSG") {
+	nick, msg, ok := parsePrivmsg(line)
+	if !ok {
 		return
 	}
-	parts := strings.SplitN(line, " :", 2)
-	if len(parts) != 2 {
-		return
-	}
-	msg := parts[1]
-	prefix := parts[0]
-	nick := ""
-	if strings.HasPrefix(prefix, ":") {
-		prefix = strings.TrimPrefix(prefix, ":")
-		if idx := strings.Index(prefix, "!"); idx > 0 {
-			nick = prefix[:idx]
-		}
-	}
-
-	msgLower := strings.ToLower(msg)
-	target := "@" + c.username
-	mentioned := strings.Contains(msgLower, target)
-	if c.disableAtInNickname && !mentioned {
-		mentioned = strings.Contains(msgLower, c.username)
-	}
-	if !mentioned {
+	if !mentions(msg, c.username, c.disableAtInNickname) {
 		return
 	}
 	if c.logger != nil {
@@ -178,11 +179,7 @@ func (c *Client) handleLine(line string) {
 			}
 			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "Chat mention in %s", channel)
 		} else {
-			displayNick := nick
-			if displayNick == "" {
-				displayNick = "unknown"
-			}
-			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "%s at #%s wrote: %s", displayNick, c.channel, msg)
+			c.logger.EmojiEventf(":speech_balloon:", events.EventChatMention, "%s", mentionLine(nick, c.channel, msg))
 		}
 	}
 }

@@ -18,7 +18,7 @@ import (
 )
 
 func (m *Miner) run(streamers []string, useFollowers bool, order domain.FollowersOrder) {
-	m.startedAt = time.Now()
+	m.startedAt = m.now()
 	m.logger.Printf("%s | %s", project.Name, project.VersionLabel())
 	m.logger.Println(project.URL)
 	sessionID := newSessionID()
@@ -32,14 +32,14 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	}
 	tw.SetGameChangeHandler(m.handleGameChange)
 	m.twitch = tw
-	if err := m.twitch.Login(m.Username); err != nil {
+	if err := tw.Login(m.Username); err != nil {
 		m.logger.Fatalf("login failed: %v", err)
 	}
 	m.loadWarmStartCache()
 
 	var targets []string
 	if useFollowers {
-		follows, err := m.twitch.GetFollowers(100, order)
+		follows, err := tw.GetFollowers(100, order)
 		if err != nil {
 			m.logger.Fatalf("failed to load followers: %v", err)
 		}
@@ -54,14 +54,14 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	}
 	targets = filteredTargets
 
-	loadStartedAt := time.Now()
+	loadStartedAt := m.now()
 	m.logger.EmojiPrintf(":hourglass_flowing_sand:", "Loading data for %d streamer(s). Please wait...", len(targets))
 	streamerObjs := m.loadStreamers(targets)
 	m.saveWarmStartCacheSnapshot(streamerObjs)
-	m.logLoadSummary(streamerObjs, time.Since(loadStartedAt))
+	m.logLoadSummary(streamerObjs, m.now().Sub(loadStartedAt))
 
 	claimDropsEnabled := m.shouldClaimDrops(streamerObjs)
-	dropClaimer := drops.NewClaimer(m.twitch, m.logger, m.showDropsProgress)
+	dropClaimer := drops.NewClaimer(tw, m.logger, m.showDropsProgress)
 	if m.ClaimDropsStartup && claimDropsEnabled {
 		dropClaimer.Claim("startup drop claim failed")
 	}
@@ -74,9 +74,9 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	}
 	go m.contextRefresher(streamerObjs, m.stop)
 	go m.minuteWatcher(streamerObjs, m.stop)
-	go m.startPubSub(streamerObjs, m.stop)
+	go m.startPubSub(tw, streamerObjs, m.stop)
 	go m.streakRecovery(streamerObjs, m.stop)
-	go m.analyticsSnapshotter(m.stop)
+	go m.analyticsSnapshotter(streamerObjs, m.stop)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -84,9 +84,9 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	m.shutdown(sessionID)
 }
 
-func (m *Miner) startPubSub(streamers []*domain.Streamer, stop <-chan struct{}) {
+func (m *Miner) startPubSub(tw *twitch.Client, streamers []*domain.Streamer, stop <-chan struct{}) {
 	client := pubsub.NewClient(
-		m.twitch,
+		tw,
 		m.logger,
 		m.anonymizer,
 		streamers,
@@ -106,12 +106,21 @@ func (m *Miner) shutdown(sessionID string) {
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
+	m.logSessionEnd(sessionID, m.streamers, m.now().Sub(m.startedAt))
+	if m.chat != nil {
+		m.chat.LeaveAll()
+	}
+	os.Exit(0)
+}
+
+// logSessionEnd reports how long the session ran and what each streamer's balance gained.
+func (m *Miner) logSessionEnd(sessionID string, streamers []*domain.Streamer, ran time.Duration) {
 	m.logger.EmojiEventf(":stop_sign:", events.EventShutdown, "Ending session: '%s'", sessionID)
-	duration := formatDuration(time.Since(m.startedAt))
+	duration := formatDuration(ran)
 	m.logger.EmojiPrintf(":hourglass:", "Duration %s", duration)
 	totalPointsChange := 0
-	for _, s := range m.streamers {
-		totalPointsChange += s.ChannelPoints - m.initialPoints[streamerInitialPointsKey(s)]
+	for _, s := range streamers {
+		totalPointsChange += s.ChannelPoints - m.initialPoints[streamerKey(s)]
 	}
 	if m.anonymizeLogs() {
 		m.logger.EmojiPrintf(":chart_with_upwards_trend:", "Total Points gained: [hidden]")
@@ -125,8 +134,8 @@ func (m *Miner) shutdown(sessionID string) {
 		}
 		m.logger.EmojiPrintf(":chart_with_upwards_trend:", "Total Points gained: %s%s%d%s", totalColor, totalSign, totalPointsChange, colorReset)
 	}
-	for _, s := range m.streamers {
-		initial := m.initialPoints[streamerInitialPointsKey(s)]
+	for _, s := range streamers {
+		initial := m.initialPoints[streamerKey(s)]
 		total := s.ChannelPoints - initial
 		if total == 0 && len(s.History) == 0 {
 			continue
@@ -155,8 +164,6 @@ func (m *Miner) shutdown(sessionID string) {
 			}
 		}
 	}
-	m.chat.LeaveAll()
-	os.Exit(0)
 }
 
 // newSessionID creates a UUID-like string for session logging.

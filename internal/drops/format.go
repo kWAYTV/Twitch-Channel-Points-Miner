@@ -7,6 +7,20 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
+func formatClaimLine(drop twitch.ClaimedDrop) string {
+	reward := drop.RewardName
+	if reward == "" {
+		reward = "Drop"
+	}
+	campaign := drop.CampaignName
+	if campaign == "" {
+		campaign = "Unknown Campaign"
+	}
+	progress := formatDropProgress(drop.CurrentValue, drop.RequiredValue)
+	percent := progressPercent(drop.CurrentValue, drop.RequiredValue)
+	return fmt.Sprintf("Claim %s (%s) %s (%d%%)", reward, campaign, progress, percent)
+}
+
 func formatDropProgress(current, required int) string {
 	if required > 0 {
 		return fmt.Sprintf("%d/%d", current, required)

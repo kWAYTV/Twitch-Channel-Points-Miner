@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
@@ -22,7 +21,7 @@ func (m *Miner) saveWarmStartCacheSnapshot(streamers []*domain.Streamer) {
 	if m == nil || m.warmStartCache == nil {
 		return
 	}
-	now := time.Now()
+	now := m.now()
 	for _, streamer := range streamers {
 		m.warmStartCache.UpdateFromStreamer(streamer, now)
 	}
@@ -35,7 +34,7 @@ func (m *Miner) syncWarmStartCacheFromStreamer(streamer *domain.Streamer) {
 	if m == nil || m.warmStartCache == nil || streamer == nil {
 		return
 	}
-	m.warmStartCache.UpdateFromStreamer(streamer, time.Now())
+	m.warmStartCache.UpdateFromStreamer(streamer, m.now())
 	if err := m.warmStartCache.SaveIfDirty(); err != nil && m.logger != nil {
 		m.logger.Debugf("warm-start cache save failed for %s: %v", m.rawStreamerName(streamer.Username), err)
 	}
@@ -45,7 +44,7 @@ func (m *Miner) applyWarmStartCache(streamer *domain.Streamer) bool {
 	if m == nil || m.warmStartCache == nil || streamer == nil || streamer.Stream == nil || !streamer.IsOnline {
 		return false
 	}
-	entry, ok := m.warmStartCache.ResolvedEntryFor(streamer, time.Now())
+	entry, ok := m.warmStartCache.ResolvedEntryFor(streamer, m.now())
 	if !ok {
 		return false
 	}

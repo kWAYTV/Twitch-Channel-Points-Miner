@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
@@ -12,20 +11,7 @@ func (m *Miner) streakRecovery(streamers []*domain.Streamer, stop <-chan struct{
 	ticker := time.NewTicker(60 * time.Minute)
 	defer ticker.Stop()
 	for {
-		expiringstreaks := 0
-		savedstreaks := 0
-		for _, s := range streamers {
-			if saved, err := m.twitch.RecoverStreak(s); err == nil {
-				if saved {
-					expiringstreaks += 1
-					savedstreaks += 1
-				}
-			} else {
-				expiringstreaks += 1
-				m.logger.EmojiPrintf(":ambulance:", "streak recovery %s: %v", m.styledStreamerName(s), err)
-			}
-		}
-		m.logger.EmojiPrintf(":ambulance:", "streak recovery: %d streaks expiring, %d saved", expiringstreaks, savedstreaks)
+		m.recoverStreaks(streamers)
 
 		select {
 		case <-ticker.C:
@@ -34,6 +20,24 @@ func (m *Miner) streakRecovery(streamers []*domain.Streamer, stop <-chan struct{
 			return
 		}
 	}
+}
+
+// recoverStreaks asks Twitch to save every streamer's expiring watch streak, and logs the tally.
+func (m *Miner) recoverStreaks(streamers []*domain.Streamer) {
+	expiringstreaks := 0
+	savedstreaks := 0
+	for _, s := range streamers {
+		if saved, err := m.twitch.RecoverStreak(s); err == nil {
+			if saved {
+				expiringstreaks += 1
+				savedstreaks += 1
+			}
+		} else {
+			expiringstreaks += 1
+			m.logger.EmojiPrintf(":ambulance:", "streak recovery %s: %v", m.styledStreamerName(s), err)
+		}
+	}
+	m.logger.EmojiPrintf(":ambulance:", "streak recovery: %d streaks expiring, %d saved", expiringstreaks, savedstreaks)
 }
 
 func (m *Miner) resolveTimedOutStreak(streamer *domain.Streamer, now time.Time) bool {
@@ -50,7 +54,7 @@ func (m *Miner) resolveTimedOutStreak(streamer *domain.Streamer, now time.Time) 
 	return true
 }
 
-func (m *Miner) streakCooldownBlocksCurrentStream(streamer *domain.Streamer, now time.Time) bool {
+func streakCooldownBlocksCurrentStream(streamer *domain.Streamer, now time.Time) bool {
 	if streamer == nil || streamer.OfflineAt.IsZero() {
 		return false
 	}
@@ -76,21 +80,11 @@ func (m *Miner) shouldPrioritizeStreak(streamer *domain.Streamer, now time.Time)
 	if !streamer.Settings.WatchStreak || streak.CarryoverActive(streamer, now) || !streamer.Stream.WatchStreakMissing {
 		return false
 	}
-	if m.streakCooldownBlocksCurrentStream(streamer, now) {
+	if streakCooldownBlocksCurrentStream(streamer, now) {
 		return false
 	}
 	// Keep streak priority long enough for Twitch to issue the streak check (typically ~15 minutes).
 	return streamer.Stream.MinuteWatched < m.streakPriorityLimit(now)
-}
-
-func (m *Miner) activeStreakWatchKey(streamer *domain.Streamer) string {
-	if streamer == nil {
-		return ""
-	}
-	if channelID := strings.TrimSpace(streamer.ChannelID); channelID != "" {
-		return channelID
-	}
-	return strings.ToLower(strings.TrimSpace(streamer.Username))
 }
 
 func (m *Miner) shouldKeepActiveStreak(streamer *domain.Streamer, now time.Time) bool {
@@ -104,7 +98,7 @@ func (m *Miner) syncActiveStreakWatch(streamer *domain.Streamer, now time.Time) 
 	if m == nil {
 		return
 	}
-	key := m.activeStreakWatchKey(streamer)
+	key := streamerKey(streamer)
 	if key == "" {
 		return
 	}
@@ -127,17 +121,22 @@ func (m *Miner) syncActiveStreakWatch(streamer *domain.Streamer, now time.Time) 
 	m.activeStreakMu.Unlock()
 }
 
-// streakPriorityLimit adjusts streak priority duration:
-// - default 7 minutes
-// - extended to 20 minutes after 10 hours runtime to avoid churn late in long sessions.
+// streakPriorityLimit is how many watched minutes a pending streak keeps its priority for.
 func (m *Miner) streakPriorityLimit(now time.Time) float64 {
 	if m == nil {
 		return streak.PriorityMinutesBase
 	}
-	if m.startedAt.IsZero() {
+	return streakPriorityMinutes(m.startedAt, now)
+}
+
+// streakPriorityMinutes adjusts streak priority duration:
+// - default 7 minutes
+// - extended to 20 minutes after 10 hours runtime to avoid churn late in long sessions.
+func streakPriorityMinutes(startedAt, now time.Time) float64 {
+	if startedAt.IsZero() {
 		return streak.PriorityMinutesBase
 	}
-	if now.Sub(m.startedAt) > 10*time.Hour {
+	if now.Sub(startedAt) > 10*time.Hour {
 		return streak.PriorityMinutesExtended
 	}
 	return streak.PriorityMinutesBase

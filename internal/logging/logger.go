@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -28,79 +26,49 @@ type Logger struct {
 	base     *log.Logger
 	settings LoggerSettings
 	discord  *notify.DiscordWebhook
+	now      func() time.Time
 }
 
-type dualWriter struct {
-	console io.Writer
-	file    io.Writer
-}
-
-func (w dualWriter) Write(p []byte) (int, error) {
-	if w.console != nil {
-		if _, err := w.console.Write(p); err != nil {
-			return 0, err
-		}
-	}
-	if w.file != nil {
-		clean := ansiRegexp.ReplaceAll(p, nil)
-		if _, err := w.file.Write(clean); err != nil {
-			return 0, err
-		}
-	}
-	return len(p), nil
-}
-
-var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
-
+// NewLogger returns a logger that writes to the console and, when settings.Save
+// is on, to a file named after the user in the "log" directory.
 func NewLogger(settings LoggerSettings, username string) *Logger {
-	var output io.Writer = os.Stdout
+	logger, _ := newLogger(os.Stdout, "log", settings, username, time.Now)
+	return logger
+}
+
+// NewLoggerTo returns a logger that writes to output only, without a log file.
+func NewLoggerTo(output io.Writer, settings LoggerSettings) *Logger {
+	return newLoggerTo(output, settings, time.Now)
+}
+
+// newLogger also returns the log file it opened, nil when there is none. The
+// file stays open for as long as the logger is used.
+func newLogger(console io.Writer, logDir string, settings LoggerSettings, username string, now func() time.Time) (*Logger, *os.File) {
+	output := console
+	var file *os.File
 	if settings.Save {
-		logDir := "log"
 		if err := os.MkdirAll(logDir, 0o755); err == nil {
-			name := strings.TrimSpace(username)
-			if settings.AnonymizeLogs || name == "" {
-				name = "miner"
-			}
-			name = SanitizeFilename(name)
-			logPath := filepath.Join(logDir, fmt.Sprintf("%s.log", name))
+			logPath := filepath.Join(logDir, logFileName(username, settings.AnonymizeLogs))
 			f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 			if err == nil {
+				file = f
 				output = dualWriter{
-					console: os.Stdout,
+					console: console,
 					file:    f,
 				}
 			}
 		}
 	}
+	return newLoggerTo(output, settings, now), file
+}
+
+func newLoggerTo(output io.Writer, settings LoggerSettings, now func() time.Time) *Logger {
 	return &Logger{
 		base:     log.New(output, "", 0),
 		settings: settings,
 		discord:  notify.NewDiscordWebhook(settings.Discord),
+		now:      now,
 	}
-}
-
-// NewLoggerTo returns a logger that writes to output only, without a log file.
-func NewLoggerTo(output io.Writer, settings LoggerSettings) *Logger {
-	return &Logger{
-		base:     log.New(output, "", 0),
-		settings: settings,
-		discord:  notify.NewDiscordWebhook(settings.Discord),
-	}
-}
-
-func SanitizeFilename(name string) string {
-	replacer := strings.NewReplacer(
-		"/", "_",
-		"\\", "_",
-		":", "_",
-		"*", "_",
-		"?", "_",
-		"\"", "_",
-		"<", "_",
-		">", "_",
-		"|", "_",
-	)
-	return replacer.Replace(name)
 }
 
 func (l *Logger) log(level, emoji, format string, args ...interface{}) {
@@ -108,10 +76,7 @@ func (l *Logger) log(level, emoji, format string, args ...interface{}) {
 }
 
 func (l *Logger) logEvent(level, emoji string, event events.Event, format string, args ...interface{}) {
-	if level == "DEBUG" && !l.settings.Debug {
-		return
-	}
-	if level == "DEEP" && (!l.settings.Debug || !l.settings.DebugDeep) {
+	if !levelEnabled(level, l.settings) {
 		return
 	}
 	message := fmt.Sprintf(format, args...)
@@ -124,15 +89,7 @@ func (l *Logger) logEvent(level, emoji string, event events.Event, format string
 		}
 		publish(event, described)
 	}
-	if glyph := emojiFor(emoji, event); glyph != "" && l.settings.Emoji {
-		message = fmt.Sprintf("%s %s", glyph, message)
-	}
-	timestampFormat := "15:04 02/01/06"
-	if l.settings.ShowSeconds {
-		timestampFormat = "15:04:05 02/01/06"
-	}
-	timestamp := time.Now().Format(timestampFormat)
-	l.base.Printf("[%s] %s: %s", level, timestamp, message)
+	l.base.Print(consoleLine(l.settings, level, emojiFor(emoji, event), message, l.now()))
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {

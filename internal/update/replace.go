@@ -6,10 +6,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
+	"runtime"
 	"time"
 )
+
+// installAndRelaunch puts the downloaded file in the executable's place and
+// starts it with this process's arguments.
+func installAndRelaunch(exePath, newPath string) (bool, error) {
+	if runtime.GOOS == "windows" {
+		return true, launchWindowsUpdater(exePath, newPath, os.Args[1:])
+	}
+
+	if err := replaceExecutable(exePath, newPath); err != nil {
+		return false, err
+	}
+	if err := relaunch(exePath, os.Args[1:]); err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 func replaceExecutable(targetPath, newPath string) error {
 	if err := os.Chmod(newPath, 0o755); err != nil && !errors.Is(err, os.ErrPermission) {
@@ -31,25 +46,7 @@ func relaunch(targetPath string, args []string) error {
 
 func launchWindowsUpdater(targetPath, newPath string, args []string) error {
 	scriptPath := filepath.Join(filepath.Dir(targetPath), fmt.Sprintf("update-%d.bat", time.Now().UnixNano()))
-	argString := formatArgs(args)
-	script := fmt.Sprintf(`@echo off
-setlocal
-set "TARGET=%s"
-set "NEWFILE=%s"
-set "WORKDIR=%s"
-cd /D "%%WORKDIR%%"
-:wait
-ping 127.0.0.1 -n 2 >nul 2>nul
-:loop
-move /Y "%%NEWFILE%%" "%%TARGET%%" >nul 2>nul
-if errorlevel 1 (
-  ping 127.0.0.1 -n 3 >nul 2>nul
-  goto loop
-)
-start "" /b "%%TARGET%%"%s
-start "" /b cmd /c "del /q ""%%~f0"""
-exit /b
-`, escapeForBatch(targetPath), escapeForBatch(newPath), escapeForBatch(filepath.Dir(targetPath)), argString)
+	script := windowsUpdaterScript(targetPath, newPath, filepath.Dir(targetPath), args)
 
 	if err := os.WriteFile(scriptPath, []byte(script), 0o644); err != nil {
 		return fmt.Errorf("write updater script: %w", err)
@@ -59,28 +56,4 @@ exit /b
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Start()
-}
-
-func formatArgs(args []string) string {
-	if len(args) == 0 {
-		return ""
-	}
-	parts := make([]string, len(args))
-	for i, arg := range args {
-		parts[i] = " " + strconv.Quote(arg)
-	}
-	return strings.Join(parts, "")
-}
-
-func escapeForBatch(path string) string {
-	replacer := strings.NewReplacer(
-		"^", "^^",
-		"&", "^&",
-		"|", "^|",
-		"<", "^<",
-		">", "^>",
-		"%", "%%",
-		"\"", "\"\"",
-	)
-	return replacer.Replace(path)
 }

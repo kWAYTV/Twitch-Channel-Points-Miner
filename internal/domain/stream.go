@@ -43,6 +43,10 @@ func NewStream() *Stream {
 }
 
 func (s *Stream) Update(broadcastID, title string, game map[string]interface{}, tags []map[string]interface{}, viewers int, createdAt time.Time, dropID string) {
+	s.updateAt(broadcastID, title, game, tags, viewers, createdAt, dropID, time.Now())
+}
+
+func (s *Stream) updateAt(broadcastID, title string, game map[string]interface{}, tags []map[string]interface{}, viewers int, createdAt time.Time, dropID string, now time.Time) {
 	if s.BroadcastID != "" && s.BroadcastID != broadcastID {
 		s.WatchStreakMissing = true
 		s.ResetWatchProgress()
@@ -63,16 +67,24 @@ func (s *Stream) Update(broadcastID, title string, game map[string]interface{}, 
 			break
 		}
 	}
-	s.lastUpdate = time.Now()
+	s.lastUpdate = now
 }
 
 func (s *Stream) UpdateRequired() bool {
-	return s.lastUpdate.IsZero() || time.Since(s.lastUpdate) >= 120*time.Second
+	return s.updateRequiredAt(time.Now())
+}
+
+func (s *Stream) updateRequiredAt(now time.Time) bool {
+	return s.lastUpdate.IsZero() || now.Sub(s.lastUpdate) >= 120*time.Second
 }
 
 func (s *Stream) UpdateMinuteWatched() {
+	s.updateMinuteWatchedAt(time.Now())
+}
+
+func (s *Stream) updateMinuteWatchedAt(now time.Time) {
 	if !s.lastMinuteUpdate.IsZero() {
-		duration := time.Since(s.lastMinuteUpdate).Minutes()
+		duration := now.Sub(s.lastMinuteUpdate).Minutes()
 		// if it's been more than 2 minutes since last minute-watched update,
 		// stream probably was not being continuously watched, so reset to 0
 		// (likely got pre-empted by something higher priority)
@@ -82,7 +94,7 @@ func (s *Stream) UpdateMinuteWatched() {
 			s.MinuteWatched += duration
 		}
 	}
-	s.lastMinuteUpdate = time.Now()
+	s.lastMinuteUpdate = now
 }
 
 func (s *Stream) ResetWatchProgress() {
@@ -96,17 +108,25 @@ func (s *Stream) ResetWatchProgress() {
 }
 
 func (s *Stream) LastUpdateAgo() time.Duration {
+	return s.lastUpdateAgoAt(time.Now())
+}
+
+func (s *Stream) lastUpdateAgoAt(now time.Time) time.Duration {
 	if s == nil || s.lastUpdate.IsZero() {
 		return 0
 	}
-	return time.Since(s.lastUpdate)
+	return now.Sub(s.lastUpdate)
 }
 
 func (s *Stream) StreamUpElapsed() bool {
+	return s.streamUpElapsedAt(time.Now())
+}
+
+func (s *Stream) streamUpElapsedAt(now time.Time) bool {
 	if s == nil || s.StreamUpAt.IsZero() {
 		return true
 	}
-	return time.Since(s.StreamUpAt) > 2*time.Minute
+	return now.Sub(s.StreamUpAt) > 2*time.Minute
 }
 
 func (s *Stream) EncodePayload() (map[string]string, error) {

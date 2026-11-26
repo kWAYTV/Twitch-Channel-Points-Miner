@@ -16,7 +16,7 @@ func (m *Miner) syncResolvedStreakState(streamer *domain.Streamer, prevBroadcast
 	}
 	segmentRolled := (prevBroadcastID != "" && streamer.Stream.BroadcastID != "" && prevBroadcastID != streamer.Stream.BroadcastID) ||
 		(!prevCreatedAt.IsZero() && !streamer.Stream.CreatedAt.IsZero() && !prevCreatedAt.Equal(streamer.Stream.CreatedAt))
-	now := time.Now()
+	now := m.now()
 	if segmentRolled && streamer.CompletedWatchStreak {
 		streak.ActivateCarryover(streamer, now)
 	}

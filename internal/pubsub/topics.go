@@ -7,6 +7,7 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"strings"
 
+	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
 )
 
@@ -15,6 +16,12 @@ func (p *Client) buildTopics() ([]string, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("no user id for pubsub")
 	}
+	return topicsFor(userID, p.streamers), nil
+}
+
+// topicsFor lists the topics to listen to: the account's own, then each
+// streamer's by what its settings ask for. A streamer without a channel ID has none.
+func topicsFor(userID string, streamers []*domain.Streamer) []string {
 	topics := []string{}
 	seen := make(map[string]struct{})
 
@@ -32,7 +39,7 @@ func (p *Client) buildTopics() ([]string, error) {
 	addTopic(fmt.Sprintf("community-points-user-v1.%s", userID))
 
 	shouldListenPredictionUser := false
-	for _, s := range p.streamers {
+	for _, s := range streamers {
 		if s.Settings.MakePredictions {
 			shouldListenPredictionUser = true
 			break
@@ -42,7 +49,7 @@ func (p *Client) buildTopics() ([]string, error) {
 		addTopic(fmt.Sprintf("predictions-user-v1.%s", userID))
 	}
 
-	for _, s := range p.streamers {
+	for _, s := range streamers {
 		if s.ChannelID == "" {
 			continue
 		}
@@ -61,16 +68,24 @@ func (p *Client) buildTopics() ([]string, error) {
 		}
 	}
 
-	return topics, nil
+	return topics
+}
+
+// topicNeedsAuth says whether a topic is the account's own, which Twitch only
+// serves with the account's token.
+func topicNeedsAuth(topic string) bool {
+	return strings.HasPrefix(topic, "community-points-user-v1.") || strings.HasPrefix(topic, "predictions-user-v1.")
+}
+
+// topicFamily is a topic without the ID it ends in.
+func topicFamily(topic string) string {
+	return strings.SplitN(topic, ".", 2)[0]
 }
 
 func (p *Client) listenTopics(ctx context.Context, conn *websocket.Conn, topics []string) error {
-	needsAuth := func(topic string) bool {
-		return strings.HasPrefix(topic, "community-points-user-v1.") || strings.HasPrefix(topic, "predictions-user-v1.")
-	}
 	for _, t := range topics {
 		data := map[string]interface{}{"topics": []string{t}}
-		if needsAuth(t) {
+		if topicNeedsAuth(t) {
 			data["auth_token"] = p.account.AuthToken()
 		}
 		payload := map[string]interface{}{
@@ -79,11 +94,7 @@ func (p *Client) listenTopics(ctx context.Context, conn *websocket.Conn, topics 
 			"data":  data,
 		}
 		if p.anonymizeLogs() {
-			prefix := t
-			if parts := strings.SplitN(t, ".", 2); len(parts) > 0 {
-				prefix = parts[0]
-			}
-			p.debugf("PubSub LISTEN %s", prefix)
+			p.debugf("PubSub LISTEN %s", topicFamily(t))
 		} else {
 			p.debugf("PubSub LISTEN %s", t)
 		}

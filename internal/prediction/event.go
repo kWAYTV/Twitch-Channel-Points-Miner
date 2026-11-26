@@ -9,18 +9,6 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/jsonvalue"
 )
 
-type Outcome struct {
-	ID              string
-	Title           string
-	Color           string
-	TotalUsers      int
-	TotalPoints     int
-	TopPoints       int
-	PercentageUsers float64
-	Odds            float64
-	OddsPercentage  float64
-}
-
 type Decision struct {
 	Choice    int
 	OutcomeID string
@@ -43,6 +31,12 @@ type Event struct {
 }
 
 func NewEvent(streamer *domain.Streamer, event map[string]interface{}) *Event {
+	return newEventAt(streamer, event, time.Now())
+}
+
+// newEventAt builds the event; now stands in for a missing or unreadable
+// created_at.
+func newEventAt(streamer *domain.Streamer, event map[string]interface{}, now time.Time) *Event {
 	if streamer == nil || event == nil {
 		return nil
 	}
@@ -50,7 +44,7 @@ func NewEvent(streamer *domain.Streamer, event map[string]interface{}) *Event {
 	title, _ := event["title"].(string)
 	status := strings.ToUpper(jsonvalue.String(event["status"]))
 	window := float64(jsonvalue.Float(event["prediction_window_seconds"]))
-	created := time.Now()
+	created := now
 	if createdStr, ok := event["created_at"].(string); ok && createdStr != "" {
 		if t, err := time.Parse(time.RFC3339, createdStr); err == nil {
 			created = t
@@ -71,42 +65,7 @@ func NewEvent(streamer *domain.Streamer, event map[string]interface{}) *Event {
 }
 
 func (p *Event) UpdateOutcomes(outcomes []interface{}) {
-	parsed := make([]Outcome, 0, len(outcomes))
-	totalUsers := 0
-	totalPoints := 0
-	for _, raw := range outcomes {
-		oc, ok := raw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		outcome := Outcome{
-			ID:          jsonvalue.String(oc["id"]),
-			Title:       jsonvalue.String(oc["title"]),
-			Color:       jsonvalue.String(oc["color"]),
-			TotalUsers:  int(jsonvalue.Float(oc["total_users"])),
-			TotalPoints: int(jsonvalue.Float(oc["total_points"])),
-		}
-		if topPredictors, ok := oc["top_predictors"].([]interface{}); ok && len(topPredictors) > 0 {
-			if first, ok := topPredictors[0].(map[string]interface{}); ok {
-				outcome.TopPoints = int(jsonvalue.Float(first["points"]))
-			}
-		}
-		parsed = append(parsed, outcome)
-		totalUsers += outcome.TotalUsers
-		totalPoints += outcome.TotalPoints
-	}
-	for i := range parsed {
-		if totalUsers > 0 {
-			parsed[i].PercentageUsers = (float64(parsed[i].TotalUsers) * 100) / float64(totalUsers)
-		}
-		if parsed[i].TotalPoints > 0 {
-			parsed[i].Odds = float64(totalPoints) / float64(parsed[i].TotalPoints)
-		}
-		if parsed[i].Odds > 0 {
-			parsed[i].OddsPercentage = 100 / parsed[i].Odds
-		}
-	}
-	p.Outcomes = parsed
+	p.Outcomes = parseOutcomes(outcomes)
 }
 
 func (p *Event) ClosingAfter(now time.Time) time.Duration {
@@ -183,19 +142,6 @@ func (p *Event) DecisionLabel() string {
 		return ""
 	}
 	return fmt.Sprintf("%s: %s (%s)", choiceLabel(p.Decision.Choice), out.Title, strings.ToUpper(out.Color))
-}
-
-func (o Outcome) String() string {
-	return fmt.Sprintf(
-		"%s (%s), Points: %s, Users: %s (%.2f%%), Odds: %s (%s%%)",
-		strings.TrimSpace(o.Title),
-		strings.ToUpper(o.Color),
-		FormatNumber(o.TotalPoints),
-		FormatNumber(o.TotalUsers),
-		o.PercentageUsers,
-		FormatFloat(o.Odds),
-		FormatFloat(o.OddsPercentage),
-	)
 }
 
 func choiceLabel(choice int) string {

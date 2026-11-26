@@ -35,26 +35,25 @@ type DiscordWebhook struct {
 	webhookAPI string
 	events     map[events.Event]struct{}
 	client     *http.Client
+	logf       func(format string, args ...any)
 	warnOnce   sync.Once
 }
 
+// NewDiscordWebhook returns nil unless the webhook URL is set.
 func NewDiscordWebhook(settings DiscordSettings) *DiscordWebhook {
+	return newDiscordWebhook(settings, log.Printf)
+}
+
+func newDiscordWebhook(settings DiscordSettings, logf func(format string, args ...any)) *DiscordWebhook {
 	webhookAPI := strings.TrimSpace(settings.WebhookAPI)
 	if webhookAPI == "" {
 		return nil
 	}
-	selected := make(map[events.Event]struct{})
-	for _, raw := range settings.Events {
-		event := events.NormalizeEventName(raw)
-		if event == "" {
-			continue
-		}
-		selected[event] = struct{}{}
-	}
 	return &DiscordWebhook{
 		webhookAPI: webhookAPI,
-		events:     selected,
+		events:     selectedEvents(settings.Events),
 		client:     &http.Client{Timeout: 5 * time.Second},
+		logf:       logf,
 	}
 }
 
@@ -78,20 +77,10 @@ func (d *DiscordWebhook) Send(message Message, event events.Event) {
 	if d == nil || !wantsEvent(d.events, event) {
 		return
 	}
-	headline := message.Headline
-	if headline == "" {
-		headline = eventTitle(event)
-	}
-	title := limitRunes(eventGlyphPrefix(event)+escapeMarkdown(headline), headlineLimit)
-	body := limitRunes(escapeMarkdown(strings.Join(message.Details, detailSeparator)), 4096)
 	payload := discordPayload{
 		Username:  project.Name,
 		AvatarURL: project.AvatarURL,
-		Embeds: []discordEmbed{{
-			Title:       title,
-			Description: body,
-			Color:       eventColor(event),
-		}},
+		Embeds:    []discordEmbed{discordEmbedFor(event, message)},
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
@@ -112,17 +101,36 @@ func (d *DiscordWebhook) Send(message Message, event events.Event) {
 		return
 	}
 	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 180))
-	reason := strings.TrimSpace(string(snippet))
-	if reason == "" {
-		reason = resp.Status
-	}
-	d.warn(reason)
+	d.warn(discordFailure(resp.Status, snippet))
 }
 
 func (d *DiscordWebhook) warn(reason string) {
 	d.warnOnce.Do(func() {
-		log.Printf("discord: notification not delivered: %s (further failures are not logged)", reason)
+		d.logf("discord: notification not delivered: %s (further failures are not logged)", reason)
 	})
+}
+
+// discordEmbedFor renders a message as an embed: the polarity glyph and the
+// headline as the title, the details on one line as the description.
+func discordEmbedFor(event events.Event, message Message) discordEmbed {
+	headline := message.Headline
+	if headline == "" {
+		headline = eventTitle(event)
+	}
+	return discordEmbed{
+		Title:       limitRunes(eventGlyphPrefix(event)+escapeMarkdown(headline), headlineLimit),
+		Description: limitRunes(escapeMarkdown(strings.Join(message.Details, detailSeparator)), 4096),
+		Color:       eventColor(event),
+	}
+}
+
+// discordFailure words why Discord refused a message: the start of its answer,
+// or the HTTP status when the answer is empty.
+func discordFailure(status string, snippet []byte) string {
+	if reason := strings.TrimSpace(string(snippet)); reason != "" {
+		return reason
+	}
+	return status
 }
 
 func escapeMarkdown(s string) string {

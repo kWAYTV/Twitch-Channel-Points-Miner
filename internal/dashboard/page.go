@@ -59,21 +59,29 @@ var (
 
 func buildPage() []byte {
 	page := readWeb("web/page/index.html")
-	page = inline(page, "/*styles*/", "web/styles/", pageStyles)
-	page = inline(page, "/*scripts*/", "web/scripts/", pageScripts)
+	page = inline(page, "/*styles*/", readWebFiles("web/styles/", pageStyles))
+	page = inline(page, "/*scripts*/", readWebFiles("web/scripts/", pageScripts))
 	return page
 }
 
-// inline replaces marker with the named files, joined in order.
-func inline(page []byte, marker, dir string, names []string) []byte {
+// inline replaces marker with the files, joined in order.
+func inline(page []byte, marker string, files [][]byte) []byte {
 	if bytes.Count(page, []byte(marker)) != 1 {
 		panic("dashboard: web/page/index.html must contain " + marker + " exactly once")
 	}
 	var parts [][]byte
-	for _, name := range names {
-		parts = append(parts, bytes.TrimRight(readWeb(dir+name), "\n"))
+	for _, file := range files {
+		parts = append(parts, bytes.TrimRight(file, "\n"))
 	}
 	return bytes.Replace(page, []byte(marker), bytes.Join(parts, []byte("\n")), 1)
+}
+
+func readWebFiles(dir string, names []string) [][]byte {
+	var files [][]byte
+	for _, name := range names {
+		files = append(files, readWeb(dir+name))
+	}
+	return files
 }
 
 func readWeb(name string) []byte {
@@ -84,17 +92,22 @@ func readWeb(name string) []byte {
 	return data
 }
 
+// etagMatches reads an If-None-Match header.
+func etagMatches(ifNoneMatch, etag string) bool {
+	return strings.Contains(ifNoneMatch, etag)
+}
+
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Set("Content-Type", "text/html; charset=utf-8")
 	h.Set("Cache-Control", "no-cache")
 	h.Set("ETag", indexETag)
 	h.Set("Vary", "Accept-Encoding")
-	if strings.Contains(r.Header.Get("If-None-Match"), indexETag) {
+	if etagMatches(r.Header.Get("If-None-Match"), indexETag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	if acceptsGzip(r) {
+	if acceptsGzip(r.Header.Get("Accept-Encoding")) {
 		h.Set("Content-Encoding", "gzip")
 		_, _ = w.Write(indexGzip)
 		return

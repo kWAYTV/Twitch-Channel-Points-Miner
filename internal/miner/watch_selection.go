@@ -10,7 +10,7 @@ import (
 
 // pickStreamersToWatch chooses which online streamers get the watch slots this round.
 func (m *Miner) pickStreamersToWatch(streamers []*domain.Streamer) []*domain.Streamer {
-	now := time.Now()
+	now := m.now()
 	candidates := m.watchCandidates(streamers, now)
 	streakReady := streakReadyCandidates(candidates)
 	slots := newWatchSlots(candidates)
@@ -60,7 +60,7 @@ func (m *Miner) keepActiveStreaks(slots *watchSlots, streamers []*domain.Streame
 		if s == nil {
 			continue
 		}
-		key := m.activeStreakWatchKey(s)
+		key := streamerKey(s)
 		watch, ok := m.activeStreakWatches[key]
 		if !ok {
 			continue

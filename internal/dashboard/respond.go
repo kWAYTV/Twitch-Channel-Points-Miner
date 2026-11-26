@@ -26,8 +26,14 @@ func gzipBytes(data []byte, level int) []byte {
 	return buf.Bytes()
 }
 
-func acceptsGzip(r *http.Request) bool {
-	return strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+// acceptsGzip reads an Accept-Encoding header.
+func acceptsGzip(acceptEncoding string) bool {
+	return strings.Contains(acceptEncoding, "gzip")
+}
+
+// compresses reports whether a body of size bytes is sent gzipped.
+func compresses(size int, acceptEncoding string) bool {
+	return size >= gzipMinBytes && acceptsGzip(acceptEncoding)
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, v interface{}) {
@@ -40,7 +46,7 @@ func writeJSON(w http.ResponseWriter, r *http.Request, v interface{}) {
 	h.Set("Content-Type", "application/json")
 	h.Set("Cache-Control", "no-store")
 	h.Set("Vary", "Accept-Encoding")
-	if len(body) < gzipMinBytes || !acceptsGzip(r) {
+	if !compresses(len(body), r.Header.Get("Accept-Encoding")) {
 		_, _ = w.Write(body)
 		return
 	}

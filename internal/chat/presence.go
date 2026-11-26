@@ -17,6 +17,8 @@ type Presence struct {
 	anonymizer          *privacy.Anonymizer
 	displayName         func(*domain.Streamer) string
 
+	link link
+
 	mu      sync.Mutex
 	clients map[string]*Client
 }
@@ -25,6 +27,10 @@ type Presence struct {
 // chat token when a chat is joined (an empty token means "not logged in yet"),
 // and displayName is how a streamer is shown in the log.
 func NewPresence(username string, token func() string, logger Logger, disableAtInNickname bool, anonymizer *privacy.Anonymizer, displayName func(*domain.Streamer) string) *Presence {
+	return newPresence(username, token, logger, disableAtInNickname, anonymizer, displayName, twitchLink())
+}
+
+func newPresence(username string, token func() string, logger Logger, disableAtInNickname bool, anonymizer *privacy.Anonymizer, displayName func(*domain.Streamer) string, link link) *Presence {
 	return &Presence{
 		username:            username,
 		token:               token,
@@ -32,6 +38,7 @@ func NewPresence(username string, token func() string, logger Logger, disableAtI
 		disableAtInNickname: disableAtInNickname,
 		anonymizer:          anonymizer,
 		displayName:         displayName,
+		link:                link,
 		clients:             make(map[string]*Client),
 	}
 }
@@ -60,7 +67,7 @@ func (p *Presence) join(streamer *domain.Streamer) {
 		p.mu.Unlock()
 		return
 	}
-	client := NewClient(p.username, token, streamer.Username, p.logger, p.disableAtInNickname, p.anonymizer)
+	client := newClient(p.username, token, streamer.Username, p.logger, p.disableAtInNickname, p.anonymizer, p.link)
 	p.clients[key] = client
 	p.mu.Unlock()
 	if p.logger != nil {

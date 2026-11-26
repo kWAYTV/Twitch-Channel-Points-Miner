@@ -20,8 +20,12 @@ var Version = DevVersion
 
 // VersionLabel is the version as shown to a person.
 func VersionLabel() string {
-	if Version == DevVersion {
+	return labelOf(Version)
+}
+
+func labelOf(version string) string {
+	if version == DevVersion {
 		return "built from source"
 	}
-	return "v" + Version
+	return "v" + version
 }

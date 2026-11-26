@@ -32,3 +32,15 @@ func wantsEvent(selected map[events.Event]struct{}, event events.Event) bool {
 	_, ok := selected[event]
 	return ok
 }
+
+// selectedEvents reads a settings events list into a selection. Names are
+// matched without regard to case or surrounding space, and blank names are dropped.
+func selectedEvents(names []string) map[events.Event]struct{} {
+	selected := make(map[events.Event]struct{})
+	for _, raw := range names {
+		if event := events.NormalizeEventName(raw); event != "" {
+			selected[event] = struct{}{}
+		}
+	}
+	return selected
+}

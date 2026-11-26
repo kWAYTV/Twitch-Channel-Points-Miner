@@ -81,30 +81,12 @@ func (m *Miner) logPointsDelta(streamer *domain.Streamer, delta int, reason stri
 
 func (m *Miner) handlePubSubGain(streamer *domain.Streamer, earned int, reason string, balance int) {
 	prev := streamer.ChannelPoints
-	expected := prev + earned
 	prevWatchStreakMissing := true
 	if streamer != nil && streamer.Stream != nil {
 		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
 	}
 
-	// Prefer applying the delta (`earned`) over trusting the absolute balance from PubSub
-	// PubSub messages can arrive out of order, and may contain a stale pre-spend balance
-	// (e.g. after placing a prediction bet), which would otherwise incorrectly inflate the local state
-	newBalance := expected
-	if earned == 0 && balance != 0 {
-		newBalance = balance
-	}
-
-	if newBalance < 0 {
-		newBalance = 0
-	}
-	// For positive earn events, keep the balance monotonic to avoid logging negative deltas
-	// when older balances arrive after a streak of gains.
-	if earned >= 0 && newBalance < prev {
-		newBalance = prev
-	}
-
-	streamer.ChannelPoints = newBalance
+	streamer.ChannelPoints = balanceAfterGain(prev, earned, balance)
 	if !streamer.PointsInit {
 		streamer.PointsInit = true
 	}
@@ -143,13 +125,13 @@ func (m *Miner) updateHistory(streamer *domain.Streamer, reason string, amount i
 		if streamer.Stream.WatchStreakMissing && streamer.Stream.WatchCount >= 2 {
 			streak.MarkCompleted(streamer)
 		}
-		m.syncActiveStreakWatch(streamer, time.Now())
+		m.syncActiveStreakWatch(streamer, m.now())
 		return
 	}
 	if reason == "WATCH_STREAK" {
 		streak.MarkCompleted(streamer)
 	}
-	m.syncActiveStreakWatch(streamer, time.Now())
+	m.syncActiveStreakWatch(streamer, m.now())
 }
 
 func (m *Miner) contextRefresher(streamers []*domain.Streamer, stop <-chan struct{}) {
@@ -158,17 +140,22 @@ func (m *Miner) contextRefresher(streamers []*domain.Streamer, stop <-chan struc
 	for {
 		select {
 		case <-ticker.C:
-			forEachIndex(len(streamers), streamerConcurrency, func(i int) {
-				s := streamers[i]
-				prev := s.ChannelPoints
-				if _, err := m.loadChannelPointsContextWithIdentityRepair(s); err != nil {
-					m.logger.Printf("refresh %s: %v", m.styledStreamerName(s), err)
-				} else {
-					m.handlePointsUpdate(s, prev, "")
-				}
-			})
+			m.refreshContexts(streamers)
 		case <-stop:
 			return
 		}
 	}
+}
+
+// refreshContexts reloads every streamer's balance, a few at a time.
+func (m *Miner) refreshContexts(streamers []*domain.Streamer) {
+	forEachIndex(len(streamers), streamerConcurrency, func(i int) {
+		s := streamers[i]
+		prev := s.ChannelPoints
+		if _, err := m.loadChannelPointsContextWithIdentityRepair(s); err != nil {
+			m.logger.Printf("refresh %s: %v", m.styledStreamerName(s), err)
+		} else {
+			m.handlePointsUpdate(s, prev, "")
+		}
+	})
 }

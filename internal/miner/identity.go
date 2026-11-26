@@ -10,7 +10,7 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
-func streamerInitialPointsKey(streamer *domain.Streamer) string {
+func streamerKey(streamer *domain.Streamer) string {
 	if streamer == nil {
 		return ""
 	}
@@ -30,7 +30,7 @@ func (m *Miner) applyStreamerLoginChange(streamer *domain.Streamer, login string
 	}
 
 	oldLogin := strings.ToLower(strings.TrimSpace(streamer.Username))
-	if m != nil {
+	if m != nil && m.chat != nil {
 		m.chat.Leave(streamer)
 	}
 
@@ -48,7 +48,7 @@ func (m *Miner) applyStreamerLoginChange(streamer *domain.Streamer, login string
 	}
 
 	if m != nil && m.initialPoints != nil && oldLogin != "" {
-		stableKey := streamerInitialPointsKey(streamer)
+		stableKey := streamerKey(streamer)
 		if stableKey != "" {
 			m.initialPointsMu.Lock()
 			if initial, ok := m.initialPoints[oldLogin]; ok {
@@ -57,8 +57,10 @@ func (m *Miner) applyStreamerLoginChange(streamer *domain.Streamer, login string
 			m.initialPointsMu.Unlock()
 		}
 	}
-	if m != nil {
+	if m != nil && m.chat != nil {
 		m.chat.Update(streamer, streamer.IsOnline)
+	}
+	if m != nil {
 		m.syncWarmStartCacheFromStreamer(streamer)
 	}
 	return true

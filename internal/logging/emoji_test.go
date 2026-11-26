@@ -7,34 +7,43 @@ import (
 )
 
 func TestEmojize(t *testing.T) {
-	if got := emojize(":rocket:"); got == ":rocket:" {
-		t.Fatalf("expected known emoji mapping, got %q", got)
-	}
-	if got := emojize(":unknown:"); got != ":unknown:" {
-		t.Fatalf("unknown emoji should pass through, got %q", got)
+	for _, tc := range []struct {
+		name string
+		code string
+		want string
+	}{
+		{"a known shortcode", ":rocket:", "🚀"},
+		{"an unknown shortcode", ":unknown:", ":unknown:"},
+		{"a known name without its colons", "rocket", "rocket"},
+		{"an empty code", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := emojize(tc.code); got != tc.want {
+				t.Errorf("emojize(%q) = %q, want %q", tc.code, got, tc.want)
+			}
+		})
 	}
 }
 
-func TestEmojiForUsesEventPolarity(t *testing.T) {
-	if got := emojiFor(":partying_face:", events.EventStreamerOnline); got != "🟢" {
-		t.Fatalf("online glyph = %q", got)
-	}
-	if got := emojiFor(":sleeping:", events.EventStreamerOffline); got != "🔴" {
-		t.Fatalf("offline glyph = %q", got)
-	}
-	if got := emojiFor(":bar_chart:", events.EventBetWin); got != "📈" {
-		t.Fatalf("win glyph = %q", got)
-	}
-	if got := emojiFor(":bar_chart:", events.EventBetLose); got != "📉" {
-		t.Fatalf("lose glyph = %q", got)
-	}
-	if got := emojiFor(":rocket:", events.EventGainForWatchStreak); got != "⏫" {
-		t.Fatalf("streak glyph = %q", got)
-	}
-	if got := emojiFor(":rocket:", ""); got != "🚀" {
-		t.Fatalf("fallback glyph = %q", got)
-	}
-	if got := emojiFor("", ""); got != "" {
-		t.Fatalf("empty glyph = %q", got)
+func TestEmojiFor(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		code  string
+		event events.Event
+		want  string
+	}{
+		{"a known event with a shortcode", ":partying_face:", events.EventStreamerOnline, "🟢"},
+		{"a known event without a shortcode", "", events.EventBetLose, "📉"},
+		{"no event with a shortcode", ":rocket:", "", "🚀"},
+		{"no event with an unknown shortcode", ":unknown:", "", ":unknown:"},
+		{"no event and no shortcode", "", "", ""},
+		{"an unknown event with a shortcode", ":rocket:", "NONSENSE", "🚀"},
+		{"an unknown event without a shortcode", "", "NONSENSE", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := emojiFor(tc.code, tc.event); got != tc.want {
+				t.Errorf("emojiFor(%q, %q) = %q, want %q", tc.code, tc.event, got, tc.want)
+			}
+		})
 	}
 }

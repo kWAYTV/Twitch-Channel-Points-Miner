@@ -8,12 +8,22 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
-func applyTimezoneOverride(raw *string, logger *logging.Logger) {
+// requestedTimezone returns the zone name the config asks for, or "" when it
+// leaves the system's time zone in place (unset, blank or "auto").
+func requestedTimezone(raw *string) string {
 	if raw == nil {
-		return
+		return ""
 	}
 	zone := strings.TrimSpace(*raw)
 	if zone == "" || strings.EqualFold(zone, "auto") {
+		return ""
+	}
+	return zone
+}
+
+func applyTimezoneOverride(raw *string, logger *logging.Logger) {
+	zone := requestedTimezone(raw)
+	if zone == "" {
 		return
 	}
 	loc, err := time.LoadLocation(zone)

@@ -62,6 +62,23 @@ type Client struct {
 	onGameChange   func(streamer *domain.Streamer, previous, current string)
 	// sleep replaces time.Sleep when set, so waits can be skipped under test.
 	sleep func(time.Duration)
+	// now replaces time.Now when set.
+	now func() time.Time
+}
+
+// clientParts is everything a Client is built from: who it is, and how it
+// reaches the account, Twitch, the log and the clock.
+type clientParts struct {
+	username      string
+	userAgent     string
+	deviceID      string
+	clientSession string
+	session       session
+	http          *http.Client
+	logger        debugLogger
+	anonymizer    *privacy.Anonymizer
+	sleep         func(time.Duration)
+	now           func() time.Time
 }
 
 func NewClient(username, userAgent, password string, logger debugLogger, anonymizer *privacy.Anonymizer) (*Client, error) {
@@ -71,21 +88,36 @@ func NewClient(username, userAgent, password string, logger debugLogger, anonymi
 		return nil, err
 	}
 
+	return newClient(clientParts{
+		username:      username,
+		userAgent:     userAgent,
+		deviceID:      deviceID,
+		clientSession: random.Hex(8),
+		session:       login,
+		http:          login.Client(),
+		logger:        logger,
+		anonymizer:    anonymizer,
+	}), nil
+}
+
+func newClient(parts clientParts) *Client {
 	return &Client{
-		username:       username,
-		userAgent:      userAgent,
-		deviceID:       deviceID,
-		clientSession:  random.Hex(8),
+		username:       parts.username,
+		userAgent:      parts.userAgent,
+		deviceID:       parts.deviceID,
+		clientSession:  parts.clientSession,
 		clientVersion:  twitchapi.ClientVersion,
 		versionTTL:     10 * time.Hour,
-		twitchLogin:    login,
-		client:         login.Client(),
+		twitchLogin:    parts.session,
+		client:         parts.http,
 		twilightRegexp: regexp.MustCompile(`window\.__twilightBuildID\s*=\s*"([0-9a-fA-F\-]{36})"`),
 		settingsRegex:  regexp.MustCompile(`(https://static\.twitchcdn\.net/config/settings.*?\.js|https://assets\.twitch\.tv/config/settings.*?\.js)`),
 		spadeRegex:     regexp.MustCompile(`"spade_url":"(.*?)"`),
-		logger:         logger,
-		anonymizer:     anonymizer,
-	}, nil
+		logger:         parts.logger,
+		anonymizer:     parts.anonymizer,
+		sleep:          parts.sleep,
+		now:            parts.now,
+	}
 }
 
 // SetGameChangeHandler registers a callback fired whenever stream game metadata changes.
@@ -143,12 +175,12 @@ func (t *Client) UpdateClientVersion() string {
 		ttl = 10 * time.Hour
 		t.versionTTL = ttl
 	}
-	if !t.versionFetched.IsZero() && time.Since(t.versionFetched) < ttl {
+	if !t.versionFetched.IsZero() && t.timeNow().Sub(t.versionFetched) < ttl {
 		version := t.clientVersion
 		t.versionMu.Unlock()
 		return version
 	}
-	t.versionFetched = time.Now()
+	t.versionFetched = t.timeNow()
 	version := t.clientVersion
 	client := t.client
 	t.versionMu.Unlock()
@@ -204,6 +236,14 @@ func (t *Client) UserID() string {
 // LoginName is the login the session was opened with.
 func (t *Client) LoginName() string {
 	return t.username
+}
+
+// timeNow is the current time.
+func (t *Client) timeNow() time.Time {
+	if t.now != nil {
+		return t.now()
+	}
+	return time.Now()
 }
 
 // pause waits for d between the steps of a slow exchange with Twitch.

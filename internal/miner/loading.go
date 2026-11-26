@@ -32,7 +32,7 @@ func (m *Miner) loadStreamers(targets []string) []*domain.Streamer {
 			continue
 		}
 		streamers = append(streamers, s)
-		m.initialPoints[streamerInitialPointsKey(s)] = s.ChannelPoints
+		m.initialPoints[streamerKey(s)] = s.ChannelPoints
 	}
 	m.initialPointsMu.Unlock()
 	return streamers

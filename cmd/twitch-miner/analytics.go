@@ -25,9 +25,10 @@ func defaultAnalyticsConfig() map[string]interface{} {
 	}
 }
 
-// analyticsAddr resolves the dashboard listen address; TCPM_ANALYTICS_ADDR overrides the config.
-func analyticsAddr(cfg analyticsConfig) string {
-	if raw := strings.TrimSpace(os.Getenv("TCPM_ANALYTICS_ADDR")); raw != "" {
+// analyticsAddr resolves the dashboard listen address. override is the value
+// of TCPM_ANALYTICS_ADDR, which wins over the config when it is set.
+func analyticsAddr(cfg analyticsConfig, override string) string {
+	if raw := strings.TrimSpace(override); raw != "" {
 		return raw
 	}
 	host := strings.TrimSpace(cfg.Host)
@@ -53,7 +54,7 @@ func startAnalytics(cfg analyticsConfig, logger *logging.Logger) {
 		return
 	}
 	miner.SetAnalyticsSink(store)
-	addr := analyticsAddr(cfg)
+	addr := analyticsAddr(cfg, os.Getenv("TCPM_ANALYTICS_ADDR"))
 	logger.Printf("Analytics dashboard listening on http://%s", addr)
 	go func() {
 		if err := dashboard.NewServer(store).ListenAndServe(addr); err != nil {

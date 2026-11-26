@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
-	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
 )
 
 const (
@@ -39,7 +38,7 @@ func (p *Client) connectAndListen(connIndex int, topics []string, stop <-chan st
 	conn.SetReadLimit(maxMessageBytes)
 
 	var lastPong atomic.Pointer[time.Time]
-	connectedAt := time.Now()
+	connectedAt := p.env.now()
 	lastPong.Store(&connectedAt)
 	pingTimer := time.NewTimer(p.randomPingInterval())
 	defer pingTimer.Stop()
@@ -85,13 +84,9 @@ func contextUntil(stop <-chan struct{}) (context.Context, context.CancelFunc) {
 }
 
 func (p *Client) dial(ctx context.Context) (*websocket.Conn, error) {
-	endpoint := p.endpoint
-	if endpoint == "" {
-		endpoint = twitchapi.WebsocketURL
-	}
 	handshake, cancel := context.WithTimeout(ctx, handshakeTimeout)
 	defer cancel()
-	conn, _, err := websocket.Dial(handshake, endpoint, p.dialOptions())
+	conn, _, err := websocket.Dial(handshake, p.env.endpoint, p.dialOptions())
 	return conn, err
 }
 
@@ -140,7 +135,7 @@ func (p *Client) keepAlive(ctx context.Context, conn *websocket.Conn, pingTimer 
 			if err := wsjson.Write(ctx, conn, map[string]string{"type": "PING"}); err != nil {
 				return err
 			}
-			if time.Since(*lastPong.Load()) > pongTimeout {
+			if pongOverdue(*lastPong.Load(), p.env.now()) {
 				return fmt.Errorf("last PONG >5m ago, reconnecting")
 			}
 			pingTimer.Reset(p.randomPingInterval())
@@ -152,6 +147,11 @@ func (p *Client) keepAlive(ctx context.Context, conn *websocket.Conn, pingTimer 
 			return err
 		}
 	}
+}
+
+// pongOverdue says whether the last PONG is too old for the connection to be kept.
+func pongOverdue(lastPong, now time.Time) bool {
+	return now.Sub(lastPong) > pongTimeout
 }
 
 func (p *Client) randomPingInterval() time.Duration {

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/project"
@@ -18,16 +17,44 @@ func RunAutoUpdate() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("locate executable: %w", err)
 	}
+	u := updater{
+		version:     project.Version,
+		exePath:     exePath,
+		tempDir:     os.TempDir(),
+		releasesURL: releasesURL,
+		goos:        runtime.GOOS,
+		arch:        runtime.GOARCH,
+		logf:        log.Printf,
+		install:     installAndRelaunch,
+	}
+	return u.run()
+}
 
+// updater replaces the executable at exePath with the latest release, when
+// that release is newer than version.
+type updater struct {
+	version     string
+	exePath     string
+	tempDir     string
+	releasesURL string
+	goos        string
+	arch        string
+	logf        func(format string, args ...interface{})
+	// install swaps the downloaded file in and starts it, and reports whether
+	// the running program should now exit.
+	install func(exePath, newPath string) (bool, error)
+}
+
+func (u updater) run() (bool, error) {
 	// A build with no version stamped in was made from source: it is whatever
 	// its builder checked out, and a release must not replace it.
-	if project.Version == project.DevVersion {
+	if u.version == project.DevVersion {
 		return false, nil
 	}
 
-	devRun := isGoRunExecutable(exePath)
+	devRun := isGoRunExecutable(u.exePath, u.tempDir)
 
-	release, err := fetchLatestRelease()
+	release, err := fetchLatestRelease(u.releasesURL)
 	if errors.Is(err, errNoRelease) {
 		return false, nil
 	}
@@ -35,96 +62,38 @@ func RunAutoUpdate() (bool, error) {
 		return false, err
 	}
 
-	currentVersion := normalizeVersion(project.Version)
+	currentVersion := normalizeVersion(u.version)
 	latestVersion := normalizeVersion(release.TagName)
 	if compareVersions(latestVersion, currentVersion) <= 0 {
 		return false, nil
 	}
 
 	if devRun {
-		log.Printf("\033[31mauto-update: newer version available (%s). Rebuild binary to update.\033[0m", release.TagName)
+		u.logf("\033[31mauto-update: newer version available (%s). Rebuild binary to update.\033[0m", release.TagName)
 		return false, nil
 	}
 
-	asset, err := pickAsset(release.Assets, runtime.GOOS, runtime.GOARCH)
+	asset, err := pickAsset(release.Assets, u.goos, u.arch)
 	if err != nil {
 		return false, err
 	}
 
-	log.Printf("auto-update: found newer version %s (asset %s)", release.TagName, asset.Name)
-	tempPath, err := downloadAsset(asset.BrowserDownloadURL, filepath.Dir(exePath))
+	u.logf("auto-update: found newer version %s (asset %s)", release.TagName, asset.Name)
+	tempPath, err := downloadAsset(asset.BrowserDownloadURL, filepath.Dir(u.exePath), u.logf)
 	if err != nil {
 		return false, fmt.Errorf("download update: %w", err)
 	}
 
-	if runtime.GOOS == "windows" {
-		return true, launchWindowsUpdater(exePath, tempPath, os.Args[1:])
-	}
-
-	if err := replaceExecutable(exePath, tempPath); err != nil {
-		return false, err
-	}
-	if err := relaunch(exePath, os.Args[1:]); err != nil {
-		return false, err
-	}
-	return true, nil
+	return u.install(u.exePath, tempPath)
 }
 
-func normalizeVersion(raw string) string {
-	raw = strings.TrimSpace(raw)
-	raw = strings.TrimPrefix(raw, "v")
-	if idx := strings.IndexAny(raw, " -"); idx > 0 {
-		raw = raw[:idx]
-	}
-	if idx := strings.Index(raw, "+"); idx > 0 {
-		raw = raw[:idx]
-	}
-	return raw
-}
-
-func compareVersions(a, b string) int {
-	parse := func(v string) []int {
-		parts := strings.Split(v, ".")
-		out := make([]int, len(parts))
-		for i, p := range parts {
-			val, err := strconv.Atoi(strings.TrimSpace(p))
-			if err != nil {
-				val = 0
-			}
-			out[i] = val
-		}
-		return out
-	}
-
-	as := parse(a)
-	bs := parse(b)
-	max := len(as)
-	if len(bs) > max {
-		max = len(bs)
-	}
-	for i := 0; i < max; i++ {
-		av, bv := 0, 0
-		if i < len(as) {
-			av = as[i]
-		}
-		if i < len(bs) {
-			bv = bs[i]
-		}
-		if av > bv {
-			return 1
-		}
-		if av < bv {
-			return -1
-		}
-	}
-	return 0
-}
-
-func isGoRunExecutable(path string) bool {
+// isGoRunExecutable reports whether path is a binary "go run" built, which
+// lives in a go-build folder or under the temp directory.
+func isGoRunExecutable(path, tempDir string) bool {
 	lower := strings.ToLower(path)
 	if strings.Contains(lower, "go-build") {
 		return true
 	}
-	temp := strings.ToLower(os.TempDir())
+	temp := strings.ToLower(tempDir)
 	return strings.HasPrefix(lower, temp)
 }

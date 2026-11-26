@@ -19,6 +19,20 @@ func (p *Event) Decide(balance int) Decision {
 		return decision
 	}
 
+	amount := stake(balance, settings, p.Outcomes[choice].TopPoints)
+
+	decision = Decision{
+		Choice:    choice,
+		OutcomeID: p.Outcomes[choice].ID,
+		Amount:    amount,
+	}
+	p.Decision = decision
+	return decision
+}
+
+// stake is how many points to bet from balance. topPoints is the largest bet
+// already placed on the chosen outcome, which stealth mode stays below.
+func stake(balance int, settings domain.BetSettings, topPoints int) int {
 	percentage := 5
 	if settings.Percentage != nil {
 		percentage = *settings.Percentage
@@ -30,8 +44,8 @@ func (p *Event) Decide(balance int) Decision {
 	if amount > balance {
 		amount = balance
 	}
-	if settings.StealthMode != nil && *settings.StealthMode && p.Outcomes[choice].TopPoints > 0 && amount >= p.Outcomes[choice].TopPoints {
-		amount = p.Outcomes[choice].TopPoints - 1
+	if settings.StealthMode != nil && *settings.StealthMode && topPoints > 0 && amount >= topPoints {
+		amount = topPoints - 1
 		if amount < 1 {
 			amount = 1
 		}
@@ -43,14 +57,7 @@ func (p *Event) Decide(balance int) Decision {
 			amount = 10
 		}
 	}
-
-	decision = Decision{
-		Choice:    choice,
-		OutcomeID: p.Outcomes[choice].ID,
-		Amount:    amount,
-	}
-	p.Decision = decision
-	return decision
+	return amount
 }
 
 func selectOutcome(outcomes []Outcome, settings domain.BetSettings) int {

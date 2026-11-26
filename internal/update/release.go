@@ -26,8 +26,8 @@ type githubRelease struct {
 	Assets  []releaseAsset `json:"assets"`
 }
 
-func fetchLatestRelease() (githubRelease, error) {
-	req, err := http.NewRequest(http.MethodGet, releasesURL, nil)
+func fetchLatestRelease(url string) (githubRelease, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return githubRelease{}, err
 	}
@@ -44,7 +44,7 @@ func fetchLatestRelease() (githubRelease, error) {
 	if resp.StatusCode == http.StatusNotFound {
 		return githubRelease{}, errNoRelease
 	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+	if !isSuccess(resp.StatusCode) {
 		return githubRelease{}, fmt.Errorf("fetch release: unexpected status %s", resp.Status)
 	}
 
@@ -74,6 +74,10 @@ func pickAsset(assets []releaseAsset, goos, arch string) (releaseAsset, error) {
 		}
 	}
 	return releaseAsset{}, fmt.Errorf("no release asset for %s/%s", goos, arch)
+}
+
+func isSuccess(statusCode int) bool {
+	return statusCode >= 200 && statusCode <= 299
 }
 
 func newHTTPClient(timeout time.Duration) *http.Client {

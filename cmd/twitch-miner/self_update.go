@@ -11,7 +11,7 @@ import (
 // installedUpdate reports whether a newer release replaced this binary, in
 // which case the new one has already been started.
 func installedUpdate(cfg config) bool {
-	if !cfg.AutoUpdate || autoUpdateDisabledByEnv() {
+	if !cfg.AutoUpdate || autoUpdateDisabled(os.Getenv("TCPM_DISABLE_AUTO_UPDATE")) {
 		return false
 	}
 	updated, err := update.RunAutoUpdate()
@@ -24,10 +24,10 @@ func installedUpdate(cfg config) bool {
 	return updated
 }
 
-// autoUpdateDisabledByEnv reports whether TCPM_DISABLE_AUTO_UPDATE forces the
-// self-updater off (container images must not replace their own binary).
-func autoUpdateDisabledByEnv() bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("TCPM_DISABLE_AUTO_UPDATE"))) {
+// autoUpdateDisabled reports whether the value of TCPM_DISABLE_AUTO_UPDATE
+// forces the self-updater off (container images must not replace their own binary).
+func autoUpdateDisabled(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "1", "true", "yes", "on":
 		return true
 	}

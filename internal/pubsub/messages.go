@@ -42,11 +42,7 @@ func (p *Client) handleTopicMessage(envelope map[string]interface{}) error {
 		return err
 	}
 	msgType := strings.ToLower(fmt.Sprint(payload["type"]))
-	prefix := topic
-	if parts := strings.SplitN(topic, ".", 2); len(parts) > 0 {
-		prefix = parts[0]
-	}
-	p.debugf("PubSub topic %s type=%s", prefix, msgType)
+	p.debugf("PubSub topic %s type=%s", topicFamily(topic), msgType)
 	p.deepDebugf("PubSub topic %s payload %s", topic, strings.TrimSpace(messageStr))
 	channelID := channelIDFromPayload(payload, topic)
 

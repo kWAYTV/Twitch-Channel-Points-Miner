@@ -1,432 +1,373 @@
 package miner
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 )
 
-func testWatchSelectionStreakStreamer(username, channelID, game string, onlineAt time.Time, minuteWatched float64) *domain.Streamer {
-	return &domain.Streamer{
-		Username:  username,
-		ChannelID: channelID,
-		IsOnline:  true,
-		OnlineAt:  onlineAt,
-		Settings: domain.StreamerSettings{
-			WatchStreak: true,
-		},
-		Stream: &domain.Stream{
-			BroadcastID:        username + "-broadcast",
-			Game:               map[string]interface{}{"displayName": game},
-			WatchStreakMissing: true,
-			MinuteWatched:      minuteWatched,
-			CreatedAt:          onlineAt,
-			StreamUpAt:         onlineAt,
-		},
+// streakStreamer is a fresh online streamer with a pending watch streak, watched for minutes so far.
+func streakStreamer(login, channelID, game string, minutes float64) *domain.Streamer {
+	streamer := freshStreamer(login, channelID, game)
+	streamer.Settings.WatchStreak = true
+	streamer.Stream.MinuteWatched = minutes
+	return streamer
+}
+
+func assertPicked(t *testing.T, got []*domain.Streamer, want ...string) {
+	t.Helper()
+	if want == nil {
+		want = []string{}
+	}
+	if names := logins(got); !reflect.DeepEqual(names, want) {
+		t.Errorf("picked %q, want %q", names, want)
 	}
 }
 
-func TestGamePreference(t *testing.T) {
-	m := &Miner{
-		gamePriority:      []string{"valorant", "wow"},
-		gamePriorityIndex: map[string]int{"valorant": 0, "wow": 1},
-		gameExclusions:    map[string]struct{}{"banned": {}},
+func TestMiner_gamePreference(t *testing.T) {
+	playing := func(game string) *domain.Streamer {
+		return &domain.Streamer{Stream: &domain.Stream{Game: map[string]interface{}{"displayName": game}}}
 	}
-	streamer := &domain.Streamer{
-		Stream: &domain.Stream{
-			Game: map[string]interface{}{"displayName": "Valorant"},
-		},
+	lists := Options{GamePriority: []string{"valorant", "wow"}, GameExclude: []string{"banned"}}
+	tests := []struct {
+		name         string
+		options      Options
+		streamer     *domain.Streamer
+		wantRank     int
+		wantExcluded bool
+	}{
+		{"no streamer", lists, nil, 3, false},
+		{"a streamer with no stream", lists, &domain.Streamer{}, 3, false},
+		{"a stream with no game", lists, playing("  "), 3, false},
+		{"the first priority game, in capitals with spaces", lists, playing(" Valorant "), 0, false},
+		{"the second priority game", lists, playing("WoW"), 1, false},
+		{"an excluded game", lists, playing("Banned"), 0, true},
+		{"a game on neither list", lists, playing("Chess"), 3, false},
+		{"a game with no lists set", Options{}, playing("Chess"), 1, false},
 	}
-	rank, excluded := m.gamePreference(streamer)
-	if excluded {
-		t.Fatalf("expected not excluded")
-	}
-	if rank != 0 {
-		t.Fatalf("expected rank 0 got %d", rank)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := setup(t, tt.options)
 
-	streamer.Stream.Game["displayName"] = "Banned"
-	rank, excluded = m.gamePreference(streamer)
-	if !excluded || rank != 0 {
-		t.Fatalf("excluded game should return excluded=true rank=0 got rank=%d excluded=%t", rank, excluded)
+			rank, excluded := h.miner.gamePreference(tt.streamer)
+
+			if rank != tt.wantRank || excluded != tt.wantExcluded {
+				t.Errorf("gamePreference() = %d, %t, want %d, %t", rank, excluded, tt.wantRank, tt.wantExcluded)
+			}
+		})
 	}
 }
 
-func TestPickStreamersToWatchSkipsSubscribedPriorityWhenNone(t *testing.T) {
-	onlineAt := time.Now().Add(-time.Minute)
-	streamers := []*domain.Streamer{
-		{Username: "streamer1", IsOnline: true, OnlineAt: onlineAt, ChannelPoints: 1000},
-		{Username: "streamer8", IsOnline: true, OnlineAt: onlineAt, ChannelPoints: 900},
-		{Username: "streamer9", IsOnline: true, OnlineAt: onlineAt, ChannelPoints: 10},
-		{Username: "streamer10", IsOnline: true, OnlineAt: onlineAt, ChannelPoints: 20},
-	}
+func TestMiner_pickByPriority(t *testing.T) {
+	t.Run("ORDER", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := freshStreamer("carol", "3", "Go")
 
-	m := &Miner{
-		watchPriorities: parseWatchPriorities([]string{"STREAK", "SUBSCRIBED", "POINTS_ASC"}),
-	}
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-	got := m.pickStreamersToWatch(streamers)
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != streamers[2] || got[1] != streamers[3] {
-		t.Fatalf("expected lowest points prioritized, got %s then %s", got[0].Username, got[1].Username)
-	}
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("ORDER with the first two on one game", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Poker")
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "carol")
+	})
+
+	t.Run("STREAK", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"STREAK"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := streakStreamer("carol", "3", "Go", 0)
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("STREAK with two pending streaks on one game", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"STREAK"}})
+		alice := streakStreamer("alice", "1", "Poker", 0)
+		bob := streakStreamer("bob", "2", "Poker", 0)
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("DROPS", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.Settings.ClaimDrops = true
+		carol := freshStreamer("carol", "3", "Go")
+		carol.Settings.ClaimDrops = true
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "carol")
+	})
+
+	t.Run("DROPS with a priority game further down the list", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS"}, GamePriority: []string{"go"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		alice.Settings.ClaimDrops = true
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.Settings.ClaimDrops = true
+		carol := freshStreamer("carol", "3", "Go")
+		carol.Settings.ClaimDrops = true
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("SUBSCRIBED", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"SUBSCRIBED"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.ActiveMultipliers = []domain.ActiveMultiplier{{Factor: 1.2}}
+		carol := freshStreamer("carol", "3", "Go")
+		carol.ActiveMultipliers = []domain.ActiveMultiplier{{Factor: 2}}
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "bob")
+	})
+
+	t.Run("SUBSCRIBED with nobody subscribed, then POINTS_ASC", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"SUBSCRIBED", "POINTS_ASC"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		alice.ChannelPoints = 1_000
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.ChannelPoints = 10
+		carol := freshStreamer("carol", "3", "Go")
+		carol.ChannelPoints = 20
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "carol")
+	})
+
+	t.Run("POINTS_ASC", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"POINTS_ASC"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		alice.ChannelPoints = 900
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.ChannelPoints = 1_000
+		carol := freshStreamer("carol", "3", "Go")
+		carol.ChannelPoints = 10
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("POINTS_DESC", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"POINTS_DESC"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		alice.ChannelPoints = 900
+		bob := freshStreamer("bob", "2", "Chess")
+		bob.ChannelPoints = 1_000
+		carol := freshStreamer("carol", "3", "Go")
+		carol.ChannelPoints = 10
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "alice")
+	})
+
+	t.Run("STREAK, then ORDER once the first is full", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"STREAK", "ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := streakStreamer("bob", "2", "Chess", 0)
+		carol := streakStreamer("carol", "3", "Go", 0)
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "carol")
+	})
 }
 
-func TestPickStreamersToWatchPrioritizesRestartedStreakCandidate(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
+func TestMiner_pickStreamersToWatch(t *testing.T) {
+	t.Run("no streamers", func(t *testing.T) {
+		h := setup(t, Options{})
 
-	first := &domain.Streamer{
-		Username:      "first",
-		IsOnline:      true,
-		OnlineAt:      onlineAt,
-		ChannelPoints: 100,
-	}
-	second := &domain.Streamer{
-		Username:      "second",
-		IsOnline:      true,
-		OnlineAt:      onlineAt,
-		ChannelPoints: 200,
-	}
-	restarted := &domain.Streamer{
-		Username:  "restarted",
-		IsOnline:  true,
-		OnlineAt:  onlineAt,
-		OfflineAt: now.Add(-10 * time.Minute),
-		Settings: domain.StreamerSettings{
-			WatchStreak: true,
-		},
-		Stream: &domain.Stream{
-			WatchStreakMissing: true,
-			MinuteWatched:      3,
-			StreamUpAt:         now.Add(-9 * time.Minute),
-			CreatedAt:          now.Add(-9 * time.Minute),
-		},
-	}
+		got := h.miner.pickStreamersToWatch(nil)
 
-	m := &Miner{
-		watchPriorities: defaultWatchPriorities(),
-	}
+		assertPicked(t, got)
+	})
 
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, restarted})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != restarted {
-		t.Fatalf("expected restarted streak candidate to take the first slot, got %s", got[0].Username)
-	}
-	if got[1] != first {
-		t.Fatalf("expected the next order candidate to fill slot two, got %s", got[1].Username)
-	}
+	t.Run("nobody online", func(t *testing.T) {
+		h := setup(t, Options{})
+		alice := &domain.Streamer{Username: "alice", ChannelID: "1"}
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice})
+
+		assertPicked(t, got)
+	})
+
+	t.Run("one streamer online", func(t *testing.T) {
+		h := setup(t, Options{})
+		alice := freshStreamer("alice", "1", "Poker")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice})
+
+		assertPicked(t, got, "alice")
+	})
+
+	t.Run("a pending streak last in the list", func(t *testing.T) {
+		h := setup(t, Options{})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := streakStreamer("carol", "3", "Go", 3)
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("a pending streak the priorities never ask for", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"ORDER"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := streakStreamer("carol", "3", "Go", 0)
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "carol")
+	})
+
+	t.Run("a pending streak on the game already picked, with one slot free", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"SUBSCRIBED"}})
+		alice := freshStreamer("alice", "1", "Just Chatting")
+		alice.ActiveMultipliers = []domain.ActiveMultiplier{{Factor: 1.2}}
+		bob := streakStreamer("bob", "2", "Just Chatting", 0)
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "alice", "bob")
+	})
+
+	t.Run("a pending streak on a game off the priority list", func(t *testing.T) {
+		h := setup(t, Options{GamePriority: []string{"chess"}})
+		alice := streakStreamer("alice", "1", "Poker", 0)
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "alice")
+	})
+
+	t.Run("a pending streak on a priority game", func(t *testing.T) {
+		h := setup(t, Options{GamePriority: []string{"go"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := streakStreamer("carol", "3", "Go", 0)
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
+
+	t.Run("a streamer backed off after failures", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"STREAK", "ORDER"}})
+		alice := streakStreamer("alice", "1", "Poker", 0)
+		alice.WatchBackoffUntil = testNow.Add(10 * time.Minute)
+		bob := streakStreamer("bob", "2", "Poker", 0)
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "bob", "carol")
+	})
+
+	t.Run("nothing asked for by the priorities", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"DROPS"}, GamePriority: []string{"go"}})
+		alice := freshStreamer("alice", "1", "Poker")
+		bob := freshStreamer("bob", "2", "Chess")
+		carol := freshStreamer("carol", "3", "Go")
+
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
+
+		assertPicked(t, got, "carol", "alice")
+	})
 }
 
-func TestPickStreamersToWatchPrioritizesStreamStartedJustBeforeFalseOffline(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
-	offlineAt := now.Add(-10 * time.Minute)
-	streamStartedAt := offlineAt.Add(-20 * time.Second)
+func TestMiner_keepActiveStreaks(t *testing.T) {
+	options := Options{GamePriority: []string{"priority game"}}
 
-	first := &domain.Streamer{
-		Username:      "first",
-		IsOnline:      true,
-		OnlineAt:      onlineAt,
-		ChannelPoints: 100,
-	}
-	second := &domain.Streamer{
-		Username:      "second",
-		IsOnline:      true,
-		OnlineAt:      onlineAt,
-		ChannelPoints: 200,
-	}
-	restarted := &domain.Streamer{
-		Username:  "restarted",
-		IsOnline:  true,
-		OnlineAt:  onlineAt,
-		OfflineAt: offlineAt,
-		Settings: domain.StreamerSettings{
-			WatchStreak: true,
-		},
-		Stream: &domain.Stream{
-			WatchStreakMissing: true,
-			MinuteWatched:      3,
-			StreamUpAt:         streamStartedAt,
-			CreatedAt:          streamStartedAt,
-		},
-	}
+	t.Run("two streaks in progress when a priority-game streak appears", func(t *testing.T) {
+		h := setup(t, options)
+		alice := streakStreamer("alice", "1", "Poker", 1.5)
+		bob := streakStreamer("bob", "2", "Chess", 2)
+		carol := streakStreamer("carol", "3", "Priority Game", 0)
+		h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob})
 
-	m := &Miner{
-		watchPriorities: defaultWatchPriorities(),
-	}
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, restarted})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != restarted {
-		t.Fatalf("expected false-offline restarted streak candidate to take the first slot, got %s", got[0].Username)
-	}
-	if got[1] != first {
-		t.Fatalf("expected the next order candidate to fill slot two, got %s", got[1].Username)
-	}
-}
+		assertPicked(t, got, "alice", "bob")
+	})
 
-func TestPickStreamersToWatchDoesNotPrioritizeRestartedResolvedStreak(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
+	t.Run("two streaks not started when a priority-game streak appears", func(t *testing.T) {
+		h := setup(t, options)
+		alice := streakStreamer("alice", "1", "Poker", 0)
+		bob := streakStreamer("bob", "2", "Chess", 0)
+		carol := streakStreamer("carol", "3", "Priority Game", 0)
+		h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob})
 
-	first := &domain.Streamer{
-		Username: "first",
-		IsOnline: true,
-		OnlineAt: onlineAt,
-	}
-	second := &domain.Streamer{
-		Username: "second",
-		IsOnline: true,
-		OnlineAt: onlineAt,
-	}
-	restarted := &domain.Streamer{
-		Username:      "restarted",
-		ChannelID:     "channel-restarted",
-		IsOnline:      true,
-		PresenceKnown: true,
-		OnlineAt:      onlineAt,
-		Settings: domain.StreamerSettings{
-			WatchStreak: true,
-		},
-		Stream: &domain.Stream{
-			WatchStreakMissing: true,
-			MinuteWatched:      0,
-			StreamUpAt:         now.Add(-15 * time.Minute),
-			CreatedAt:          now.Add(-15 * time.Minute),
-		},
-	}
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-	m := &Miner{
-		logger:          discardLogger(),
-		watchPriorities: defaultWatchPriorities(),
-	}
-	m.updateHistory(restarted, "WATCH_STREAK", 50)
+		assertPicked(t, got, "carol", "alice")
+	})
 
-	m.setPresence(restarted, false, "poll")
-	restarted.Stream = &domain.Stream{
-		WatchStreakMissing: true,
-		MinuteWatched:      0,
-		StreamUpAt:         now.Add(time.Minute),
-		CreatedAt:          now.Add(time.Minute),
-	}
-	m.setPresence(restarted, true, "poll")
-	restarted.OnlineAt = onlineAt
+	t.Run("a streak in progress that has since resolved", func(t *testing.T) {
+		h := setup(t, options)
+		alice := streakStreamer("alice", "1", "Poker", 1.5)
+		bob := streakStreamer("bob", "2", "Chess", 2)
+		carol := streakStreamer("carol", "3", "Priority Game", 0)
+		h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob})
+		alice.Stream.WatchStreakMissing = false
 
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, restarted})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != first || got[1] != second {
-		t.Fatalf("expected resolved restarted streak to stay out of streak priority, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-func TestPickStreamersToWatchKeepsInProgressStreakSlotsWhenHigherPriorityStreakAppears(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
+		assertPicked(t, got, "bob", "carol")
+	})
 
-	first := testWatchSelectionStreakStreamer("first", "channel-first", "casual game", onlineAt, 1.5)
-	second := testWatchSelectionStreakStreamer("second", "channel-second", "another game", onlineAt, 2.0)
-	higherPriority := testWatchSelectionStreakStreamer("priority", "channel-priority", "priority game", onlineAt, 0)
+	t.Run("a streak in progress whose broadcast has since changed", func(t *testing.T) {
+		h := setup(t, options)
+		alice := streakStreamer("alice", "1", "Poker", 1.5)
+		bob := streakStreamer("bob", "2", "Chess", 2)
+		carol := streakStreamer("carol", "3", "Priority Game", 0)
+		h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob})
+		alice.Stream.BroadcastID = "alice-broadcast-2"
 
-	m := &Miner{
-		watchPriorities:   defaultWatchPriorities(),
-		gamePriority:      []string{"priority game"},
-		gamePriorityIndex: map[string]int{"priority game": 0},
-	}
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{alice, bob, carol})
 
-	initial := m.pickStreamersToWatch([]*domain.Streamer{first, second})
-	if len(initial) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(initial))
-	}
-	if initial[0] != first || initial[1] != second {
-		t.Fatalf("expected initial in-progress streak selection to stay in order, got %s then %s", initial[0].Username, initial[1].Username)
-	}
+		assertPicked(t, got, "bob", "carol")
+	})
 
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, higherPriority})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != first || got[1] != second {
-		t.Fatalf("expected in-progress streaks to keep both slots, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
+	t.Run("a streak in progress on the game of a streak not started", func(t *testing.T) {
+		h := setup(t, Options{WatchPriority: []string{"STREAK"}})
+		alice := streakStreamer("alice", "1", "Just Chatting", 2)
+		bob := streakStreamer("bob", "2", "Just Chatting", 0)
+		carol := freshStreamer("carol", "3", "Go")
+		h.miner.pickStreamersToWatch([]*domain.Streamer{alice})
 
-func TestPickStreamersToWatchDoesNotPinFreshStreaksWithoutProgress(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
+		got := h.miner.pickStreamersToWatch([]*domain.Streamer{carol, bob, alice})
 
-	first := testWatchSelectionStreakStreamer("first", "channel-first", "casual game", onlineAt, 0)
-	second := testWatchSelectionStreakStreamer("second", "channel-second", "another game", onlineAt, 0)
-	higherPriority := testWatchSelectionStreakStreamer("priority", "channel-priority", "priority game", onlineAt, 0)
-
-	m := &Miner{
-		watchPriorities:   defaultWatchPriorities(),
-		gamePriority:      []string{"priority game"},
-		gamePriorityIndex: map[string]int{"priority game": 0},
-	}
-
-	initial := m.pickStreamersToWatch([]*domain.Streamer{first, second})
-	if len(initial) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(initial))
-	}
-
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, higherPriority})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != higherPriority || got[1] != first {
-		t.Fatalf("expected fresh streaks to remain pre-emptible, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
-
-func TestPickStreamersToWatchReleasesResolvedActiveStreakSlot(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
-
-	first := testWatchSelectionStreakStreamer("first", "channel-first", "casual game", onlineAt, 1.5)
-	second := testWatchSelectionStreakStreamer("second", "channel-second", "another game", onlineAt, 2.0)
-	higherPriority := testWatchSelectionStreakStreamer("priority", "channel-priority", "priority game", onlineAt, 0)
-
-	m := &Miner{
-		watchPriorities:   defaultWatchPriorities(),
-		gamePriority:      []string{"priority game"},
-		gamePriorityIndex: map[string]int{"priority game": 0},
-	}
-
-	initial := m.pickStreamersToWatch([]*domain.Streamer{first, second})
-	if len(initial) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(initial))
-	}
-
-	first.Stream.WatchStreakMissing = false
-
-	got := m.pickStreamersToWatch([]*domain.Streamer{first, second, higherPriority})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != second || got[1] != higherPriority {
-		t.Fatalf("expected resolved streak slot to release, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
-
-func TestPickStreamersToWatchKeepsSameGameStreakAheadOfFallback(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
-
-	active := testWatchSelectionStreakStreamer("active", "channel-active", "Just Chatting", onlineAt, 2.0)
-	sameGameStreak := testWatchSelectionStreakStreamer("same-game", "channel-same-game", "Just Chatting", onlineAt, 0)
-	fallback := &domain.Streamer{
-		Username: "fallback",
-		IsOnline: true,
-		OnlineAt: onlineAt,
-		Stream: &domain.Stream{
-			BroadcastID:        "fallback-broadcast",
-			Game:               map[string]interface{}{"displayName": "Different Game"},
-			WatchStreakMissing: false,
-			CreatedAt:          onlineAt,
-			StreamUpAt:         onlineAt,
-		},
-	}
-
-	m := &Miner{
-		watchPriorities: []watchPriority{watchPriorityStreak},
-	}
-
-	got := m.pickStreamersToWatch([]*domain.Streamer{active, sameGameStreak, fallback})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != active || got[1] != sameGameStreak {
-		t.Fatalf("expected same-game streak to outrank fallback, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
-
-func TestPickStreamersToWatchForceStreakSlotIgnoresGameDiversity(t *testing.T) {
-	now := time.Now()
-	onlineAt := now.Add(-time.Minute)
-
-	subscribed := &domain.Streamer{
-		Username: "subscribed",
-		IsOnline: true,
-		OnlineAt: onlineAt,
-		ActiveMultipliers: []domain.ActiveMultiplier{
-			{Factor: 1.2},
-		},
-		Stream: &domain.Stream{
-			BroadcastID:        "subscribed-broadcast",
-			Game:               map[string]interface{}{"displayName": "Just Chatting"},
-			WatchStreakMissing: false,
-			CreatedAt:          onlineAt,
-			StreamUpAt:         onlineAt,
-		},
-	}
-	sameGameStreak := testWatchSelectionStreakStreamer("same-game", "channel-same-game", "Just Chatting", onlineAt, 0)
-	fallback := &domain.Streamer{
-		Username: "fallback",
-		IsOnline: true,
-		OnlineAt: onlineAt,
-		Stream: &domain.Stream{
-			BroadcastID:        "fallback-broadcast",
-			Game:               map[string]interface{}{"displayName": "Different Game"},
-			WatchStreakMissing: false,
-			CreatedAt:          onlineAt,
-			StreamUpAt:         onlineAt,
-		},
-	}
-
-	m := &Miner{
-		watchPriorities: []watchPriority{watchPrioritySubscribed},
-	}
-
-	got := m.pickStreamersToWatch([]*domain.Streamer{subscribed, sameGameStreak, fallback})
-	if len(got) != 2 {
-		t.Fatalf("expected 2 watchers got %d", len(got))
-	}
-	if got[0] != subscribed || got[1] != sameGameStreak {
-		t.Fatalf("expected forced streak slot to outrank fallback, got %s then %s", got[0].Username, got[1].Username)
-	}
-}
-
-func TestPickStreamersToWatchSkipsBackedOffStreamer(t *testing.T) {
-	now := time.Now()
-	backedOff := testWatchSelectionStreakStreamer("stuck", "channel-stuck", "game", now.Add(-time.Minute), 0)
-	backedOff.WatchBackoffUntil = now.Add(10 * time.Minute)
-	backedOff.WatchFailureCount = 3
-
-	healthy := testWatchSelectionStreakStreamer("healthy", "channel-healthy", "game", now.Add(-time.Minute), 0)
-	fallback := &domain.Streamer{
-		Username: "fallback",
-		IsOnline: true,
-		OnlineAt: now.Add(-time.Minute),
-		Stream: &domain.Stream{
-			BroadcastID:        "fallback-broadcast",
-			Game:               map[string]interface{}{"displayName": "Different Game"},
-			WatchStreakMissing: false,
-			CreatedAt:          now.Add(-time.Minute),
-			StreamUpAt:         now.Add(-time.Minute),
-		},
-	}
-
-	m := &Miner{
-		watchPriorities: []watchPriority{watchPriorityStreak, watchPriorityOrder},
-	}
-
-	got := m.pickStreamersToWatch([]*domain.Streamer{backedOff, healthy, fallback})
-	for _, streamer := range got {
-		if streamer == backedOff {
-			t.Fatalf("backed off streamer should not be selected")
-		}
-	}
-	if len(got) == 0 || got[0] != healthy {
-		t.Fatalf("healthy streak should still be selectable")
-	}
+		assertPicked(t, got, "alice", "bob")
+	})
 }

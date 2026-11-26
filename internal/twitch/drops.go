@@ -79,7 +79,7 @@ func (t *Client) ClaimAllDropsFromInventoryWithStatuses() ([]ClaimedDrop, []Drop
 				CurrentValue:  status.CurrentValue,
 				RequiredValue: status.RequiredValue,
 			})
-			time.Sleep(time.Duration(random.Int(5, 10)) * time.Second)
+			t.pause(time.Duration(random.Int(5, 10)) * time.Second)
 		}
 	}
 	return claimedDrops, statuses, claimErr

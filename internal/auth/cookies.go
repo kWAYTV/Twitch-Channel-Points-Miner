@@ -6,43 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 )
-
-type persistedCookie struct {
-	Value  string `json:"value"`
-	Path   string `json:"path,omitempty"`
-	Domain string `json:"domain,omitempty"`
-}
-
-type cookieStore map[string]persistedCookie
-
-func decodeCookieStore(data []byte) (cookieStore, error) {
-	var store cookieStore
-	if err := json.Unmarshal(data, &store); err == nil {
-		return store, nil
-	}
-
-	var legacy []map[string]string
-	if err := json.Unmarshal(data, &legacy); err != nil {
-		return nil, err
-	}
-
-	store = make(cookieStore, len(legacy))
-	for _, c := range legacy {
-		name := c["name"]
-		if name == "" {
-			continue
-		}
-		store[name] = persistedCookie{
-			Value:  c["value"],
-			Path:   c["path"],
-			Domain: c["domain"],
-		}
-	}
-
-	return store, nil
-}
 
 func (t *Login) saveCookies(cookiesPath string) error {
 	t.mu.Lock()
@@ -108,21 +72,7 @@ func (t *Login) loadCookies(cookiesPath string) error {
 			continue
 		}
 
-		domain := c.Domain
-		if domain == "" {
-			domain = ".twitch.tv"
-		}
-		path := c.Path
-		if path == "" {
-			path = "/"
-		}
-		cookie := &http.Cookie{
-			Name:   name,
-			Value:  c.Value,
-			Path:   path,
-			Domain: domain,
-		}
-		host := strings.TrimPrefix(domain, ".")
+		host, cookie := jarCookie(name, c)
 		sessionCookies[host] = append(sessionCookies[host], cookie)
 	}
 

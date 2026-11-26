@@ -58,13 +58,13 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 
 		watchList := m.pickStreamersToWatch(streamers)
 		if len(watchList) == 0 {
-			if m.sleepWithStop(20*time.Second, stop) {
+			if sleepWithStop(20*time.Second, stop) {
 				return
 			}
 			continue
 		}
 
-		interval := m.watchInterval(len(watchList))
+		interval := watchInterval(len(watchList))
 		for _, streamer := range watchList {
 			select {
 			case <-stop:
@@ -72,62 +72,71 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 			default:
 			}
 
-			if streamer.Stream != nil && streamer.Stream.LastUpdateAgo() > 10*time.Minute {
-				if _, err := m.checkStreamerOnlineWithIdentityRepair(streamer); err != nil {
-					m.logger.Printf("online check %s: %v", m.styledStreamerName(streamer), err)
-				}
-				if !streamer.IsOnline {
-					continue
-				}
+			if !m.watchMinute(streamer) {
+				continue
 			}
 
-			prevBroadcastID := ""
-			prevCreatedAt := time.Time{}
-			prevWatchStreakMissing := true
-			if streamer.Stream != nil {
-				prevBroadcastID = streamer.Stream.BroadcastID
-				prevCreatedAt = streamer.Stream.CreatedAt
-				prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
-			}
-			if err := m.sendMinuteWatchedWithIdentityRepair(streamer); err != nil {
-				countWatchFailure := true
-				if errors.Is(err, twitch.ErrStreamerOffline) {
-					countWatchFailure = false
-					live, liveErr := m.twitch.IsStreamLive(streamer.ChannelID)
-					if liveErr != nil {
-						m.logger.Printf("live check %s: %v", m.styledStreamerName(streamer), liveErr)
-					}
-					if !live {
-						m.setPresence(streamer, false, "minute-watch")
-					} else {
-						m.logger.Printf("minute watch %s: transient offline response, keeping online", m.styledStreamerName(streamer))
-					}
-				}
-				if countWatchFailure {
-					prevFailures := streamer.WatchFailureCount
-					recordMinuteWatchFailure(streamer, time.Now())
-					if m.logger != nil && prevFailures < minuteWatchFailureBackoffThreshold && streamer.WatchFailureCount >= minuteWatchFailureBackoffThreshold {
-						m.logger.Printf("minute watch %s: backing off until %s after repeated failures", m.styledStreamerName(streamer), streamer.WatchBackoffUntil.Format(time.RFC3339))
-					}
-				}
-				m.logger.Errorf("minute watch %s: %v", m.styledStreamerName(streamer), err)
-			} else {
-				recordMinuteWatchSuccess(streamer)
-				m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
-				if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
-					m.syncWarmStartCacheFromStreamer(streamer)
-				}
-			}
-			m.syncActiveStreakWatch(streamer, time.Now())
-
-			if m.sleepWithStop(interval, stop) {
+			if sleepWithStop(interval, stop) {
 				return
 			}
 		}
 	}
 }
 
-func (m *Miner) watchInterval(count int) time.Duration {
+// watchMinute reports one watched minute for the streamer and records how it went.
+// It returns false when the streamer turned out to be offline before anything was sent.
+func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
+	if streamer.Stream != nil && streamer.Stream.LastUpdateAgo() > 10*time.Minute {
+		if _, err := m.checkStreamerOnlineWithIdentityRepair(streamer); err != nil {
+			m.logger.Printf("online check %s: %v", m.styledStreamerName(streamer), err)
+		}
+		if !streamer.IsOnline {
+			return false
+		}
+	}
+
+	prevBroadcastID := ""
+	prevCreatedAt := time.Time{}
+	prevWatchStreakMissing := true
+	if streamer.Stream != nil {
+		prevBroadcastID = streamer.Stream.BroadcastID
+		prevCreatedAt = streamer.Stream.CreatedAt
+		prevWatchStreakMissing = streamer.Stream.WatchStreakMissing
+	}
+	if err := m.sendMinuteWatchedWithIdentityRepair(streamer); err != nil {
+		countWatchFailure := true
+		if errors.Is(err, twitch.ErrStreamerOffline) {
+			countWatchFailure = false
+			live, liveErr := m.twitch.IsStreamLive(streamer.ChannelID)
+			if liveErr != nil {
+				m.logger.Printf("live check %s: %v", m.styledStreamerName(streamer), liveErr)
+			}
+			if !live {
+				m.setPresence(streamer, false, "minute-watch")
+			} else {
+				m.logger.Printf("minute watch %s: transient offline response, keeping online", m.styledStreamerName(streamer))
+			}
+		}
+		if countWatchFailure {
+			prevFailures := streamer.WatchFailureCount
+			recordMinuteWatchFailure(streamer, m.now())
+			if m.logger != nil && prevFailures < minuteWatchFailureBackoffThreshold && streamer.WatchFailureCount >= minuteWatchFailureBackoffThreshold {
+				m.logger.Printf("minute watch %s: backing off until %s after repeated failures", m.styledStreamerName(streamer), streamer.WatchBackoffUntil.Format(time.RFC3339))
+			}
+		}
+		m.logger.Errorf("minute watch %s: %v", m.styledStreamerName(streamer), err)
+	} else {
+		recordMinuteWatchSuccess(streamer)
+		m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)
+		if streamer.Stream != nil && (prevBroadcastID != streamer.Stream.BroadcastID || !prevCreatedAt.Equal(streamer.Stream.CreatedAt) || prevWatchStreakMissing != streamer.Stream.WatchStreakMissing) {
+			m.syncWarmStartCacheFromStreamer(streamer)
+		}
+	}
+	m.syncActiveStreakWatch(streamer, m.now())
+	return true
+}
+
+func watchInterval(count int) time.Duration {
 	if count <= 0 {
 		return 20 * time.Second
 	}
@@ -138,7 +147,7 @@ func (m *Miner) watchInterval(count int) time.Duration {
 	return interval
 }
 
-func (m *Miner) sleepWithStop(duration time.Duration, stop <-chan struct{}) bool {
+func sleepWithStop(duration time.Duration, stop <-chan struct{}) bool {
 	if duration <= 0 {
 		return false
 	}

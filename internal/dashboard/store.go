@@ -63,10 +63,14 @@ type Store struct {
 
 // NewStore opens (creating if needed) the analytics directory.
 func NewStore(dir string) (*Store, error) {
+	return newStore(dir, time.Now)
+}
+
+func newStore(dir string, now func() time.Time) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-	s := &Store{dir: dir, now: time.Now, streamers: make(map[string]*streamerState)}
+	s := &Store{dir: dir, now: now, streamers: make(map[string]*streamerState)}
 	files, _ := filepath.Glob(filepath.Join(dir, "*"+pointsSuffix))
 	for _, f := range files {
 		name := strings.TrimSuffix(filepath.Base(f), pointsSuffix)

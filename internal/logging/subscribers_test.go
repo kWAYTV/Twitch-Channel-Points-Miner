@@ -1,58 +1,94 @@
 package logging
 
 import (
+	"reflect"
 	"testing"
 
-	"github.com/kWAYTV/twitch-points-miner/internal/ansi"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/notify"
 )
 
-type published struct {
-	event    events.Event
-	message  notify.Message
-	sentence string
-}
+var aliceOnline = notify.Message{Headline: "Alice is online", Details: []string{"Playing Valorant"}}
 
-func TestLoggerPublishesEventsToSubscribers(t *testing.T) {
-	var got []published
-	Subscribe("test", func(event events.Event, message notify.Message) {
-		got = append(got, published{event, message, message.Sentence()})
-	})
-	defer Subscribe("test", nil)
-	last := func() published {
-		t.Helper()
-		if len(got) == 0 {
-			t.Fatalf("nothing was published")
+func TestSubscribe(t *testing.T) {
+	t.Run("one subscriber", func(t *testing.T) {
+		subscriber := subscribeFake(t)
+
+		publish(events.EventStreamerOnline, aliceOnline)
+
+		want := []publication{{events.EventStreamerOnline, aliceOnline}}
+		if !reflect.DeepEqual(subscriber.Received, want) {
+			t.Errorf("subscriber received %+v, want %+v", subscriber.Received, want)
 		}
-		return got[len(got)-1]
-	}
+	})
 
-	logger := NewLogger(LoggerSettings{}, "")
-	logger.Printf("plain lines are not published")
-	if len(got) != 0 {
-		t.Fatalf("non-event log line was published: %v", got)
-	}
-	logger.Eventf(events.EventStreamerOnline, "%sAlice%s is Online!", ansi.ColorGreen, ansi.ColorReset)
-	if p := last(); p.sentence != "Alice is online." || p.event != events.EventStreamerOnline {
-		t.Fatalf("event should arrive as a plain sentence without colour codes, got %+v", p)
-	}
+	t.Run("two subscribers", func(t *testing.T) {
+		first := subscribeFake(t)
+		second := &fakeSubscriber{}
+		Subscribe(t.Name()+"/second", second.receive)
+		t.Cleanup(func() { Subscribe(t.Name()+"/second", nil) })
 
-	// The console glyph is added after publishing, so it never leaks into a notification.
-	logger = NewLogger(LoggerSettings{Emoji: true}, "")
-	logger.EmojiEventf(":partying_face:", events.EventStreamerOnline, "%sAlice%s is Online!", ansi.ColorGreen, ansi.ColorReset)
-	if p := last(); p.sentence != "Alice is online." {
-		t.Fatalf("notification should not carry the console shortcode, got %+v", p)
-	}
-	logger.EmojiEventf(":bar_chart:", events.EventBetLose, "EventPrediction: bob - overtime? - Decision: No - Result: %sLOSE%s, Gained: -500", ansi.ColorRed, ansi.ColorReset)
-	if p := last(); p.message.Headline != "Lost 500 points on bob" || p.sentence != "Lost 500 points on bob. \"overtime?\". Chose No." || p.event != events.EventBetLose {
-		t.Fatalf("loss notification should stay a sentence, got %+v", p)
-	}
+		publish(events.EventStreamerOnline, aliceOnline)
 
-	Subscribe("test", nil)
-	before := len(got)
-	logger.Eventf(events.EventStreamerOnline, "Alice is Online!")
-	if len(got) != before {
-		t.Fatalf("removed subscriber still received an event")
-	}
+		want := []publication{{events.EventStreamerOnline, aliceOnline}}
+		if !reflect.DeepEqual(first.Received, want) {
+			t.Errorf("the first subscriber received %+v, want %+v", first.Received, want)
+		}
+		if !reflect.DeepEqual(second.Received, want) {
+			t.Errorf("the second subscriber received %+v, want %+v", second.Received, want)
+		}
+	})
+
+	t.Run("two events", func(t *testing.T) {
+		subscriber := subscribeFake(t)
+		publish(events.EventStreamerOnline, aliceOnline)
+
+		publish(events.EventShutdown, notify.Message{Headline: "Session ended"})
+
+		want := []publication{
+			{events.EventStreamerOnline, aliceOnline},
+			{events.EventShutdown, notify.Message{Headline: "Session ended"}},
+		}
+		if !reflect.DeepEqual(subscriber.Received, want) {
+			t.Errorf("subscriber received %+v, want %+v", subscriber.Received, want)
+		}
+	})
+
+	t.Run("a name subscribed twice", func(t *testing.T) {
+		replaced := subscribeFake(t)
+		replacement := subscribeFake(t)
+
+		publish(events.EventStreamerOnline, aliceOnline)
+
+		if len(replaced.Received) != 0 {
+			t.Errorf("the replaced subscriber received %+v, want nothing", replaced.Received)
+		}
+		want := []publication{{events.EventStreamerOnline, aliceOnline}}
+		if !reflect.DeepEqual(replacement.Received, want) {
+			t.Errorf("the replacement received %+v, want %+v", replacement.Received, want)
+		}
+	})
+
+	t.Run("a subscriber removed", func(t *testing.T) {
+		subscriber := subscribeFake(t)
+		Subscribe(t.Name(), nil)
+
+		publish(events.EventStreamerOnline, aliceOnline)
+
+		if len(subscriber.Received) != 0 {
+			t.Errorf("subscriber received %+v, want nothing", subscriber.Received)
+		}
+	})
+
+	t.Run("a name removed that was never subscribed", func(t *testing.T) {
+		subscriber := subscribeFake(t)
+		Subscribe(t.Name()+"/unknown", nil)
+
+		publish(events.EventStreamerOnline, aliceOnline)
+
+		want := []publication{{events.EventStreamerOnline, aliceOnline}}
+		if !reflect.DeepEqual(subscriber.Received, want) {
+			t.Errorf("subscriber received %+v, want %+v", subscriber.Received, want)
+		}
+	})
 }

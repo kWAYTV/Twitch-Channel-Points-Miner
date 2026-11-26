@@ -1,56 +1,129 @@
 package miner
 
 import (
-	"sync"
+	"reflect"
 	"testing"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
-	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 )
 
-type fakeAnalyticsSink struct {
-	mu     sync.Mutex
-	points []string
-	events []string
+func TestSetAnalyticsSink(t *testing.T) {
+	t.Run("a logged event", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+
+		h.miner.logger.Eventf(events.EventStreamerOnline, "%sAlice%s is Online!", colorGreen, colorReset)
+
+		if want := []recordedEvent{{Event: "STREAMER_ONLINE", Message: "Alice is online."}}; !reflect.DeepEqual(sink.Events, want) {
+			t.Errorf("recorded events = %+v, want %+v", sink.Events, want)
+		}
+	})
+
+	t.Run("a plain log line", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+
+		h.miner.logger.Printf("Alice is Online!")
+
+		if sink.Events != nil {
+			t.Errorf("recorded events = %+v, want none", sink.Events)
+		}
+	})
+
+	t.Run("a logged event after the sink is removed", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+		SetAnalyticsSink(nil)
+
+		h.miner.logger.Eventf(events.EventStreamerOnline, "Alice is Online!")
+
+		if sink.Events != nil {
+			t.Errorf("recorded events = %+v, want none", sink.Events)
+		}
+	})
+
+	t.Run("a logged event after another sink takes over", func(t *testing.T) {
+		h := setup(t, Options{})
+		first := installAnalyticsSink(t)
+		second := installAnalyticsSink(t)
+
+		h.miner.logger.Eventf(events.EventStreamerOnline, "Alice is Online!")
+
+		if first.Events != nil {
+			t.Errorf("events recorded by the first sink = %+v, want none", first.Events)
+		}
+		if want := []recordedEvent{{Event: "STREAMER_ONLINE", Message: "Alice is online."}}; !reflect.DeepEqual(second.Events, want) {
+			t.Errorf("events recorded by the second sink = %+v, want %+v", second.Events, want)
+		}
+	})
+
+	t.Run("a balance change after the sink is removed", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+		SetAnalyticsSink(nil)
+
+		h.miner.logPointsDelta(&domain.Streamer{Username: "alice", ChannelPoints: 750}, -250, "PREDICTION")
+
+		if sink.Points != nil {
+			t.Errorf("recorded points = %+v, want none", sink.Points)
+		}
+	})
 }
 
-func (f *fakeAnalyticsSink) RecordPoint(streamer string, points, delta int, reason string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.points = append(f.points, streamer+"|"+reason)
-	_ = points
-	_ = delta
-}
-
-func (f *fakeAnalyticsSink) RecordSnapshot(string, int, bool) {}
-
-func (f *fakeAnalyticsSink) RecordEvent(event, message string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.events = append(f.events, event+"|"+message)
-}
-
-func TestAnalyticsSinkReceivesPointsAndEvents(t *testing.T) {
-	sink := &fakeAnalyticsSink{}
-	SetAnalyticsSink(sink)
-	defer SetAnalyticsSink(nil)
-
-	m := &Miner{logger: logging.NewLogger(logging.LoggerSettings{}, "")}
-	streamer := &domain.Streamer{Username: "alice", ChannelPoints: 1000}
-
-	m.handlePointsUpdate(streamer, 0, "") // first load: baseline only
-	streamer.ChannelPoints = 1450
-	m.handlePointsUpdate(streamer, 1000, "WATCH_STREAK")
-	m.logger.Eventf(events.EventStreamerOnline, "%sAlice%s is Online!", colorGreen, colorReset)
-	m.logger.Printf("plain log lines are not events")
-
-	if len(sink.points) != 2 || sink.points[0] != "alice|" || sink.points[1] != "alice|WATCH_STREAK" {
-		t.Fatalf("unexpected points %v", sink.points)
+func TestMiner_recordAnalyticsSnapshots(t *testing.T) {
+	loaded := func(login string, points int, online bool) *domain.Streamer {
+		return &domain.Streamer{Username: login, ChannelPoints: points, IsOnline: online, PointsInit: true}
 	}
-	// The watch-streak gain is itself logged as an event, followed by the explicit one.
-	last := sink.events[len(sink.events)-1]
-	if last != "STREAMER_ONLINE|Alice is online." {
-		t.Fatalf("event should arrive as a short summary, got %q (all: %v)", last, sink.events)
-	}
+
+	t.Run("an online and an offline streamer", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+
+		h.miner.recordAnalyticsSnapshots([]*domain.Streamer{loaded("alice", 100, true), loaded("bob", 50, false)})
+
+		want := []recordedSnapshot{
+			{Streamer: "alice", Points: 100, Online: true},
+			{Streamer: "bob", Points: 50, Online: false},
+		}
+		if !reflect.DeepEqual(sink.Snapshots, want) {
+			t.Errorf("recorded snapshots = %+v, want %+v", sink.Snapshots, want)
+		}
+	})
+
+	t.Run("a streamer whose balance never loaded, and a missing one", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+		unloaded := &domain.Streamer{Username: "bob", IsOnline: true}
+
+		h.miner.recordAnalyticsSnapshots([]*domain.Streamer{unloaded, nil, loaded("alice", 100, true)})
+
+		want := []recordedSnapshot{{Streamer: "alice", Points: 100, Online: true}}
+		if !reflect.DeepEqual(sink.Snapshots, want) {
+			t.Errorf("recorded snapshots = %+v, want %+v", sink.Snapshots, want)
+		}
+	})
+
+	t.Run("no sink installed", func(t *testing.T) {
+		h := setup(t, Options{})
+
+		h.miner.recordAnalyticsSnapshots([]*domain.Streamer{loaded("alice", 100, true)})
+	})
+}
+
+func TestMiner_analyticsSnapshotter(t *testing.T) {
+	t.Run("stopped before it starts", func(t *testing.T) {
+		h := setup(t, Options{})
+		sink := installAnalyticsSink(t)
+		alice := &domain.Streamer{Username: "alice", ChannelPoints: 100, IsOnline: true, PointsInit: true}
+		stop := make(chan struct{})
+		close(stop)
+
+		h.miner.analyticsSnapshotter([]*domain.Streamer{alice}, stop)
+
+		want := []recordedSnapshot{{Streamer: "alice", Points: 100, Online: true}}
+		if !reflect.DeepEqual(sink.Snapshots, want) {
+			t.Errorf("recorded snapshots = %+v, want %+v", sink.Snapshots, want)
+		}
+	})
 }

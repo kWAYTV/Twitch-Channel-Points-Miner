@@ -21,27 +21,14 @@ func (p *Client) logPredictionResult(event *prediction.Event, result map[string]
 	if decisionLabel == "" {
 		decisionLabel = fmt.Sprintf("Decision #%d", event.Decision.Choice+1)
 	}
-	color := ansi.ColorGreen
-	if gained < 0 {
-		color = ansi.ColorRed
-	} else if gained == 0 {
-		color = ansi.ColorReset
-	}
+	color := resultColor(gained)
 	label := event.String()
 	if p.anonymizeLogs() {
 		name := ""
 		if event.Streamer != nil {
 			name = p.streamerName(event.Streamer)
 		}
-		if name != "" && event.Title != "" {
-			label = fmt.Sprintf("EventPrediction: %s - %s", name, event.Title)
-		} else if name != "" {
-			label = fmt.Sprintf("EventPrediction: %s", name)
-		} else if event.Title != "" {
-			label = fmt.Sprintf("EventPrediction: %s", event.Title)
-		} else {
-			label = "EventPrediction"
-		}
+		label = anonymisedLabel(name, event.Title)
 		resultString = resultType
 	}
 	resultEvent := events.EventFromBetResult(resultType)
@@ -69,30 +56,38 @@ func (p *Client) logPredictionResult(event *prediction.Event, result map[string]
 	}
 }
 
+// resultColor is green for a gain, red for a loss and plain for neither.
+func resultColor(gained int) string {
+	if gained < 0 {
+		return ansi.ColorRed
+	}
+	if gained == 0 {
+		return ansi.ColorReset
+	}
+	return ansi.ColorGreen
+}
+
+// anonymisedLabel names a prediction by the streamer's alias and the event's
+// title, leaving out whichever is missing.
+func anonymisedLabel(name, title string) string {
+	if name != "" && title != "" {
+		return fmt.Sprintf("EventPrediction: %s - %s", name, title)
+	} else if name != "" {
+		return fmt.Sprintf("EventPrediction: %s", name)
+	} else if title != "" {
+		return fmt.Sprintf("EventPrediction: %s", title)
+	}
+	return "EventPrediction"
+}
+
 func (p *Client) resolvePredictionFromChannel(event *prediction.Event, eventMap map[string]interface{}) {
 	if event == nil || !event.BetPlaced || event.Decision.Amount == 0 || event.ResultType != "" {
 		return
 	}
 	status := strings.ToUpper(jsonvalue.String(eventMap["status"]))
-	if status != "RESOLVED" && status != "CANCELED" && status != "CANCELLED" {
+	resultType, pointsWon, settled := settledResult(status, winningOutcomeID(eventMap), event.Decision, event.Outcomes)
+	if !settled {
 		return
-	}
-
-	winningID := winningOutcomeID(eventMap)
-	resultType := "LOSE"
-	pointsWon := 0
-
-	switch status {
-	case "CANCELED", "CANCELLED":
-		resultType = "REFUND"
-	default:
-		if winningID == "" {
-			return
-		}
-		if event.Decision.OutcomeID == winningID {
-			resultType = "WIN"
-			pointsWon = payoutForOutcome(event.Decision, event.Outcomes, winningID)
-		}
 	}
 
 	p.logPredictionResult(event, map[string]interface{}{
@@ -103,6 +98,27 @@ func (p *Client) resolvePredictionFromChannel(event *prediction.Event, eventMap 
 	p.predMu.Lock()
 	delete(p.predictions, event.EventID)
 	p.predMu.Unlock()
+}
+
+// settledResult is how a bet came out once its event has a final status: a
+// refund when it was cancelled, a win with its payout or a loss when it was
+// resolved. settled is false while the event is open, or resolved with no
+// winner named.
+func settledResult(status, winningID string, decision prediction.Decision, outcomes []prediction.Outcome) (resultType string, pointsWon int, settled bool) {
+	switch status {
+	case "CANCELED", "CANCELLED":
+		return "REFUND", 0, true
+	case "RESOLVED":
+		if winningID == "" {
+			return "", 0, false
+		}
+		if decision.OutcomeID == winningID {
+			return "WIN", payoutForOutcome(decision, outcomes, winningID), true
+		}
+		return "LOSE", 0, true
+	default:
+		return "", 0, false
+	}
 }
 
 func winningOutcomeID(event map[string]interface{}) string {

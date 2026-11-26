@@ -56,21 +56,25 @@ func (m *Miner) analyticsRecordPoint(streamer *domain.Streamer, delta int, reaso
 
 // analyticsSnapshotter records every streamer's balance and online state now and
 // then every five minutes, catching changes that never pass through logPointsDelta.
-func (m *Miner) analyticsSnapshotter(stop <-chan struct{}) {
+func (m *Miner) analyticsSnapshotter(streamers []*domain.Streamer, stop <-chan struct{}) {
 	ticker := time.NewTicker(analyticsSnapshotInterval)
 	defer ticker.Stop()
 	for {
-		if sink := currentAnalyticsSink(); sink != nil {
-			for _, s := range m.streamers {
-				if s != nil && s.PointsInit {
-					sink.RecordSnapshot(s.Username, s.ChannelPoints, s.IsOnline)
-				}
-			}
-		}
+		m.recordAnalyticsSnapshots(streamers)
 		select {
 		case <-stop:
 			return
 		case <-ticker.C:
+		}
+	}
+}
+
+func (m *Miner) recordAnalyticsSnapshots(streamers []*domain.Streamer) {
+	if sink := currentAnalyticsSink(); sink != nil {
+		for _, s := range streamers {
+			if s != nil && s.PointsInit {
+				sink.RecordSnapshot(s.Username, s.ChannelPoints, s.IsOnline)
+			}
 		}
 	}
 }

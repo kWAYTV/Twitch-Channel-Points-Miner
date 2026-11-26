@@ -1,25 +1,14 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info != nil && !info.IsDir()
-}
-
-func isGoRunExecutable(path string) bool {
-	lower := strings.ToLower(path)
-	if strings.Contains(lower, "go-build") {
-		return true
-	}
-	temp := strings.ToLower(os.TempDir())
-	return strings.HasPrefix(lower, temp)
 }
 
 type appPaths struct {
@@ -77,22 +66,31 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 	if err != nil {
 		cwd = ""
 	}
+	cwdHasConfig := cwd != "" && fileExists(filepath.Join(cwd, "config.json"))
+	exePath, err := os.Executable()
+	if err != nil {
+		exePath = ""
+	}
+	return defaultAppPaths(cwd, cwdHasConfig, exePath, os.TempDir()), nil
+}
 
+// defaultAppPaths picks the data folder when no flag or variable names one.
+// cwd and exePath are empty when the system could not tell them.
+func defaultAppPaths(cwd string, cwdHasConfig bool, exePath, tempDir string) appPaths {
 	// Preserve the historical behavior when the user runs from a folder that already has config.json.
-	if cwd != "" && fileExists(filepath.Join(cwd, "config.json")) {
+	if cwd != "" && cwdHasConfig {
 		return appPaths{
 			WorkDir:    cwd,
 			ConfigPath: filepath.Join(cwd, "config.json"),
-		}, nil
+		}
 	}
 
-	exePath, err := os.Executable()
-	if err == nil && exePath != "" && !isGoRunExecutable(exePath) {
+	if exePath != "" && !isGoRunExecutable(exePath, tempDir) {
 		exeDir := filepath.Dir(exePath)
 		return appPaths{
 			WorkDir:    exeDir,
 			ConfigPath: filepath.Join(exeDir, "config.json"),
-		}, nil
+		}
 	}
 
 	// Fallback (dev runs, restricted environments).
@@ -102,15 +100,5 @@ func resolveAppPaths(configFlag, dataDirFlag string) (appPaths, error) {
 	return appPaths{
 		WorkDir:    cwd,
 		ConfigPath: filepath.Join(cwd, "config.json"),
-	}, nil
-}
-
-func shouldFallbackToUserConfig(err error) bool {
-	if err == nil {
-		return false
 	}
-	if os.IsPermission(err) {
-		return true
-	}
-	return errors.Is(err, syscall.EROFS)
 }

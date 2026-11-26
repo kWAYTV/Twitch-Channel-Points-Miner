@@ -39,12 +39,11 @@ type Account interface {
 }
 
 type Client struct {
-	account    Account
-	logger     Logger
-	anonymizer *privacy.Anonymizer
-	disableSSL bool
-	// endpoint overrides the PubSub address; empty means Twitch.
-	endpoint    string
+	account     Account
+	logger      Logger
+	anonymizer  *privacy.Anonymizer
+	disableSSL  bool
+	env         environment
 	streamers   []*domain.Streamer
 	streamerMap map[string]*domain.Streamer
 	predictions map[string]*prediction.Event
@@ -109,6 +108,19 @@ func NewClient(
 	onGain func(*domain.Streamer, int, string, int),
 	onPresence func(*domain.Streamer, bool, string),
 ) *Client {
+	return newClient(twitchEnvironment(), account, logger, anonymizer, streamers, disableSSL, onGain, onPresence)
+}
+
+func newClient(
+	env environment,
+	account Account,
+	logger Logger,
+	anonymizer *privacy.Anonymizer,
+	streamers []*domain.Streamer,
+	disableSSL bool,
+	onGain func(*domain.Streamer, int, string, int),
+	onPresence func(*domain.Streamer, bool, string),
+) *Client {
 	streamerMap := make(map[string]*domain.Streamer)
 	for _, s := range streamers {
 		if s.ChannelID != "" {
@@ -120,6 +132,7 @@ func NewClient(
 		logger:      logger,
 		anonymizer:  anonymizer,
 		disableSSL:  disableSSL,
+		env:         env,
 		streamers:   streamers,
 		streamerMap: streamerMap,
 		predictions: make(map[string]*prediction.Event),
@@ -156,11 +169,11 @@ func (p *Client) run(connIndex int, topics []string, stop <-chan struct{}) {
 		if err := p.connectAndListen(connIndex, topics, stop); err != nil {
 			if errors.Is(err, ErrReconnectRequested) {
 				p.logger.Printf("PubSub[%d] reconnect requested; waiting ~60 seconds", connIndex)
-				time.Sleep(60 * time.Second)
+				p.env.sleep(60 * time.Second)
 				continue
 			}
 			p.logger.Errorf("PubSub[%d] connection error: %v", connIndex, err)
-			time.Sleep(10 * time.Second)
+			p.env.sleep(10 * time.Second)
 		}
 	}
 }

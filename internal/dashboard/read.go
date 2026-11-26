@@ -2,11 +2,7 @@ package dashboard
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
-	"io"
 	"os"
-	"path/filepath"
 	"sort"
 )
 
@@ -34,41 +30,6 @@ func (s *Store) Streamers() []StreamerInfo {
 	return out
 }
 
-// Points loads a streamer's samples with T >= since. prev is the last sample
-// before since (nil if none), so a chart can start from a known balance.
-func (s *Store) Points(name string, since int64) (points []Point, prev *Point, err error) {
-	err = readLines(filepath.Join(s.dir, name+pointsSuffix), func(line []byte) {
-		var p Point
-		if json.Unmarshal(line, &p) != nil || p.T == 0 {
-			return
-		}
-		if p.T < since {
-			prev = &p
-			return
-		}
-		points = append(points, p)
-	})
-	return points, prev, err
-}
-
-// Events loads a streamer's events with T >= since, including unattributed ones.
-func (s *Store) Events(name string, since int64) ([]Event, error) {
-	var events []Event
-	for _, n := range []string{name, globalName} {
-		err := readLines(filepath.Join(s.dir, n+eventsSuffix), func(line []byte) {
-			var e Event
-			if json.Unmarshal(line, &e) != nil || e.T < since || e.Type == "" {
-				return
-			}
-			events = append(events, e)
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-	return events, nil
-}
-
 // readLines calls fn for every line of a file; a missing file is not an error.
 // Files are append-only, so a torn last line simply fails to parse and is skipped.
 func readLines(path string, fn func(line []byte)) error {
@@ -88,28 +49,4 @@ func readLines(path string, fn func(line []byte)) error {
 		}
 	}
 	return sc.Err()
-}
-
-func readLastPoint(path string) (Point, bool) {
-	f, err := os.Open(path)
-	if err != nil {
-		return Point{}, false
-	}
-	defer f.Close()
-	const tail = 4096
-	if info, err := f.Stat(); err == nil && info.Size() > tail {
-		_, _ = f.Seek(-tail, io.SeekEnd)
-	}
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return Point{}, false
-	}
-	lines := bytes.Split(data, []byte{'\n'})
-	for i := len(lines) - 1; i >= 0; i-- {
-		var p Point
-		if len(lines[i]) > 0 && json.Unmarshal(lines[i], &p) == nil && p.T != 0 {
-			return p, true
-		}
-	}
-	return Point{}, false
 }

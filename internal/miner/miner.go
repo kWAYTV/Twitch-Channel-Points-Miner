@@ -12,7 +12,6 @@ import (
 	"github.com/kWAYTV/twitch-points-miner/internal/logging"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 	"github.com/kWAYTV/twitch-points-miner/internal/streak"
-	"github.com/kWAYTV/twitch-points-miner/internal/twitch"
 )
 
 const (
@@ -24,40 +23,6 @@ const (
 	colorReset       = ansi.ColorReset
 )
 
-func normalizeGameList(values []string) []string {
-	normalized := make([]string, 0, len(values))
-	seen := make(map[string]struct{})
-	for _, raw := range values {
-		name := strings.ToLower(strings.TrimSpace(raw))
-		if name == "" {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-		normalized = append(normalized, name)
-	}
-	return normalized
-}
-
-func normalizeStreamerList(values []string) []string {
-	normalized := make([]string, 0, len(values))
-	seen := make(map[string]struct{})
-	for _, raw := range values {
-		name := strings.ToLower(strings.TrimSpace(raw))
-		if name == "" {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-		normalized = append(normalized, name)
-	}
-	return normalized
-}
-
 type Miner struct {
 	Username                   string
 	Password                   string
@@ -68,7 +33,8 @@ type Miner struct {
 	WatchStreakWarmStartCache  bool
 	logger                     *logging.Logger
 	startedAt                  time.Time
-	twitch                     *twitch.Client
+	twitch                     twitchAPI
+	clock                      func() time.Time
 	streamers                  []*domain.Streamer
 	initialPoints              map[string]int
 	initialPointsMu            sync.Mutex
@@ -79,7 +45,7 @@ type Miner struct {
 	gamePriority               []string
 	gamePriorityIndex          map[string]int
 	gameExclusions             map[string]struct{}
-	chat                       *chat.Presence
+	chat                       chatRooms
 	disableAtInNickname        bool
 	showGameInfo               bool
 	showDropsProgress          bool
@@ -114,7 +80,7 @@ type Options struct {
 // New returns a Miner that is ready to Mine. It does not contact Twitch yet.
 func New(options Options) *Miner {
 	options.StreamerSettings.Default()
-	gamePriority := normalizeGameList(options.GamePriority)
+	gamePriority := normalizeNames(options.GamePriority)
 	m := &Miner{
 		Username:                   options.Username,
 		Password:                   options.Password,
@@ -124,11 +90,12 @@ func New(options Options) *Miner {
 		StreamerOverrides:          options.StreamerOverrides,
 		WatchStreakWarmStartCache:  options.WatchStreakWarmStartCache,
 		logger:                     logging.NewLogger(options.Logger, options.Username),
+		initialPoints:              make(map[string]int),
 		watchPriorities:            parseWatchPriorities(options.WatchPriority),
-		streamerExclusions:         nameSet(normalizeStreamerList(options.StreamersExclude)),
+		streamerExclusions:         nameSet(normalizeNames(options.StreamersExclude)),
 		gamePriority:               gamePriority,
 		gamePriorityIndex:          positions(gamePriority),
-		gameExclusions:             nameSet(normalizeGameList(options.GameExclude)),
+		gameExclusions:             nameSet(normalizeNames(options.GameExclude)),
 		disableAtInNickname:        options.DisableAtInNickname,
 		showGameInfo:               options.ShowGame,
 		showDropsProgress:          options.ShowDropsProgress,
@@ -141,21 +108,12 @@ func New(options Options) *Miner {
 	return m
 }
 
-func nameSet(names []string) map[string]struct{} {
-	set := make(map[string]struct{}, len(names))
-	for _, name := range names {
-		set[name] = struct{}{}
+// now is the miner's clock: the wall clock unless another was given.
+func (m *Miner) now() time.Time {
+	if m == nil || m.clock == nil {
+		return time.Now()
 	}
-	return set
-}
-
-// positions maps each name to its place in the list.
-func positions(names []string) map[string]int {
-	index := make(map[string]int, len(names))
-	for i, name := range names {
-		index[name] = i
-	}
-	return index
+	return m.clock()
 }
 
 // chatToken is empty until the miner has logged in.

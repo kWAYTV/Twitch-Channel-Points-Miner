@@ -2,7 +2,6 @@ package miner
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -69,7 +68,7 @@ func (m *Miner) handlePubSubPresence(streamer *domain.Streamer, online bool, rea
 func (m *Miner) setPresence(streamer *domain.Streamer, online bool, reason string) {
 	prevKnown := streamer.PresenceKnown
 	prevOnline := streamer.IsOnline
-	now := time.Now()
+	now := m.now()
 	streamer.PresenceKnown = true
 	if online != prevOnline || !prevKnown {
 		if online {
@@ -87,7 +86,9 @@ func (m *Miner) setPresence(streamer *domain.Streamer, online bool, reason strin
 	}
 	streamer.IsOnline = online
 	m.syncActiveStreakWatch(streamer, now)
-	m.chat.Update(streamer, online)
+	if m.chat != nil {
+		m.chat.Update(streamer, online)
+	}
 	if online && m.showGameInfo {
 		m.resolveGameName(streamer)
 	}

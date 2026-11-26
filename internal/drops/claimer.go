@@ -39,9 +39,13 @@ func NewClaimer(inventory Inventory, logger Logger, showProgress bool) *Claimer 
 func (c *Claimer) Run(stop <-chan struct{}) {
 	ticker := time.NewTicker(claimInterval)
 	defer ticker.Stop()
+	c.run(stop, ticker.C)
+}
+
+func (c *Claimer) run(stop <-chan struct{}, ticks <-chan time.Time) {
 	for {
 		select {
-		case <-ticker.C:
+		case <-ticks:
 			c.Claim("drop claim failed")
 		case <-stop:
 			return
@@ -74,17 +78,7 @@ func (c *Claimer) Claim(errorPrefix string) {
 
 func (c *Claimer) logClaimed(drops []twitch.ClaimedDrop) {
 	for _, drop := range drops {
-		reward := drop.RewardName
-		if reward == "" {
-			reward = "Drop"
-		}
-		campaign := drop.CampaignName
-		if campaign == "" {
-			campaign = "Unknown Campaign"
-		}
-		progress := formatDropProgress(drop.CurrentValue, drop.RequiredValue)
-		percent := progressPercent(drop.CurrentValue, drop.RequiredValue)
-		c.logger.EmojiEventf(":package:", events.EventDropClaim, "Claim %s (%s) %s (%d%%)", reward, campaign, progress, percent)
+		c.logger.EmojiEventf(":package:", events.EventDropClaim, "%s", formatClaimLine(drop))
 	}
 }
 
