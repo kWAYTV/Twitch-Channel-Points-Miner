@@ -44,15 +44,18 @@ A Twitch prediction is a parimutuel pool: the winners share everything that was 
 
 ### Small and large predictions
 
-A prediction with 6 voters and one with 600 are not the same bet: one voter moves the first by a sixth. `KELLY` handles this without a rule per size. Its estimate starts from the pool's own split and moves towards the voters' share as more of them vote, the pool counting for 20 voters:
+A prediction with 6 voters and one with 600 are not the same bet: one voter moves the first by a sixth. `KELLY` handles this without a rule per size. Its estimate is not the voters' share itself but the lower end of that share's Wilson score interval at 95%: the lowest share the voters can be trusted to hold, given how many of them there are. It is the standard way to compare proportions from samples of different sizes.
 
-| Voters, two thirds on Yes, pool split evenly | Estimated chance of Yes | Full Kelly stake |
+| Voters, two thirds on Yes, pool split evenly | Share Yes can be trusted for | Full Kelly stake |
 |---|---|---|
-| 6 | 54% | 8% of the balance |
-| 60 | 63% | 25% |
-| 600 | 66% | 32% |
+| 6 | 30% | none: under the pool's 50% |
+| 60 | 54% | 8% of the balance |
+| 600 | 63% | 26% |
+| 6,000 | 65% | 31% |
 
-So a small prediction gets a small stake or none, and a large one is judged by its voters. A quarter of the full stake is what is bet, within your limits. When even the full stake would be under Twitch's minimum of 10 points, no bet is placed.
+So a small prediction is left alone unless its voters are nearly unanimous, and a large one is judged by its voters. A quarter of the full stake is what is bet, within your limits. When even the full stake would be under Twitch's minimum of 10 points, no bet is placed.
+
+The stake therefore moves with three things at once: your balance on the channel, the size of the pool (a stake that is large against the pool lowers its own payout), and how many viewers voted.
 
 The estimate is the weak part: nothing published shows that viewer counts predict Twitch outcomes better than the pool does. The strategy is disciplined about when and how much to bet; it does not make the estimate right.
 

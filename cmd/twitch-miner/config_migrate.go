@@ -55,6 +55,7 @@ func migrateSettings(settings map[string]interface{}) bool {
 	changed = mergeDebugDeep(settings) || changed
 	if changed {
 		moveOffOldBetTiming(group(settings, "bet"))
+		moveOffOldBetStrategy(group(settings, "bet"))
 	}
 	return changed
 }
@@ -70,6 +71,17 @@ func moveOffOldBetTiming(bet map[string]interface{}) {
 	}
 	bet["delay_mode"] = string(domain.DefaultBetDelayMode)
 	bet["delay"] = domain.DefaultBetDelay
+}
+
+// moveOffOldBetStrategy gives a file from an older version the current
+// default strategy when it still has the old default, SMART, which bet the
+// same share of the balance on every prediction, however few viewers had
+// voted. Like the timing, it is changed only while such a file is converted.
+func moveOffOldBetStrategy(bet map[string]interface{}) {
+	if bet == nil || bet["strategy"] != "SMART" {
+		return
+	}
+	bet["strategy"] = string(domain.DefaultBetStrategy)
 }
 
 // group returns the object under key, or nil when there is none.

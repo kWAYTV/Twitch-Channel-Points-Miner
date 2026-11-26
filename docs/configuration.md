@@ -134,6 +134,7 @@ Renamed:
 | `disable_at_in_nickname` | `mention_without_at` |
 | `watch_queue_logging` | `show_watch_queue` |
 | `show_username_in_console` | `show_username`. It did nothing in older versions; it now does what it says. |
+| `bet.strategy` `SMART` | `KELLY`, the new default: see [the Kelly strategy](predictions.md#the-kelly-strategy). Write `SMART` back if you prefer it. |
 | `bet.delay_mode` `FROM_END` with `bet.delay` `6` | `PERCENTAGE` with `0.75`, the new default: see [when the bet is placed](predictions.md#when-the-bet-is-placed). |
 | `debug` with `debug_deep` | `debug`: `false`, `true` or `"full"`. `"full"` is what `debug` and `debug_deep` both on used to be. |
 

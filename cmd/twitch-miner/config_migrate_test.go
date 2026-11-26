@@ -125,6 +125,24 @@ func TestMigrateSettings(t *testing.T) {
 			wantChanged: true,
 		},
 		{
+			name:        "an older file with the old default strategy",
+			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"strategy": "SMART"}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"strategy": "KELLY"}},
+			wantChanged: true,
+		},
+		{
+			name:        "an older file with another strategy",
+			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"strategy": "HIGH_ODDS"}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"strategy": "HIGH_ODDS"}},
+			wantChanged: true,
+		},
+		{
+			name:        "a current file with SMART, chosen on purpose",
+			settings:    map[string]interface{}{"bet": map[string]interface{}{"strategy": "SMART"}},
+			want:        map[string]interface{}{"bet": map[string]interface{}{"strategy": "SMART"}},
+			wantChanged: false,
+		},
+		{
 			name:        "an older file with another bet timing",
 			settings:    map[string]interface{}{"password": "", "bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 10.0}},
 			want:        map[string]interface{}{"bet": map[string]interface{}{"delay_mode": "FROM_END", "delay": 10.0}},

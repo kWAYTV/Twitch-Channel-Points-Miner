@@ -17,24 +17,29 @@ import (
 // which a few large stakes cannot move the way they move the pool.
 //
 // A share of six voters says little and a share of six hundred says a lot.
-// So the estimate starts from what the pool itself implies and moves towards
-// the voters' share as more of them vote. A small prediction then offers
-// little or no edge and gets a small stake or none, and a large one is
-// judged by its voters, without a separate rule for each size.
+// So the estimate is not the share itself but the lower end of its Wilson
+// score interval: the lowest share the voters as a whole can be trusted to
+// hold, given how few or many of them there are. It is the standard way to
+// compare proportions from samples of different sizes. A small prediction
+// then offers no edge and is left alone, and a large one is judged by its
+// voters, without a separate rule for each size.
 
-// priorVoters is how many voters' worth of evidence the pool's own split
-// counts for. With fewer voters than this the pool weighs more than the
-// votes; with many more, the votes decide.
-const priorVoters = 20
+// wilsonZ is the normal quantile of a 95% interval, the usual confidence
+// level for the Wilson score.
+const wilsonZ = 1.96
 
-// chanceOf estimates the chance that an outcome wins: the voters' share,
-// pulled towards the outcome's share of the pool by priorVoters.
-func chanceOf(users, totalUsers, pool, totalPool int) float64 {
-	if totalPool <= 0 {
+// wilsonLowerBound returns the lower end of the Wilson score interval for a
+// share of successes out of n. It is 0 when n is 0.
+func wilsonLowerBound(successes, n int) float64 {
+	if n <= 0 {
 		return 0
 	}
-	poolShare := float64(pool) / float64(totalPool)
-	return (float64(users) + priorVoters*poolShare) / (float64(totalUsers) + priorVoters)
+	count := float64(n)
+	share := float64(successes) / count
+	z2 := wilsonZ * wilsonZ
+	centre := share + z2/(2*count)
+	margin := wilsonZ * math.Sqrt((share*(1-share)+z2/(4*count))/count)
+	return max(0, (centre-margin)/(1+z2/count))
 }
 
 // kellyFraction is the part of the full Kelly stake that is bet. The full
@@ -97,7 +102,7 @@ func kellyChoice(outcomes []Outcome, balance int) (index int, stake float64) {
 	}
 	index = -1
 	for i, o := range outcomes {
-		chance := chanceOf(o.TotalUsers, totalUsers, o.TotalPoints, totalPool)
+		chance := wilsonLowerBound(o.TotalUsers, totalUsers)
 		if s := kellyStake(float64(balance), chance, float64(o.TotalPoints), float64(totalPool)); s > stake {
 			index, stake = i, s
 		}

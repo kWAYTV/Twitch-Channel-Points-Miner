@@ -120,7 +120,7 @@ const olderConfigConverted = `{
 
   "make_predictions": false,
   "bet": {
-    "strategy": "SMART",
+    "strategy": "KELLY",
     "percentage": 9,
     "percentage_gap": 20,
     "max_points": 50000,
@@ -201,7 +201,7 @@ func TestLoadOrCreateConfig_olderVersion(t *testing.T) {
 			GameExclude:      []string{},
 			WatchPriority:    []string{"ORDER"},
 			Bet: betConfig{
-				Strategy:        "SMART",
+				Strategy:        "KELLY",
 				Percentage:      ptr(9),
 				PercentageGap:   ptr(20),
 				MaxPoints:       ptr(50000),
