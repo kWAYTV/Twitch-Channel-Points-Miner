@@ -1,6 +1,10 @@
 package twitch
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
+)
 
 // fakeLogger keeps every line logged, each starting with its level.
 type fakeLogger struct {
@@ -15,6 +19,10 @@ func (l *fakeLogger) Printf(format string, args ...interface{}) {
 
 func (l *fakeLogger) Errorf(format string, args ...interface{}) {
 	l.Lines = append(l.Lines, "error: "+fmt.Sprintf(format, args...))
+}
+
+func (l *fakeLogger) ErrorEventf(event events.Event, format string, args ...interface{}) {
+	l.Lines = append(l.Lines, "error "+string(event)+": "+fmt.Sprintf(format, args...))
 }
 
 func (l *fakeLogger) EmojiPrintf(emoji, format string, args ...interface{}) {

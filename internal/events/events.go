@@ -30,7 +30,9 @@ const (
 	// EventDropNotConnected: drops that cannot be received because the Twitch
 	// account is not connected to the game.
 	EventDropNotConnected Event = "DROP_NOT_CONNECTED"
-	EventChatMention      Event = "CHAT_MENTION"
+	// EventLoginExpired: Twitch no longer accepts the saved login.
+	EventLoginExpired Event = "LOGIN_EXPIRED"
+	EventChatMention  Event = "CHAT_MENTION"
 )
 
 func NormalizeEventName(raw string) Event {
@@ -106,6 +108,7 @@ var eventGlyphs = map[Event]eventGlyph{
 	EventDropClaim:          {"📦", TonePositive},
 	EventDropStatus:         {"📋", ToneNeutral},
 	EventDropNotConnected:   {"🔌", ToneNegative},
+	EventLoginExpired:       {"🔑", ToneNegative},
 	EventMomentClaim:        {"⚡", TonePositive},
 	EventChatMention:        {"💬", ToneNeutral},
 }

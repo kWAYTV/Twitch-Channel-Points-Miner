@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/auth"
 	"github.com/kWAYTV/twitch-points-miner/internal/domain"
+	"github.com/kWAYTV/twitch-points-miner/internal/events"
 	"github.com/kWAYTV/twitch-points-miner/internal/privacy"
 	"github.com/kWAYTV/twitch-points-miner/internal/random"
 	"github.com/kWAYTV/twitch-points-miner/internal/twitchapi"
@@ -29,6 +31,7 @@ type debugLogger interface {
 	DebugEnabled() bool
 	Printf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
+	ErrorEventf(event events.Event, format string, args ...interface{})
 	EmojiPrintf(emoji, format string, args ...interface{})
 }
 
@@ -72,6 +75,9 @@ type Client struct {
 	// lookupHost resolves a host name; nil skips the check that needs it.
 	lookupHost       func(ctx context.Context, host string) ([]string, error)
 	watchReportCheck sync.Once
+	// loginExpiredReported is set while an expired login has been reported
+	// and no request has worked since.
+	loginExpiredReported atomic.Bool
 }
 
 // clientParts is everything a Client is built from: who it is, and how it

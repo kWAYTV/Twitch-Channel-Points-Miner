@@ -59,6 +59,7 @@ Treat the tokens and the webhook URL like passwords: anyone who has one can post
 | Event | Sent when |
 |---|---|
 | `STARTUP` | The session starts, and once the streamers are loaded. |
+| `LOGIN_EXPIRED` | Twitch no longer accepts the saved login. Once, until a request works again. |
 | `SHUTDOWN` | The session ends. |
 | `STREAMER_ONLINE`, `STREAMER_OFFLINE` | A streamer goes live or stops. |
 | `GAIN_FOR_WATCH` | Points arrive for watching. Frequent. |

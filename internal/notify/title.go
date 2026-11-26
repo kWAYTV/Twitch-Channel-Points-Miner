@@ -55,6 +55,8 @@ func eventTitle(event events.Event) string {
 		return "Drop progress"
 	case events.EventDropNotConnected:
 		return "Drops not collected"
+	case events.EventLoginExpired:
+		return "Login expired"
 	case events.EventChatMention:
 		return "Chat mention"
 	default:
@@ -70,7 +72,7 @@ func eventColor(event events.Event) int {
 	case events.EventStreamerOnline, events.EventGainForWatch, events.EventGainForWatchStreak,
 		events.EventBetWin, events.EventGainForClaim, events.EventBonusClaim:
 		return 0x0A7A2F
-	case events.EventStreamerOffline, events.EventBetLose, events.EventBetFailed:
+	case events.EventStreamerOffline, events.EventBetLose, events.EventBetFailed, events.EventLoginExpired:
 		return 0xC23030
 	case events.EventBetRefund:
 		return 0xEDA100

@@ -1,5 +1,9 @@
 # Troubleshooting
 
+## The login expired while the miner was running
+
+`Twitch login expired: restart the miner and enter the new code at twitch.tv/activate`, also sent as a `LOGIN_EXPIRED` notification, means Twitch answers every request with a refusal. Nothing is earned until you log in again: restart the miner and enter the code it prints.
+
 ## The login code expired, or I want another account
 
 Restart the miner to get a new code. To log in from scratch or with a different account, delete `cookies/<username>.json` and restart. In Docker the file is in `./data/cookies/`.
