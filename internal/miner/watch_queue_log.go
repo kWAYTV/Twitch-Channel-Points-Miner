@@ -10,7 +10,7 @@ import (
 
 // logWatchQueueSlots prints who holds each watch slot and why, when queue logging is on.
 func (m *Miner) logWatchQueueSlots(slots *watchSlots, streamers []*domain.Streamer, now time.Time) {
-	if m.logger == nil || !m.logWatchQueue {
+	if m.logger == nil || !m.logWatchQueue || len(slots.picked) == 0 {
 		return
 	}
 	interval := watchInterval(len(slots.picked))

@@ -67,7 +67,7 @@ func TestClient_processClaimAvailable(t *testing.T) {
 
 		h.receive(t, "community-points-user-v1.999", `{"type":"claim-available","data":{"claim":{"id":"claim-1","channel_id":"456"}}}`)
 
-		want := effects{Lines: []string{"error: claim-available ignored: channel=456 claim=claim-1 streamer=false"}}
+		want := effects{}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
 		}
@@ -128,7 +128,7 @@ func TestClient_processClaimAvailable(t *testing.T) {
 
 		h.receive(t, "", `{"type":"claim-available","data":{"claim":{"id":"claim-1"}}}`)
 
-		want := effects{Lines: []string{"error: claim-available ignored: channel= claim=claim-1 streamer=false"}}
+		want := effects{}
 		if got := h.effects(); !reflect.DeepEqual(got, want) {
 			t.Errorf("effects = %+v, want %+v", got, want)
 		}

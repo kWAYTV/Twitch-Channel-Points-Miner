@@ -211,6 +211,22 @@ func TestMiner_watchMinute(t *testing.T) {
 		}
 	})
 
+	t.Run("Twitch failing a second time", func(t *testing.T) {
+		h := setup(t, options)
+		alice := h.live("alice", "1", "Poker")
+		alice.WatchFailureCount = 1
+		h.twitch.Fail["SendMinuteWatched"] = errors.New("503")
+
+		h.miner.watchMinute(alice)
+
+		if alice.WatchFailureCount != 2 {
+			t.Errorf("WatchFailureCount = %d, want 2", alice.WatchFailureCount)
+		}
+		if got := h.logLines(t); len(got) != 0 {
+			t.Errorf("log = %q, want nothing: the failure was reported the first time", got)
+		}
+	})
+
 	t.Run("Twitch failing a third time", func(t *testing.T) {
 		h := setup(t, options)
 		alice := h.live("alice", "1", "Poker")
@@ -222,10 +238,7 @@ func TestMiner_watchMinute(t *testing.T) {
 		if want := testNow.Add(5 * time.Minute); !alice.WatchBackoffUntil.Equal(want) {
 			t.Errorf("WatchBackoffUntil = %s, want %s", alice.WatchBackoffUntil, want)
 		}
-		wantLog := []string{
-			"[INFO] minute watch Alice: backing off until 2026-05-17T12:05:00Z after repeated failures",
-			"[ERROR] minute watch Alice: 503",
-		}
+		wantLog := []string{"[ERROR] minute watch Alice: failed 3 times, next try at 12:05: 503"}
 		if got := h.logLines(t); !reflect.DeepEqual(got, wantLog) {
 			t.Errorf("log = %q, want %q", got, wantLog)
 		}
@@ -242,7 +255,7 @@ func TestMiner_watchMinute(t *testing.T) {
 		if want := testNow.Add(10 * time.Minute); !alice.WatchBackoffUntil.Equal(want) {
 			t.Errorf("WatchBackoffUntil = %s, want %s", alice.WatchBackoffUntil, want)
 		}
-		wantLog := []string{"[ERROR] minute watch Alice: 503"}
+		wantLog := []string{"[ERROR] minute watch Alice: failed 4 times, next try at 12:10: 503"}
 		if got := h.logLines(t); !reflect.DeepEqual(got, wantLog) {
 			t.Errorf("log = %q, want %q", got, wantLog)
 		}

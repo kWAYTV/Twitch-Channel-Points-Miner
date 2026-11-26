@@ -15,9 +15,8 @@ func TestMiner_logWatchQueueSlots(t *testing.T) {
 
 		h.miner.pickStreamersToWatch(nil)
 
-		want := []string{"[INFO] WATCH queue (≈20s between streamers):"}
-		if got := h.logLines(t); !reflect.DeepEqual(got, want) {
-			t.Errorf("log = %q, want %q", got, want)
+		if got := h.logLines(t); len(got) != 0 {
+			t.Errorf("log = %q, want nothing", got)
 		}
 	})
 

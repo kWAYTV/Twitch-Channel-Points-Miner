@@ -83,6 +83,19 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 	}
 }
 
+// logMinuteWatchFailure reports a failed minute. A failure that keeps
+// repeating is tried every few seconds, so it is reported the first time and
+// then once per back-off, with when the next try is.
+func (m *Miner) logMinuteWatchFailure(streamer *domain.Streamer, err error, counted bool) {
+	name := m.styledStreamerName(streamer)
+	switch {
+	case !counted || streamer.WatchFailureCount == 1:
+		m.logger.Errorf("minute watch %s: %v", name, err)
+	case streamer.WatchFailureCount >= minuteWatchFailureBackoffThreshold:
+		m.logger.Errorf("minute watch %s: failed %d times, next try at %s: %v", name, streamer.WatchFailureCount, streamer.WatchBackoffUntil.Format("15:04"), err)
+	}
+}
+
 // watchMinute reports one watched minute for the streamer and records how it went.
 // It returns false when the streamer turned out to be offline before anything was sent.
 func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
@@ -124,13 +137,9 @@ func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 			}
 		}
 		if countWatchFailure {
-			prevFailures := streamer.WatchFailureCount
 			recordMinuteWatchFailure(streamer, m.now())
-			if m.logger != nil && prevFailures < minuteWatchFailureBackoffThreshold && streamer.WatchFailureCount >= minuteWatchFailureBackoffThreshold {
-				m.logger.Printf("minute watch %s: backing off until %s after repeated failures", m.styledStreamerName(streamer), streamer.WatchBackoffUntil.Format(time.RFC3339))
-			}
 		}
-		m.logger.Errorf("minute watch %s: %v", m.styledStreamerName(streamer), err)
+		m.logMinuteWatchFailure(streamer, err, countWatchFailure)
 	} else {
 		recordMinuteWatchSuccess(streamer)
 		m.syncResolvedStreakState(streamer, prevBroadcastID, prevCreatedAt, prevWatchStreakMissing)

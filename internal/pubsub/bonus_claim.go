@@ -20,7 +20,13 @@ func (p *Client) processClaimAvailable(payload map[string]interface{}, channelID
 		}
 	}
 	streamer := p.streamerMap[channelID]
-	if streamer == nil || claimID == "" {
+	if streamer == nil {
+		// A bonus on a channel this session doesn't mine, such as one another
+		// session of the account is watching: nothing is wrong.
+		p.debugf("claim-available ignored: not a mined channel")
+		return nil
+	}
+	if claimID == "" {
 		if p.anonymizeLogs() {
 			p.logger.Errorf("claim-available ignored: [redacted]")
 		} else {
