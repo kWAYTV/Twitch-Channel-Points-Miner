@@ -55,6 +55,12 @@ func (t *Client) postGQLDecodeWithHeaders(payload interface{}, extraHeaders map[
 	defer resp.Body.Close()
 
 	t.debugf("GQL %s | Status %d", operationLabel(payload, true), resp.StatusCode)
+	// A refusal or an outage answers in JSON too, and read as a result it
+	// would look like an answer with nothing in it.
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return fmt.Errorf("GQL %s: Twitch answered with status %d", operationLabel(payload, false), resp.StatusCode)
+	}
 
 	deepEnabled := false
 	if t.anonymizer == nil || !t.anonymizer.Enabled() {

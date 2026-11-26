@@ -267,9 +267,8 @@ func TestClient_Start(t *testing.T) {
 
 		client.Start()
 
-		checkSlept(t, irc, 5*time.Second)
+		client.Stop()
 		checkEntries(t, logger, []logEntry{{Level: "error", Text: "chat #chan error: missing chat credentials"}})
-		irc.StopParked(client.Stop)
 		if got := irc.Unaccepted(); got != 0 {
 			t.Errorf("%d connections opened, want none", got)
 		}
@@ -277,6 +276,30 @@ func TestClient_Start(t *testing.T) {
 }
 
 func TestClient_Stop(t *testing.T) {
+	t.Run("before it was started", func(t *testing.T) {
+		client, irc, logger := setup(clientOptions{token: "token"})
+
+		client.Stop()
+
+		checkEntries(t, logger, nil)
+		if got := irc.Unaccepted(); got != 0 {
+			t.Errorf("%d connections opened, want none", got)
+		}
+	})
+
+	t.Run("while waiting to try again", func(t *testing.T) {
+		client, irc, _ := setup(clientOptions{token: "token"})
+		irc.Refuse(errors.New("dial tcp: connection refused"))
+		client.Start()
+		checkSlept(t, irc, 5*time.Second)
+
+		client.Stop()
+
+		if got := irc.Unaccepted(); got != 0 {
+			t.Errorf("%d connections opened, want none: the wait ends without another try", got)
+		}
+	})
+
 	t.Run("while connected", func(t *testing.T) {
 		client, irc, logger := setup(clientOptions{token: "token"})
 		conn := connected(t, client, irc)

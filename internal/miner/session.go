@@ -26,7 +26,7 @@ func (m *Miner) run(streamers []string, useFollowers bool, order domain.Follower
 	m.stop = make(chan struct{})
 	m.initialPoints = make(map[string]int)
 
-	tw, err := twitch.NewClient(m.Username, twitchapi.GetUserAgent("CHROME"), m.Password, m.logger, m.anonymizer)
+	tw, err := twitch.NewClient(m.Username, twitchapi.AndroidTVUserAgent, m.Password, m.logger, m.anonymizer)
 	if err != nil {
 		m.logger.Fatalf("failed to create twitch client: %v", err)
 	}

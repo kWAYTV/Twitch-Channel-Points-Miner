@@ -19,7 +19,7 @@ func (t *Client) GetSpadeURL(streamer *domain.Streamer) error {
 		streamer.Stream = domain.NewStream()
 	}
 	headers := map[string]string{
-		"User-Agent": twitchapi.UserAgents["Linux"]["FIREFOX"],
+		"User-Agent": twitchapi.LinuxFirefoxUserAgent,
 	}
 	pageURL := streamer.StreamerURL
 	if pageURL == "" {

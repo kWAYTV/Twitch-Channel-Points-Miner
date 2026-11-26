@@ -35,7 +35,7 @@ func newFakeIRC() *fakeIRC {
 }
 
 func (f *fakeIRC) link() link {
-	return link{dial: f.dial, sleep: f.sleep}
+	return link{dial: f.dial, wait: f.wait}
 }
 
 // Refuse makes every dial from now on fail with err.
@@ -68,9 +68,16 @@ func (f *fakeIRC) dial() (net.Conn, error) {
 	return client, nil
 }
 
-func (f *fakeIRC) sleep(d time.Duration) {
-	f.slept <- d
-	<-f.wake
+func (f *fakeIRC) wait(d time.Duration, stop <-chan struct{}) {
+	select {
+	case f.slept <- d:
+	case <-stop:
+		return
+	}
+	select {
+	case <-f.wake:
+	case <-stop:
+	}
 }
 
 // Accept returns the server end of the next connection a client opens.

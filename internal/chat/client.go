@@ -2,11 +2,13 @@ package chat
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/kWAYTV/twitch-points-miner/internal/events"
@@ -30,19 +32,30 @@ type Client struct {
 	disableAtInNickname bool
 	stop                chan struct{}
 	stopped             chan struct{}
+	started             atomic.Bool
 	conn                net.Conn
 	connMu              sync.Mutex
 	link                link
 }
 
 // link is how a chat reaches Twitch, and how it waits before trying again.
+// wait returns early when stop is closed.
 type link struct {
-	dial  func() (net.Conn, error)
-	sleep func(time.Duration)
+	dial func() (net.Conn, error)
+	wait func(d time.Duration, stop <-chan struct{})
 }
 
 func twitchLink() link {
-	return link{dial: dialTwitch, sleep: time.Sleep}
+	return link{dial: dialTwitch, wait: waitOrStop}
+}
+
+func waitOrStop(d time.Duration, stop <-chan struct{}) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-stop:
+	}
 }
 
 func dialTwitch() (net.Conn, error) {
@@ -68,10 +81,33 @@ func newClient(username, token, channel string, logger Logger, disableAtInNickna
 	}
 }
 
+// Start joins the chat and keeps it joined until Stop. Without a name, a
+// channel and a token there is nothing to try, so it reports that once and
+// starts nothing.
 func (c *Client) Start() {
+	if c.username == "" || c.channel == "" || c.token == "" {
+		c.logError(errors.New("missing chat credentials"))
+		return
+	}
+	if c.started.Swap(true) {
+		return
+	}
 	go c.run()
 }
 
+func (c *Client) logError(err error) {
+	if c.logger == nil {
+		return
+	}
+	if c.anonymizer != nil && c.anonymizer.Enabled() {
+		c.logger.Errorf("chat error: %v", err)
+	} else {
+		c.logger.Errorf("chat #%s error: %v", c.channel, err)
+	}
+}
+
+// Stop ends the chat and returns once it has. A client that was never started
+// has nothing to wait for.
 func (c *Client) Stop() {
 	select {
 	case <-c.stop:
@@ -79,37 +115,33 @@ func (c *Client) Stop() {
 		close(c.stop)
 		c.closeConn()
 	}
-	<-c.stopped
+	if c.started.Load() {
+		<-c.stopped
+	}
 }
 
 func (c *Client) run() {
 	defer close(c.stopped)
-	for {
-		if err := c.connectAndListen(); err != nil && !c.isStopped() && c.logger != nil {
-			if c.anonymizer != nil && c.anonymizer.Enabled() {
-				c.logger.Errorf("chat error: %v", err)
-			} else {
-				c.logger.Errorf("chat #%s error: %v", c.channel, err)
-			}
+	for !c.isStopped() {
+		if err := c.connectAndListen(); err != nil && !c.isStopped() {
+			c.logError(err)
 		}
-		if c.isStopped() {
-			return
-		}
-		c.link.sleep(5 * time.Second)
+		c.link.wait(5*time.Second, c.stop)
 	}
 }
 
 func (c *Client) connectAndListen() error {
-	if c.username == "" || c.channel == "" || c.token == "" {
-		return fmt.Errorf("missing chat credentials")
-	}
-
 	conn, err := c.link.dial()
 	if err != nil {
 		return err
 	}
 	c.setConn(conn)
 	defer c.closeConn()
+	// Stop closes the connection it finds. One opened while it was looking
+	// would otherwise be read until its deadline.
+	if c.isStopped() {
+		return nil
+	}
 
 	if err := c.write(fmt.Sprintf("PASS oauth:%s\r\n", c.token)); err != nil {
 		return err

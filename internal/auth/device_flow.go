@@ -31,7 +31,7 @@ func (t *Login) runDeviceFlow() error {
 		req.Header.Set("Origin", "https://android.tv.twitch.tv")
 		req.Header.Set("Pragma", "no-cache")
 		req.Header.Set("Referer", "https://android.tv.twitch.tv/")
-		req.Header.Set("User-Agent", twitchapi.UserAgents["Android"]["TV"])
+		req.Header.Set("User-Agent", twitchapi.AndroidTVUserAgent)
 		req.Header.Set("X-Device-Id", t.DeviceID)
 	}
 

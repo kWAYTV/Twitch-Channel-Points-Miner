@@ -90,11 +90,11 @@ func TestClient_PostGQL(t *testing.T) {
 
 		got, err := client.PostGQL(raid)
 
-		if err != nil {
-			t.Fatalf("PostGQL error = %v, want none: the status is not read", err)
+		if want := "GQL JoinRaid: Twitch answered with status 503"; errorText(err) != want {
+			t.Errorf("PostGQL error = %v, want %s", err, want)
 		}
-		if want := (map[string]interface{}{"error": "Service Unavailable"}); !equal(got, want) {
-			t.Errorf("PostGQL = %v, want %v", got, want)
+		if got != nil {
+			t.Errorf("PostGQL = %v, want nothing", got)
 		}
 	})
 
@@ -105,11 +105,11 @@ func TestClient_PostGQL(t *testing.T) {
 
 		got, err := client.PostGQL(raid)
 
-		if err != nil {
-			t.Fatalf("PostGQL error = %v, want none: the status is not read", err)
+		if want := "GQL JoinRaid: Twitch answered with status 401"; errorText(err) != want {
+			t.Errorf("PostGQL error = %v, want %s", err, want)
 		}
-		if want := (map[string]interface{}{"error": "Unauthorized"}); !equal(got, want) {
-			t.Errorf("PostGQL = %v, want %v", got, want)
+		if got != nil {
+			t.Errorf("PostGQL = %v, want nothing", got)
 		}
 	})
 

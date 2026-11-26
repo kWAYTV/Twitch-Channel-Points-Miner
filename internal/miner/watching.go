@@ -87,10 +87,16 @@ func (m *Miner) minuteWatcher(streamers []*domain.Streamer, stop <-chan struct{}
 // It returns false when the streamer turned out to be offline before anything was sent.
 func (m *Miner) watchMinute(streamer *domain.Streamer) bool {
 	if streamer.Stream != nil && streamer.Stream.LastUpdateAgo() > 10*time.Minute {
+		wasOnline := streamer.IsOnline
 		if _, err := m.checkStreamerOnlineWithIdentityRepair(streamer); err != nil {
 			m.logger.Printf("online check %s: %v", m.styledStreamerName(streamer), err)
 		}
 		if !streamer.IsOnline {
+			// The check marks the streamer offline itself. Going offline is
+			// setPresence's to handle, so that it is announced and a finished
+			// streak is carried over, as for any other way of going offline.
+			streamer.IsOnline = wasOnline
+			m.setPresence(streamer, false, "stale-stream")
 			return false
 		}
 	}

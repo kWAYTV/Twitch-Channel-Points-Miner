@@ -120,7 +120,7 @@ func oauthRequestWith(form string) oauthRequest {
 		ContentType: "application/x-www-form-urlencoded",
 		ClientID:    "client-1",
 		DeviceID:    "device-1",
-		UserAgent:   twitchapi.UserAgents["Android"]["TV"],
+		UserAgent:   twitchapi.AndroidTVUserAgent,
 		Origin:      "https://android.tv.twitch.tv",
 		Referer:     "https://android.tv.twitch.tv/",
 		Form:        form,

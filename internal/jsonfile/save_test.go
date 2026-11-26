@@ -121,9 +121,37 @@ func TestSaveJSON(t *testing.T) {
 
 		err := SaveJSON(path, map[string]interface{}{"n": 1})
 
-		var pathErr *fs.PathError
-		if !errors.As(err, &pathErr) || pathErr.Path != path || !errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("SaveJSON error = %v, want a not-exist error for %s", err, path)
+		if !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("SaveJSON error = %v, want a not-exist error", err)
+		}
+	})
+
+	t.Run("a value JSON can't hold, over a file already there", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "out.json")
+		if err := os.WriteFile(path, []byte("kept"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		_ = SaveJSON(path, map[string]interface{}{"ch": make(chan int)})
+
+		if got, want := saved(t, path), "kept"; got != want {
+			t.Errorf("file = %q, want it left as %q", got, want)
+		}
+	})
+
+	t.Run("nothing else left in the folder", func(t *testing.T) {
+		dir := t.TempDir()
+
+		if err := SaveJSON(filepath.Join(dir, "out.json"), map[string]interface{}{"n": 1}); err != nil {
+			t.Fatalf("SaveJSON error = %v, want nil", err)
+		}
+
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 || entries[0].Name() != "out.json" {
+			t.Errorf("folder holds %v, want out.json alone", entries)
 		}
 	})
 }

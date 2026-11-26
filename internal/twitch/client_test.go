@@ -131,13 +131,36 @@ func TestClient_UpdateClientVersion(t *testing.T) {
 		}
 	})
 
-	t.Run("a second call after the home page was down", func(t *testing.T) {
+	t.Run("a second call just under five minutes after the home page was down", func(t *testing.T) {
 		client, fake := setup(t)
 		fake.twitch.serve("GET https://www.twitch.tv", down("connection refused"), ok(homePage))
 		client.UpdateClientVersion()
+		fake.clock.Now = now.Add(5*time.Minute - time.Second)
 
 		if got := client.UpdateClientVersion(); got != twitchapi.ClientVersion {
-			t.Errorf("UpdateClientVersion() = %q, want the built-in %q until ten hours pass", got, twitchapi.ClientVersion)
+			t.Errorf("UpdateClientVersion() = %q, want the built-in %q until five minutes pass", got, twitchapi.ClientVersion)
+		}
+	})
+
+	t.Run("a second call five minutes after the home page was down", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.serve("GET https://www.twitch.tv", down("connection refused"), ok(homePage))
+		client.UpdateClientVersion()
+		fake.clock.Now = now.Add(5 * time.Minute)
+
+		if got := client.UpdateClientVersion(); got != buildID {
+			t.Errorf("UpdateClientVersion() = %q, want it read again: %q", got, buildID)
+		}
+	})
+
+	t.Run("a second call five minutes after the home page answered 503", func(t *testing.T) {
+		client, fake := setup(t)
+		fake.twitch.serve("GET https://www.twitch.tv", code(503, ""), ok(homePage))
+		client.UpdateClientVersion()
+		fake.clock.Now = now.Add(5 * time.Minute)
+
+		if got := client.UpdateClientVersion(); got != buildID {
+			t.Errorf("UpdateClientVersion() = %q, want it read again: %q", got, buildID)
 		}
 	})
 

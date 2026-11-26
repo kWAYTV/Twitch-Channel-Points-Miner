@@ -169,6 +169,16 @@ func (t *Client) deepDebugf(format string, args ...interface{}) {
 }
 
 // UpdateClientVersion refreshes the Twitch build id used for GQL calls.
+// clientVersionRetry is how long after a failed fetch the version is asked
+// for again, where a fetch that worked is kept for the whole TTL.
+const clientVersionRetry = 5 * time.Minute
+
+func (t *Client) retryClientVersionSoon(ttl time.Duration) {
+	t.versionMu.Lock()
+	defer t.versionMu.Unlock()
+	t.versionFetched = t.timeNow().Add(clientVersionRetry - ttl)
+}
+
 func (t *Client) UpdateClientVersion() string {
 	if t == nil {
 		return twitchapi.ClientVersion
@@ -196,12 +206,14 @@ func (t *Client) UpdateClientVersion() string {
 
 	resp, err := client.Get(twitchapi.URL)
 	if err != nil {
+		t.retryClientVersionSoon(ttl)
 		return version
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		t.debugf("UpdateClientVersion request failed with status %d", resp.StatusCode)
+		t.retryClientVersionSoon(ttl)
 		return version
 	}
 	m := t.twilightRegexp.FindStringSubmatch(string(body))
